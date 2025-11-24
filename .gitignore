@@ -1,3 +1,23 @@
+.dart_tool/
+.flutter-plugins-dependencies
+.idea/
+.metadata
+analysis_options.yaml
+android/
+build/
+firebase.json
+*.iml
+ios/
+linux/
+macos/
+pubspec.lock
+README.md
+web/
+windows/
+
+
+
+
 # Miscellaneous
 *.class
 *.lock
