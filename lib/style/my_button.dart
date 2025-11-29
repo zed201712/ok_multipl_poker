@@ -11,7 +11,10 @@ class MyButton extends StatefulWidget {
 
   final VoidCallback? onPressed;
 
-  const MyButton({super.key, required this.child, this.onPressed});
+  final Color? color;
+
+  const MyButton(
+      {super.key, required this.child, this.onPressed, this.color});
 
   @override
   State<MyButton> createState() => _MyButtonState();
@@ -41,7 +44,15 @@ class _MyButtonState extends State<MyButton>
       },
       child: RotationTransition(
         turns: _controller.drive(const _MySineTween(0.005)),
-        child: FilledButton(onPressed: widget.onPressed, child: widget.child),
+        child: FilledButton(
+          onPressed: widget.onPressed,
+          style: widget.color == null
+              ? null
+              : FilledButton.styleFrom(
+                  backgroundColor: widget.color,
+                ),
+          child: widget.child,
+        ),
       ),
     );
   }
