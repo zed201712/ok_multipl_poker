@@ -53,22 +53,37 @@ class FirestoreMessageController {
         _log.fine('Received and broadcasted ${messages.length} messages.');
       },
       onError: (error) {
-        _log.severe('Error listening to message stream: \$error');
+        _log.severe('Error listening to message stream: $error');
         _messagesController.addError(error);
       },
     );
 
-    _log.fine('Initialized for room: \$roomId');
+    _log.fine('Initialized for room: $roomId');
   }
 
-  /// Sends a message to the Firestore collection.
+  /// Sends a message to the Firestore collection, automatically setting the
+  /// creation timestamp on the server.
   Future<void> sendMessage(Message message) async {
     try {
-      _log.fine('Sending message: \${message.toJson()}');
-      await _messagesRef.add(message);
+      _log.fine('Sending message: ${message.toJson()}');
+
+      // Convert the Message object to a Map for writing.
+      final writeData = message.toJson();
+
+      // Inject the server-side timestamp. When this is read back, the
+      // `fromFirestore` converter will correctly turn it into a DateTime.
+      writeData['createdAt'] = FieldValue.serverTimestamp();
+
+      // Use a raw collection reference (without a converter) to send the map
+      // that includes the FieldValue.
+      await instance
+          .collection('matches')
+          .doc(roomId)
+          .collection('messages')
+          .add(writeData);
       _log.info('Message sent successfully.');
     } catch (e) {
-      _log.severe('Failed to send message: \$e');
+      _log.severe('Failed to send message: $e');
       // Optionally, rethrow or handle the error as needed.
     }
   }

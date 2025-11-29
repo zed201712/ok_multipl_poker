@@ -74,3 +74,7 @@
 5.  呼叫 `dispose()` 方法後，Firestore 的監聽應被取消。
 
 ---
+
+### **Section 4: 上一輪回饋 (Previous Iteration Feedback)**
+
+* **說明：** 這是迭代修改，sendMessage, 需要加上createAt的處理, 像iOS中加上FieldValue.serverTimestamp(), 要求填入serverTimestamp
