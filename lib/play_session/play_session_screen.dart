@@ -1,7 +1,3 @@
-// Copyright 2022, the Flutter project authors. Please see the AUTHORS file
-// for details. All rights reserved. Use of this source code is governed by a
-// BSD-style license that can be found in the LICENSE file.
-
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,13 +8,14 @@ import 'package:provider/provider.dart';
 
 import '../audio/audio_controller.dart';
 import '../audio/sounds.dart';
+import '../game_internals/big_two_board_state.dart';
 import '../game_internals/board_state.dart';
 import '../game_internals/score.dart';
 import '../multiplayer/firestore_controller.dart';
 import '../style/confetti.dart';
 import '../style/my_button.dart';
 import '../style/palette.dart';
-import 'board_widget.dart';
+import 'bigtwo_board_widget.dart';
 
 /// 這個 Widget 定義了玩家在進行遊戲時所看到的完整畫面。
 ///
@@ -45,6 +42,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
   late DateTime _startOfPlay;
 
   late final BoardState _boardState;
+  late final BigTwoBoardState _bigTwoBoardState;
 
   FirestoreController? _firestoreController;
 
@@ -53,7 +51,10 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     final palette = context.watch<Palette>();
 
     return MultiProvider(
-      providers: [Provider.value(value: _boardState)],
+      providers: [
+        Provider.value(value: _boardState),
+        Provider.value(value: _bigTwoBoardState),
+      ],
       child: IgnorePointer(
         ignoring: _duringCelebration,
         child: Scaffold(
@@ -73,10 +74,13 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  const BoardWidget(),
-                  const Text('Drag cards to the two areas above.'),
-                  const Spacer(),
+                  const Expanded(
+                    child: BigTwoBoardWidget(),
+                  ),
+                  // const Spacer(),
+                  // const BoardWidget(),
+                  // const Text('Drag cards to the two areas above.'),
+                  // const Spacer(),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: MyButton(
@@ -104,6 +108,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
   @override
   void dispose() {
     _boardState.dispose();
+    _bigTwoBoardState.dispose();
     _firestoreController?.dispose();
     super.dispose();
   }
@@ -112,7 +117,9 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
   void initState() {
     super.initState();
     _startOfPlay = DateTime.now();
+
     _boardState = BoardState(onWin: _playerWon);
+    _bigTwoBoardState = BigTwoBoardState();
 
     final firestore = context.read<FirebaseFirestore?>();
     if (firestore == null) {
