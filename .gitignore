@@ -14,7 +14,7 @@ pubspec.lock
 README.md
 #web/
 windows/
-*firebase_options.dart
+#*firebase_options.dart
 
 
 
