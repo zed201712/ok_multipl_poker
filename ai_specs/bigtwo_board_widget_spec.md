@@ -2,12 +2,12 @@
 
 ### **文件標頭 (Metadata)**
 
-| 區塊 | 內容 | 目的/對 AI 的意義 |
-| :--- | :--- | :--- |
+| 區塊 | 內容                       | 目的/對 AI 的意義 |
+| :--- |:-------------------------| :--- |
 | **任務 ID (Task ID)** | `FEAT-WIDGET-BIGTWO-001` | 方便追蹤和版本控制。 |
-| **創建日期 (Date)** | `2024/07/30` | - |
-| **目標版本 (Target Version)** | `N/A` | 新增核心遊戲畫面元件。 |
-| **專案名稱 (Project)** | `ok_multipl_poker` | - |
+| **創建日期 (Date)** | `2025/11/30`             | - |
+| **目標版本 (Target Version)** | `N/A`                    | 新增核心遊戲畫面元件。 |
+| **專案名稱 (Project)** | `ok_multipl_poker`       | - |
 
 ---
 
@@ -23,8 +23,6 @@
 *   **佈局 (Layout):**
     *   應使用 `Stack` Widget 作為根佈局，以便在畫面上自由定位各個 UI 元素。
     *   **本機玩家 (底部):** 在畫面底部中央，使用現有的 `PlayerHandWidget` 來顯示玩家自己的、可互動的手牌。
-        *   **本機玩家 (底部) 出牌按鈕:** 在畫面底部中央右側，使用現有的 `MyButton` 設置出牌按鈕。
-        *   **本機玩家 (底部) 出牌類型Row:** 在畫面底部中央上方，增設一列 出牌類型按鈕, ["單張", "一對", "葫蘆", "順子", "同花順"]的英文版。
     *   **右側玩家 (右側):** 在畫面右側垂直置中，此區域應僅顯示該玩家的手牌背面圖示和剩餘牌數。
     *   **對家玩家 (頂部):** 在畫面頂部中央，此區域應僅顯示該玩家的手牌背面圖示和剩餘牌數。
     *   **左側玩家 (左側):** 在畫面左側垂直置中，此區域應僅顯示該玩家的手牌背面圖示和剩餘牌數。
@@ -70,4 +68,15 @@
 
 ### **Section 4: 上一輪回饋 (Previous Iteration Feedback)**
 
-*   無，此為初次建立。
+*   **`BigTwoBoardWidget` 修改:**
+    *   如同 `BoardWidget`，`BigTwoBoardWidget` 應該是一個 `StatefulWidget`。
+    *   它應透過 `context.watch<BoardState>()` 來獲取 `final boardState`。
+    *   中央的 `PlayingAreaWidget` 應使用 `boardState.areaOne` 進行初始化。
+
+*   **新增 `BigTwoBoardState`:**
+    *   需要參考 `@/lib/game_internals/board_state.dart`，建立一個新的 `BigTwoBoardState` class。
+    *   `BigTwoBoardState` 應包含 4 個代表玩家的 property。
+    *   `BigTwoBoardState` 應包含 1 個代表中央棄牌區的 `PlayingArea` property。
+
+*   **修改 `PlaySessionScreen`:**
+    *   在 `@/lib/play_session/play_session_screen.dart` 中，除了 `_boardState`，還需要 Provide 新的 `BigTwoBoardState`。
