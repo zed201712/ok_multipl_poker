@@ -8,14 +8,15 @@ import 'package:provider/provider.dart';
 
 import '../audio/audio_controller.dart';
 import '../audio/sounds.dart';
-import '../game_internals/big_two_board_state.dart';
+//import '../game_internals/big_two_board_state.dart';
 import '../game_internals/board_state.dart';
 import '../game_internals/score.dart';
 import '../multiplayer/firestore_controller.dart';
 import '../style/confetti.dart';
 import '../style/my_button.dart';
 import '../style/palette.dart';
-import 'bigtwo_board_widget.dart';
+import 'board_widget.dart';
+//import 'bigtwo_board_widget.dart';
 
 /// 這個 Widget 定義了玩家在進行遊戲時所看到的完整畫面。
 ///
@@ -42,7 +43,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
   late DateTime _startOfPlay;
 
   late final BoardState _boardState;
-  late final BigTwoBoardState _bigTwoBoardState;
+  //late final BigTwoBoardState _bigTwoBoardState;
 
   FirestoreController? _firestoreController;
 
@@ -53,7 +54,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     return MultiProvider(
       providers: [
         Provider.value(value: _boardState),
-        Provider.value(value: _bigTwoBoardState),
+        //Provider.value(value: _bigTwoBoardState),
       ],
       child: IgnorePointer(
         ignoring: _duringCelebration,
@@ -74,13 +75,13 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                       ),
                     ),
                   ),
-                  const Expanded(
-                    child: BigTwoBoardWidget(),
-                  ),
-                  // const Spacer(),
-                  // const BoardWidget(),
-                  // const Text('Drag cards to the two areas above.'),
-                  // const Spacer(),
+                  // const Expanded(
+                  //   child: BigTwoBoardWidget(),
+                  // ),
+                  const Spacer(),
+                  const BoardWidget(),
+                  const Text('Drag cards to the two areas above.'),
+                  const Spacer(),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: MyButton(
@@ -108,7 +109,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
   @override
   void dispose() {
     _boardState.dispose();
-    _bigTwoBoardState.dispose();
+    //_bigTwoBoardState.dispose();
     _firestoreController?.dispose();
     super.dispose();
   }
@@ -119,7 +120,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     _startOfPlay = DateTime.now();
 
     _boardState = BoardState(onWin: _playerWon);
-    _bigTwoBoardState = BigTwoBoardState();
+    //_bigTwoBoardState = BigTwoBoardState();
 
     final firestore = context.read<FirebaseFirestore?>();
     if (firestore == null) {
