@@ -12,7 +12,7 @@ linux/
 macos/
 pubspec.lock
 README.md
-web/
+#web/
 windows/
 *firebase_options.dart
 
