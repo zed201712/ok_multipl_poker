@@ -39,7 +39,7 @@ jobs:
       # 5️⃣ Build Web
       # Optional: deploy to GitHub Pages for web
       - name: Build Web
-        run: flutter build web --release
+        run: flutter build web --release --base-href /${{ github.event.repository.name }}/
 
       # 6️⃣ deploy to GitHub Pages for web
       - name: Deploy to GitHub Pages
