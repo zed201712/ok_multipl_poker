@@ -42,6 +42,18 @@ class PlayingCard {
     );
   }
 
+  /// Creates a full, shuffled deck of 52 cards.
+  static List<PlayingCard> createDeck() {
+    final List<PlayingCard> deck = [];
+    for (final suit in CardSuit.values) {
+      for (int value = 1; value <= 13; value++) {
+        deck.add(PlayingCard(suit, value));
+      }
+    }
+    deck.shuffle();
+    return deck;
+  }
+
   @override
   int get hashCode => Object.hash(suit, value);
 
@@ -58,6 +70,22 @@ class PlayingCard {
 
   @override
   String toString() {
+    // A simple string representation, e.g., '♠10' for the 10 of spades.
     return '$suit$value';
+  }
+
+  String valueToString() {
+    switch (value) {
+      case 1:
+        return 'A';
+      case 11:
+        return 'J';
+      case 12:
+        return 'Q';
+      case 13:
+        return 'K';
+      default:
+        return value.toString();
+    }
   }
 }
