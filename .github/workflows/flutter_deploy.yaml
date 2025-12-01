@@ -33,8 +33,8 @@ jobs:
       # 4️⃣ Run linter / tests
       #- name: Run flutter analyze
       #  run: flutter analyze
-      #- name: Run tests
-      #  run: flutter test
+      - name: Run tests
+        run: flutter test
 
       # 5️⃣ Build Web
       # Optional: deploy to GitHub Pages for web
