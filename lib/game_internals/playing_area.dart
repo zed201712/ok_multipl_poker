@@ -10,7 +10,7 @@ class PlayingArea {
   static const int maxCards = 6;
 
   /// 此區域中目前的卡牌。
-  List<PlayingCard> cards = [];
+  final List<PlayingCard> cards = [];
 
   final StreamController<void> _playerChanges =
       StreamController<void>.broadcast();
@@ -56,6 +56,16 @@ class PlayingArea {
     this.cards.clear();
     this.cards.addAll(cards);
     _maybeTrim();
+    _remoteChanges.add(null);
+  }
+
+  void addCards(List<PlayingCard> cards) {
+    this.cards.addAll(cards);
+    _remoteChanges.add(null);
+  }
+
+  void clearCards() {
+    this.cards.clear();
     _remoteChanges.add(null);
   }
 

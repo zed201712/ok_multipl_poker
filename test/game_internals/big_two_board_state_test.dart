@@ -48,7 +48,7 @@ void main() {
         // Give players some cards initially
         state.player.hand = [PlayingCard.random()];
         state.otherPlayers.first.hand = [PlayingCard.random()];
-        state.centerPlayingArea.cards = [PlayingCard.random()];
+        state.centerPlayingArea.replaceWith([PlayingCard.random()]);
 
         state.restartGame();
 
