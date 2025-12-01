@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../game_internals/big_two_board_state.dart';
 import './player_hand_widget.dart';
 import './playing_area_widget.dart';
 import '../style/my_button.dart';
-// import '../game_state/big_two_state.dart'; // Assumed to exist for state management
 
 /// A widget that displays the main game board for a 4-player Big Two game.
 ///
 /// It lays out the playing area, the local player's hand, controls, and a
 /// representation of the opponents' hands.
-class BigTwoBoardWidget extends StatelessWidget {
+class BigTwoBoardWidget extends StatefulWidget {
   const BigTwoBoardWidget({super.key});
 
   @override
+  State<BigTwoBoardWidget> createState() => _BigTwoBoardWidgetState();
+}
+
+class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
+  @override
   Widget build(BuildContext context) {
-    // This widget assumes a `BigTwoState` is provided higher up in the widget tree.
-    // final state = context.watch<BigTwoState>();
+    final boardState = context.watch<BigTwoBoardState>();
 
     // Placeholder values until the state object is fully integrated.
     const int opponentCardCount = 13;
@@ -28,9 +32,9 @@ class BigTwoBoardWidget extends StatelessWidget {
       body: Stack(
         children: [
           // 1. Central playing area for cards that have been played.
-          const Align(
+          Align(
             alignment: Alignment.center,
-            child: PlayingAreaWidget(/* cards: state.playingAreaCards */),
+            child: PlayingAreaWidget(boardState.centerPlayingArea),
           ),
 
           // 2. Opponent players' hands (top, left, right).

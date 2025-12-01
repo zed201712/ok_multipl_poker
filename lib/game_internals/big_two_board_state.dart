@@ -8,7 +8,7 @@ import 'playing_card.dart';
 ///
 /// This includes the state of the local player, other players, and the
 /// central playing area.
-class BigTwoBoardState with ChangeNotifier {
+class BigTwoBoardState {
   /// The total number of players in the game.
   final int playerCount;
 
@@ -54,11 +54,21 @@ class BigTwoBoardState with ChangeNotifier {
       centerPlayingArea.replaceWith(centerPlayingArea.cards + deck.sublist(deck.length - remainingCards));
     }
 
-    notifyListeners();
+    player.addListener(_handlePlayerChange);
   }
 
-  /// Notifies listeners of a change in the board state.
-  void update() {
-    notifyListeners();
+  /// 釋放資源。
+  void dispose() {
+    player.removeListener(_handlePlayerChange);
+    centerPlayingArea.dispose();
+  }
+
+  /// 處理玩家狀態的變更。
+  ///
+  /// 當玩家手牌為空時，觸發 `onWin` 回呼。
+  void _handlePlayerChange() {
+    if (player.hand.isEmpty) {
+      //onWin();
+    }
   }
 }
