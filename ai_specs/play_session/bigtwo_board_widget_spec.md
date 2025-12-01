@@ -68,15 +68,12 @@
 
 ### **Section 4: 上一輪回饋 (Previous Iteration Feedback)**
 
-*   **`BigTwoBoardWidget` 修改:**
-    *   如同 `BoardWidget`，`BigTwoBoardWidget` 應該是一個 `StatefulWidget`。
-    *   它應透過 `context.watch<BoardState>()` 來獲取 `final boardState`。
-    *   中央的 `PlayingAreaWidget` 應使用 `boardState.areaOne` 進行初始化。
-
 *   **新增 `BigTwoBoardState`:**
-    *   需要參考 `@/lib/game_internals/board_state.dart`，建立一個新的 `BigTwoBoardState` class。
-    *   `BigTwoBoardState` 應包含 4 個代表玩家的 property。
-    *   `BigTwoBoardState` 應包含 1 個代表中央棄牌區的 `PlayingArea` property。
-
-*   **修改 `PlaySessionScreen`:**
-    *   在 `@/lib/play_session/play_session_screen.dart` 中，除了 `_boardState`，還需要 Provide 新的 `BigTwoBoardState`。
+    *   需要參考 `@/lib/game_internals/board_state.dart`，修改 `BigTwoBoardState` class。
+    *   `BigTwoBoardState`
+    *   final CardPlayer centerPlayingArea; 改成 final PlayingArea centerPlayingArea = PlayingArea();
+    *
+    *  增加一個restartGame, 呼叫PlayingCard.createDeck()重新洗牌,
+    *  根據player數量, 平均發牌, 若無法整除, 把多餘的牌放在 centerPlayingArea
+    * 
+    *  在big_two_board_state_test.dart, 新增對於上述功能的測試

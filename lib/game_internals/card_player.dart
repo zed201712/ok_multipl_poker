@@ -10,10 +10,10 @@ class CardPlayer with ChangeNotifier {
   final int maxCards;
 
   /// The cards currently in the player's hand.
-  final List<PlayingCard> hand;
+  List<PlayingCard> hand;
 
   /// Creates a new card player.
-  CardPlayer({int? maxCards, List<PlayingCard>? initialHand}) 
+  CardPlayer({int? maxCards, List<PlayingCard>? initialHand})
       : maxCards = maxCards ?? 13,
         hand = initialHand ?? [];
 
@@ -22,5 +22,17 @@ class CardPlayer with ChangeNotifier {
     if (hand.remove(card)) {
       notifyListeners();
     }
+  }
+
+  /// Removes all cards from the player's hand.
+  void clearHand() {
+    hand.clear();
+    notifyListeners();
+  }
+
+  /// Adds a list of cards to the player's hand.
+  void addCards(List<PlayingCard> cards) {
+    hand.addAll(cards);
+    notifyListeners();
   }
 }
