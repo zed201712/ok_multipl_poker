@@ -1,6 +1,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
+import '../core/mixins/json_serializable_mixin.dart';
 
 part 'firestore_room_controller.g.dart';
 
@@ -11,7 +12,10 @@ Timestamp _timestampToJson(Timestamp timestamp) => timestamp;
 // --- Data Models ---
 
 @JsonSerializable(explicitToJson: true)
-class Room {
+class Room with JsonSerializableMixin {
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  Set<String> get timeKeys => {'createdAt', 'lastActivityAt'};
+
   @JsonKey(includeFromJson: false, includeToJson: false)
   final String roomId;
 
@@ -70,7 +74,10 @@ class Room {
 }
 
 @JsonSerializable()
-class Participant {
+class Participant with JsonSerializableMixin {
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  Set<String> get timeKeys => {'joinedAt'};
+
   final String uid;
   final String status;
 
