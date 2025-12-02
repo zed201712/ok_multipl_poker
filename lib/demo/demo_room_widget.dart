@@ -32,7 +32,6 @@ class _DemoRoomWidgetState extends State<DemoRoomWidget> {
   void initState() {
     super.initState();
     _roomController = FirestoreRoomController(FirebaseFirestore.instance);
-    _roomsStream = _roomController.roomsStream();
     _initUser();
     _roomIdController.addListener(_onRoomIdChanged);
   }
@@ -51,9 +50,7 @@ class _DemoRoomWidgetState extends State<DemoRoomWidget> {
 
   Future<void> _initUser() async {
     User? user = _auth.currentUser;
-    if (user == null) {
-      user = (await _auth.signInAnonymously()).user;
-    }
+    user ??= (await _auth.signInAnonymously()).user;
     if (mounted) {
       setState(() {
         _userId = user!.uid;
@@ -64,6 +61,7 @@ class _DemoRoomWidgetState extends State<DemoRoomWidget> {
 
   void _onRoomIdChanged() {
     setState(() {
+      _roomsStream ??= _roomController.roomsStream();
       _participantsStream = _roomController.participantsStream(
         roomId: _roomIdController.text,
       );
