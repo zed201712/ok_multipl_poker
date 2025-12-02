@@ -1,22 +1,35 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:json_annotation/json_annotation.dart';
+
+part 'firestore_room_controller.g.dart';
+
+// Helper function to convert Firestore Timestamp to/from JSON.
+Timestamp _timestampFromJson(dynamic json) => json as Timestamp;
+Timestamp _timestampToJson(Timestamp timestamp) => timestamp;
 
 // --- Data Models ---
 
-/// Represents a room document in the `rooms` collection.
+@JsonSerializable(explicitToJson: true)
 class Room {
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final String roomId;
+
   final String creatorUid;
   final String title;
   final int maxPlayers;
   final String status;
   final String matchMode;
   final String visibility;
+
+  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp createdAt;
+
+  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp lastActivityAt;
 
   Room({
-    required this.roomId,
+    this.roomId = '', // Default value for when creating from json
     required this.creatorUid,
     required this.title,
     required this.maxPlayers,
@@ -27,42 +40,41 @@ class Room {
     required this.lastActivityAt,
   });
 
-  /// Creates a Room object from a Firestore document snapshot.
+  /// Creates a Room instance from a Firestore document.
   factory Room.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!;
+    if (!doc.exists || doc.data() == null) {
+      throw Exception('Room document not found or is empty');
+    }
+    // Use the generated fromJson factory and then set the non-data field.
+    return Room.fromJson(doc.data()!).copyWith(roomId: doc.id);
+  }
+
+  /// Creates a copy of the room with a new roomId.
+  Room copyWith({String? roomId}) {
     return Room(
-      roomId: doc.id,
-      creatorUid: data['creatorUid'] ?? '',
-      title: data['title'] ?? '',
-      maxPlayers: data['maxPlayers'] ?? 0,
-      status: data['status'] ?? '',
-      matchMode: data['matchMode'] ?? '',
-      visibility: data['visibility'] ?? '',
-      createdAt: data['createdAt'] ?? Timestamp.now(),
-      lastActivityAt: data['lastActivityAt'] ?? Timestamp.now(),
+      roomId: roomId ?? this.roomId,
+      creatorUid: this.creatorUid,
+      title: this.title,
+      maxPlayers: this.maxPlayers,
+      status: this.status,
+      matchMode: this.matchMode,
+      visibility: this.visibility,
+      createdAt: this.createdAt,
+      lastActivityAt: this.lastActivityAt,
     );
   }
 
-  /// Converts a Room object into a Map for Firestore.
-  /// Note: `roomId` is typically used as the document ID and not stored as a field.
-  Map<String, dynamic> toFirestore() {
-    return {
-      'creatorUid': creatorUid,
-      'title': title,
-      'maxPlayers': maxPlayers,
-      'status': status,
-      'matchMode': matchMode,
-      'visibility': visibility,
-      'createdAt': createdAt,
-      'lastActivityAt': lastActivityAt,
-    };
-  }
+  factory Room.fromJson(Map<String, dynamic> json) => _$RoomFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RoomToJson(this);
 }
 
-/// Represents a participant document in the `participants` sub-collection.
+@JsonSerializable()
 class Participant {
   final String uid;
   final String status;
+
+  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp joinedAt;
 
   Participant({
@@ -71,25 +83,20 @@ class Participant {
     required this.joinedAt,
   });
 
-  /// Creates a Participant object from a Firestore document snapshot.
+  /// Creates a Participant instance from a Firestore document.
   factory Participant.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!;
-    return Participant(
-      uid: data['uid'] ?? '',
-      status: data['status'] ?? '',
-      joinedAt: data['joinedAt'] ?? Timestamp.now(),
-    );
+    if (!doc.exists || doc.data() == null) {
+      throw Exception('Participant document not found or is empty');
+    }
+    return Participant.fromJson(doc.data()!);
   }
 
-  /// Converts a Participant object into a Map for Firestore.
-  Map<String, dynamic> toFirestore() {
-    return {
-      'uid': uid,
-      'status': status,
-      'joinedAt': joinedAt,
-    };
-  }
+  factory Participant.fromJson(Map<String, dynamic> json) =>
+      _$ParticipantFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ParticipantToJson(this);
 }
+
 
 // --- Controller ---
 
@@ -168,5 +175,16 @@ class FirestoreRoomController {
       }
       return null;
     });
+  }
+
+  /// Returns a stream of all participants in a specific room.
+  Stream<List<Participant>> participantsStream({required String roomId}) {
+    if (roomId.isEmpty) {
+      return Stream.value([]);
+    }
+    final collectionRef = _firestore.collection('rooms').doc(roomId).collection('participants');
+    return collectionRef.snapshots().map(
+          (snapshot) => snapshot.docs.map((doc) => Participant.fromFirestore(doc)).toList(),
+    );
   }
 }

@@ -4,7 +4,7 @@
 
 | 區塊 | 內容                    | 目的/對 AI 的意義 |
 | :--- |:----------------------| :--- |
-| **任務 ID (Task ID)** | `DOC-DEMO-SCREEN-001` | 方便追蹤和版本控制。AI 在回覆時應引用此 ID。 |
+| **任務 ID (Task ID)** | `FEAT-DEMO-ROOM-SCREEN-001` | 方便追蹤和版本控制。AI 在回覆時應引用此 ID。 |
 | **創建日期 (Date)** | `2025/12/02`          | - |
 | **目標版本 (Target Version)** | `N/A`                 | 讓 AI 了解這次修改的專案範圍。 |
 | **專案名稱 (Project)** | `ok_multipl_poker`    | - |
