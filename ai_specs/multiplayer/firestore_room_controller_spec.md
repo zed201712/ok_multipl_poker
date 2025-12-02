@@ -15,7 +15,7 @@
 
 #### **1.1 任務目標 (Goal)** **【必填】**
 
-* **說明：** 將 `RoomDemoScreen.dart` 中的 Firestore 資料存取邏輯，分離到一個獨立的 `FirestoreRoomController` 中，並建立對應的資料模型，以達成關注點分離 (Separation of Concerns)。
+* **說明：** 將 `DemoRoomScreen.dart` 中的 Firestore 資料存取邏輯，分離到一個獨立的 `FirestoreRoomController` 中，並建立對應的資料模型，以達成關注點分離 (Separation of Concerns)。
 
 #### **1.2 詳細需求 (Detailed Requirements)** **【必填】**
 
@@ -39,7 +39,7 @@
 #### **2.1 受影響/新增的檔案清單 (Affected Files)** **【必填】**
 
 *   **新增：** `lib/play_session/firestore_room_controller.dart`
-*   **修改：** `lib/play_session/RoomDemoScreen.dart`
+*   **修改：** `lib/play_session/DemoRoomScreen.dart`
 
 #### **2.2 程式碼風格與技術棧 (Style & Stack)**
 
@@ -91,7 +91,7 @@
     }
     ```
 
-*   **`RoomDemoScreen.dart`:**
+*   **`DemoRoomScreen.dart`:**
     *   `_RoomDemoWidgetState` 將會新增 `late final FirestoreRoomController _roomController;`。
     *   `_createRoom` 和 `_joinRoom` 函式內部將簡化為對 `_roomController` 的單行呼叫。
     *   `RoomsStreamWidget` 和 `ParticipantStreamWidget` 的 `stream` 參數將來自 `_roomController`。
@@ -104,13 +104,13 @@
 
 1.  **執行計劃：**
     1.  建立 `lib/play_session/firestore_room_controller.dart` 檔案，並在其中實作 `Room`, `Participant`, 和 `FirestoreRoomController` 三個 class 的完整程式碼。
-    2.  修改 `lib/play_session/RoomDemoScreen.dart` 檔案，將其重構以使用新的 `FirestoreRoomController`。
+    2.  修改 `lib/play_session/DemoRoomScreen.dart` 檔案，將其重構以使用新的 `FirestoreRoomController`。
 2.  **程式碼輸出：** 依序輸出上述兩個檔案的**完整修改後內容**。
 
 #### **3.2 驗證步驟 (Verification Steps)**
 
 *   **重構後的功能應與重構前完全一致。**
-    1.  啟動 App 並導航至 `RoomDemoScreen`。
+    1.  啟動 App 並導航至 `DemoRoomScreen`。
     2.  確認匿名登入依然正常，`userId` 能成功獲取並顯示。
     3.  建立一個新房間，確認下方的 `RoomsStreamWidget` 能即時顯示新房間的資訊。
     4.  使用上一步驟得到的 `roomId` 加入房間。
