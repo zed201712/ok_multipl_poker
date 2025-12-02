@@ -23,4 +23,7 @@ _____
 1~13 diamonds
 然後洗牌
 
-並且在test新增一個 test的dart檔案, 來測試這個功能, 並新增測試項目 
+並且在test新增一個 test的dart檔案, 來測試這個功能, 並新增測試項目
+_____
+產生 @ai_dev_spec_template.md 風格的 spec
+分析 @RoomDemoScreen.dart 的內容, 產生 room_demo_screen_spec.md
