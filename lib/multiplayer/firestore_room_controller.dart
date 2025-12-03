@@ -13,8 +13,9 @@ Timestamp _timestampToJson(Timestamp timestamp) => timestamp;
 
 @JsonSerializable(explicitToJson: true)
 class Room with JsonSerializableMixin {
+  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  Set<String> get timeKeys => {'createdAt', 'lastActivityAt'};
+  Set<String> get timeKeys => {'createdAt', 'updatedAt'};
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   final String roomId;
@@ -30,7 +31,7 @@ class Room with JsonSerializableMixin {
   final Timestamp createdAt;
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-  final Timestamp lastActivityAt;
+  final Timestamp updatedAt;
 
   Room({
     this.roomId = '', // Default value for when creating from json
@@ -41,7 +42,7 @@ class Room with JsonSerializableMixin {
     required this.matchMode,
     required this.visibility,
     required this.createdAt,
-    required this.lastActivityAt,
+    required this.updatedAt,
   });
 
   /// Creates a Room instance from a Firestore document.
@@ -64,19 +65,21 @@ class Room with JsonSerializableMixin {
       matchMode: this.matchMode,
       visibility: this.visibility,
       createdAt: this.createdAt,
-      lastActivityAt: this.lastActivityAt,
+      updatedAt: updatedAt,
     );
   }
 
   factory Room.fromJson(Map<String, dynamic> json) => _$RoomFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$RoomToJson(this);
 }
 
 @JsonSerializable()
 class Participant with JsonSerializableMixin {
+  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  Set<String> get timeKeys => {'joinedAt'};
+  Set<String> get timeKeys => {'joinedAt', 'createdAt', 'updatedAt'};
 
   final String uid;
   final String status;
@@ -84,10 +87,18 @@ class Participant with JsonSerializableMixin {
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp joinedAt;
 
+  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
+  final Timestamp createdAt;
+
+  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
+  final Timestamp updatedAt;
+
   Participant({
     required this.uid,
     required this.status,
     required this.joinedAt,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   /// Creates a Participant instance from a Firestore document.
@@ -98,9 +109,23 @@ class Participant with JsonSerializableMixin {
     return Participant.fromJson(doc.data()!);
   }
 
+  /// Creates a copy of the participant with new values.
+  Participant copyWith({
+    String? uid
+  }) {
+    return Participant(
+      uid: uid ?? this.uid,
+      status: status,
+      joinedAt: joinedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
   factory Participant.fromJson(Map<String, dynamic> json) =>
       _$ParticipantFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$ParticipantToJson(this);
 }
 
@@ -127,7 +152,6 @@ class FirestoreRoomController {
     final docId = (roomId != null && roomId.isNotEmpty) ? roomId : _firestore.collection('rooms').doc().id;
 
     final roomData = {
-      'roomId': docId,
       'creatorUid': creatorUid,
       'title': title,
       'maxPlayers': maxPlayers,
@@ -135,7 +159,7 @@ class FirestoreRoomController {
       'matchMode': matchMode,
       'visibility': visibility,
       'createdAt': FieldValue.serverTimestamp(),
-      'lastActivityAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     };
 
     await _firestore.collection('rooms').doc(docId).set(roomData);
@@ -152,6 +176,8 @@ class FirestoreRoomController {
       'uid': userId,
       'status': status,
       'joinedAt': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     };
 
     await _firestore
@@ -160,6 +186,52 @@ class FirestoreRoomController {
         .collection('participants')
         .doc(userId)
         .set(participantData, SetOptions(merge: true));
+  }
+
+  /// Updates a room with the given data.
+  Future<void> updateRoom({
+    required String roomId,
+    required Map<String, Object?> data,
+  }) async {
+    final updateData = {
+      ...data,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await _firestore.collection('rooms').doc(roomId).update(updateData);
+  }
+
+  /// Updates a participant's data in a room.
+  Future<void> updateParticipant({
+    required String roomId,
+    required String userId,
+    required Map<String, Object?> data,
+  }) async {
+    final updateData = {
+      ...data,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await _firestore
+        .collection('rooms')
+        .doc(roomId)
+        .collection('participants')
+        .doc(userId)
+        .update(updateData);
+  }
+
+  /// Deletes a room document.
+  /// Note: This does not delete subcollections. For that, a Cloud Function is recommended.
+  Future<void> deleteRoom({required String roomId}) async {
+    await _firestore.collection('rooms').doc(roomId).delete();
+  }
+
+  /// Deletes a participant from a room (the user "leaves" the room).
+  Future<void> leaveRoom({required String roomId, required String userId}) async {
+    await _firestore
+        .collection('rooms')
+        .doc(roomId)
+        .collection('participants')
+        .doc(userId)
+        .delete();
   }
 
   /// Returns a stream of all rooms.
