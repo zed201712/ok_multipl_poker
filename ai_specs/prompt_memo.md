@@ -4,6 +4,8 @@ _____
 根據 @ai_dev_spec_template.md 寫一個spec
 
 目的: 寫一個 firestore_message_controller.dart
+| **任務 ID (Task ID)** | `FEAT-CTRL-MSG-001` |
+| **創建日期 (Date)** | `2025/11/29` |
 仿照 @firestore_controller.dart 的做法, (StreamSubscription, DocumentSnapshot等
 
 以message為單位, 做資訊的收發, 並寫一個void sendMessage用來作範例

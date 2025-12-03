@@ -21,6 +21,7 @@ class Room with JsonSerializableMixin {
   final String roomId;
 
   final String creatorUid;
+  final String managerUid;
   final String title;
   final int maxPlayers;
   final String status;
@@ -36,6 +37,7 @@ class Room with JsonSerializableMixin {
   Room({
     this.roomId = '', // Default value for when creating from json
     required this.creatorUid,
+    required this.managerUid,
     required this.title,
     required this.maxPlayers,
     required this.status,
@@ -59,6 +61,7 @@ class Room with JsonSerializableMixin {
     return Room(
       roomId: roomId ?? this.roomId,
       creatorUid: this.creatorUid,
+      managerUid: this.managerUid,
       title: this.title,
       maxPlayers: this.maxPlayers,
       status: this.status,
@@ -153,6 +156,7 @@ class FirestoreRoomController {
 
     final roomData = {
       'creatorUid': creatorUid,
+      'managerUid': creatorUid, // Manager is the creator initially
       'title': title,
       'maxPlayers': maxPlayers,
       'status': 'open',
@@ -198,6 +202,14 @@ class FirestoreRoomController {
       'updatedAt': FieldValue.serverTimestamp(),
     };
     await _firestore.collection('rooms').doc(roomId).update(updateData);
+  }
+
+  /// Changes the manager of a room.
+  Future<void> changeManager({
+    required String roomId,
+    required String newManagerUid,
+  }) async {
+    await updateRoom(roomId: roomId, data: {'managerUid': newManagerUid});
   }
 
   /// Updates a participant's data in a room.

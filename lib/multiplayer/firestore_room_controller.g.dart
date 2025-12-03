@@ -8,6 +8,7 @@ part of 'firestore_room_controller.dart';
 
 Room _$RoomFromJson(Map<String, dynamic> json) => Room(
   creatorUid: json['creatorUid'] as String,
+  managerUid: json['managerUid'] as String,
   title: json['title'] as String,
   maxPlayers: (json['maxPlayers'] as num).toInt(),
   status: json['status'] as String,
@@ -19,6 +20,7 @@ Room _$RoomFromJson(Map<String, dynamic> json) => Room(
 
 Map<String, dynamic> _$RoomToJson(Room instance) => <String, dynamic>{
   'creatorUid': instance.creatorUid,
+  'managerUid': instance.managerUid,
   'title': instance.title,
   'maxPlayers': instance.maxPlayers,
   'status': instance.status,
