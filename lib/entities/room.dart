@@ -25,6 +25,8 @@ class Room with JsonSerializableMixin {
   final String body;
   final String matchMode;
   final String visibility;
+  final List<String> seats;
+  final List<String> participants;
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp createdAt;
@@ -42,6 +44,8 @@ class Room with JsonSerializableMixin {
     required this.body,
     required this.matchMode,
     required this.visibility,
+    this.seats = const [],
+    this.participants = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -55,20 +59,36 @@ class Room with JsonSerializableMixin {
     return Room.fromJson(doc.data()!).copyWith(roomId: doc.id);
   }
 
-  /// Creates a copy of the room with a new roomId.
-  Room copyWith({String? roomId}) {
+  /// Creates a copy of the room with new values.
+  Room copyWith({
+    String? roomId,
+    String? creatorUid,
+    String? managerUid,
+    String? title,
+    int? maxPlayers,
+    String? state,
+    String? body,
+    String? matchMode,
+    String? visibility,
+    List<String>? seats,
+    List<String>? participants,
+    Timestamp? createdAt,
+    Timestamp? updatedAt,
+  }) {
     return Room(
       roomId: roomId ?? this.roomId,
-      creatorUid: this.creatorUid,
-      managerUid: this.managerUid,
-      title: this.title,
-      maxPlayers: this.maxPlayers,
-      state: this.state,
-      body: this.body,
-      matchMode: this.matchMode,
-      visibility: this.visibility,
-      createdAt: this.createdAt,
-      updatedAt: updatedAt,
+      creatorUid: creatorUid ?? this.creatorUid,
+      managerUid: managerUid ?? this.managerUid,
+      title: title ?? this.title,
+      maxPlayers: maxPlayers ?? this.maxPlayers,
+      state: state ?? this.state,
+      body: body ?? this.body,
+      matchMode: matchMode ?? this.matchMode,
+      visibility: visibility ?? this.visibility,
+      seats: seats ?? this.seats,
+      participants: participants ?? this.participants,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
