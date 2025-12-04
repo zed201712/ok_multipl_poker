@@ -32,9 +32,12 @@ class FirestoreRoomStateController {
       'managerUid': creatorUid, // Manager is the creator initially
       'title': title,
       'maxPlayers': maxPlayers,
-      'status': 'open',
+      'state': 'open', // Use 'state' to match Room entity
+      'body': '', // Initialize body
       'matchMode': matchMode,
       'visibility': visibility,
+      'participants': [creatorUid], // Creator is the first participant
+      'seats': [creatorUid], // Creator takes the first seat
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -77,15 +80,15 @@ class FirestoreRoomStateController {
 
   // --- Room State ---
 
-  /// Updates the result field of a room.
-  Future<void> updateRoomResult({
+  /// Updates the body field of a room.
+  Future<void> updateRoomBody({
     required String roomId,
-    required String result,
+    required String body,
   }) async {
-    await updateRoom(roomId: roomId, data: {'result': result});
+    await updateRoom(roomId: roomId, data: {'body': body});
   }
 
-  /// Returns a stream of the room's result field.
+  /// Returns a stream of the room's body field.
   Stream<String?> getRoomBodyStream({required String roomId}) {
     return _firestore
         .collection(_collectionName)
