@@ -1,14 +1,21 @@
 根據 @firestore_message_controller_spec.md 生成程式碼
 _____
 
-根據 @ai_dev_spec_template.md 寫一個spec
+根據 @firestore_room_state_controller_spec.md 寫一個spec
+| **任務 ID (Task ID)** | `FEAT-DEMO-ROOM-STATE-WIDGET-001` |
+| **創建日期 (Date)** | `2025/12/05` |
 
-目的: 寫一個 firestore_message_controller.dart
-| **任務 ID (Task ID)** | `FEAT-CTRL-MSG-001` |
-| **創建日期 (Date)** | `2025/11/29` |
-仿照 @firestore_controller.dart 的做法, (StreamSubscription, DocumentSnapshot等
+目的:
+參考 @demo_room_widget.dart
+製作一個demo_room_state_widget
 
-以message為單位, 做資訊的收發, 並寫一個void sendMessage用來作範例
+@firestore_room_state_controller.dart
+增加一個function updateRoomBody
+
+createRoom的裝置, listen room_request, 接收到新的request, 會將room的body改成 'updated: $ManagerId, requesterId: $request.participantId'
+
+當另一個participant 請求join room, 不再建立collection room/{participant}, 而是participant 用FirestoreRoomStateController sendRequest, body: 'join'
+roomManager會將participantId加入, updateRoom 將participantId加入 room的participants
 _____
 
 寫提示詞, 用來產生 @ai_dev_spec_template.md 風格的 spec
