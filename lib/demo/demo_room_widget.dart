@@ -185,7 +185,7 @@ class RoomsStreamWidget extends StatelessWidget {
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text('ID: ${room.roomId}\nTitle: ${room.title}, Players: ${room.maxPlayers}, Status: ${room.status}'),
+                child: Text('ID: ${room.roomId}\nTitle: ${room.title}, Players: ${room.maxPlayers}, State: ${room.state}, Body: ${room.body}'),
               ),
             );
           },

@@ -7,11 +7,13 @@ part of 'room.dart';
 // **************************************************************************
 
 Room _$RoomFromJson(Map<String, dynamic> json) => Room(
+  roomId: json['roomId'] as String? ?? '',
   creatorUid: json['creatorUid'] as String,
   managerUid: json['managerUid'] as String,
   title: json['title'] as String,
   maxPlayers: (json['maxPlayers'] as num).toInt(),
-  status: json['status'] as String,
+  state: json['state'] as String,
+  body: json['body'] as String,
   matchMode: json['matchMode'] as String,
   visibility: json['visibility'] as String,
   createdAt: _timestampFromJson(json['createdAt']),
@@ -19,11 +21,13 @@ Room _$RoomFromJson(Map<String, dynamic> json) => Room(
 );
 
 Map<String, dynamic> _$RoomToJson(Room instance) => <String, dynamic>{
+  'roomId': instance.roomId,
   'creatorUid': instance.creatorUid,
   'managerUid': instance.managerUid,
   'title': instance.title,
   'maxPlayers': instance.maxPlayers,
-  'status': instance.status,
+  'state': instance.state,
+  'body': instance.body,
   'matchMode': instance.matchMode,
   'visibility': instance.visibility,
   'createdAt': _timestampToJson(instance.createdAt),

@@ -15,14 +15,14 @@ class Room with JsonSerializableMixin {
   @JsonKey(includeFromJson: false, includeToJson: false)
   Set<String> get timeKeys => {'createdAt', 'updatedAt'};
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
   final String roomId;
 
   final String creatorUid;
   final String managerUid;
   final String title;
   final int maxPlayers;
-  final String status;
+  final String state;
+  final String body;
   final String matchMode;
   final String visibility;
 
@@ -38,7 +38,8 @@ class Room with JsonSerializableMixin {
     required this.managerUid,
     required this.title,
     required this.maxPlayers,
-    required this.status,
+    required this.state,
+    required this.body,
     required this.matchMode,
     required this.visibility,
     required this.createdAt,
@@ -62,7 +63,8 @@ class Room with JsonSerializableMixin {
       managerUid: this.managerUid,
       title: this.title,
       maxPlayers: this.maxPlayers,
-      status: this.status,
+      state: this.state,
+      body: this.body,
       matchMode: this.matchMode,
       visibility: this.visibility,
       createdAt: this.createdAt,
