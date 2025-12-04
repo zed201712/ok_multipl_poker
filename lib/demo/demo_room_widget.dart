@@ -5,6 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:ok_multipl_poker/multiplayer/firestore_room_controller.dart';
 
+import '../entities/participant.dart';
+import '../entities/room.dart';
+
 class DemoRoomWidget extends StatefulWidget {
   const DemoRoomWidget({super.key});
 
