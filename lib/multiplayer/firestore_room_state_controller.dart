@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rxdart/rxdart.dart';
 import '../entities/room.dart';
 import '../entities/room_request.dart';
 import '../entities/room_response.dart';
+import '../entities/room_state.dart';
 
 /// Manages all Firestore operations related to room state, requests, and responses.
 class FirestoreRoomStateController {
@@ -63,15 +65,6 @@ class FirestoreRoomStateController {
     await _firestore.collection(_collectionName).doc(roomId).delete();
   }
 
-  /// Returns a stream of a specific room document.
-  Stream<Room?> roomStream({required String roomId}) {
-    return _firestore
-        .collection(_collectionName)
-        .doc(roomId)
-        .snapshots()
-        .map((doc) => doc.exists ? Room.fromFirestore(doc) : null);
-  }
-
   /// Returns a stream of all rooms.
   Stream<List<Room>> roomsStream() {
     return _firestore.collection(_collectionName).snapshots().map(
@@ -80,21 +73,28 @@ class FirestoreRoomStateController {
 
   // --- Room State ---
 
-  /// Updates the body field of a room.
-  Future<void> updateRoomBody({
-    required String roomId,
-    required String body,
-  }) async {
-    await updateRoom(roomId: roomId, data: {'body': body});
+  Stream<RoomState> getRoomStateStream({required String roomId}) {
+    return CombineLatestStream.combine3(
+      _roomStream(roomId: roomId),
+      _getRequestsStream(roomId: roomId),
+      _getResponsesStream(roomId: roomId),
+      (Room? room, List<RoomRequest> requests, List<RoomResponse> responses) {
+        return RoomState(
+          room: room,
+          requests: requests,
+          responses: responses,
+        );
+      },
+    );
   }
 
-  /// Returns a stream of the room's body field.
-  Stream<String?> getRoomBodyStream({required String roomId}) {
+  /// Returns a stream of a specific room document.
+  Stream<Room?> _roomStream({required String roomId}) {
     return _firestore
         .collection(_collectionName)
         .doc(roomId)
         .snapshots()
-        .map((doc) => doc.exists ? Room.fromFirestore(doc).body : null);
+        .map((doc) => doc.exists ? Room.fromFirestore(doc) : null);
   }
 
   // --- Request / Response CRUD ---
@@ -126,7 +126,7 @@ class FirestoreRoomStateController {
   }
 
   /// Returns a stream of all requests in a room.
-  Stream<List<RoomRequest>> getRequestsStream({required String roomId}) {
+  Stream<List<RoomRequest>> _getRequestsStream({required String roomId}) {
     return _firestore
         .collection(_collectionName)
         .doc(roomId)
@@ -166,7 +166,7 @@ class FirestoreRoomStateController {
   }
 
   /// Returns a stream of all responses in a room.
-  Stream<List<RoomResponse>> getResponsesStream({required String roomId}) {
+  Stream<List<RoomResponse>> _getResponsesStream({required String roomId}) {
     return _firestore
         .collection(_collectionName)
         .doc(roomId)
