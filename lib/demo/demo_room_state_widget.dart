@@ -35,7 +35,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   @override
   void initState() {
     super.initState();
-    _roomController = FirestoreRoomStateController(FirebaseFirestore.instance);
+    _roomController = FirestoreRoomStateController(FirebaseFirestore.instance, 'rooms');
     _initUser();
     _roomIdController.addListener(_onRoomIdChanged);
   }

@@ -10,9 +10,9 @@ import '../entities/room_state.dart';
 /// Manages all Firestore operations related to room state, requests, and responses.
 class FirestoreRoomStateController {
   final FirebaseFirestore _firestore;
-  final String _collectionName = 'rooms';
+  final String _collectionName;
 
-  FirestoreRoomStateController(this._firestore);
+  FirestoreRoomStateController(this._firestore, this._collectionName);
 
   // --- Room ---
 
