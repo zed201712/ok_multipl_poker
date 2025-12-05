@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'demo_room_state_widget.dart';
 import 'demo_room_widget.dart';
 
 class RoomDemoScreen extends StatelessWidget {
@@ -8,7 +9,7 @@ class RoomDemoScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Room Demo')),
       body: const SafeArea(
-        child: DemoRoomWidget(), // 你的 widget 放這裡
+        child: DemoRoomStateWidget(), // 你的 widget 放這裡
       ),
     );
   }

@@ -28,6 +28,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   String _managerId = '';
   Stream<Room?>? _roomStream;
   Stream<List<RoomRequest>>? _requestsStream;
+  Stream<List<Room>>? _allRoomsStream;
 
   @override
   void initState() {
@@ -49,6 +50,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   Future<void> _initUser() async {
     User? user = _auth.currentUser;
     user ??= (await _auth.signInAnonymously()).user;
+    _allRoomsStream = _roomController.roomsStream(); // Initialize the stream for all rooms
     if (mounted) {
       setState(() {
         _userId = user!.uid;
@@ -58,11 +60,17 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   void _onRoomIdChanged() {
     final roomId = _roomIdController.text;
-    if (roomId.isEmpty) return;
+    if (roomId.isEmpty) {
+      setState(() {
+        _roomStream = null;
+        _requestsStream = null;
+        _managerId = '';
+      });
+      return;
+    }
     setState(() {
       _roomStream = _roomController.roomStream(roomId: roomId);
       _requestsStream = _roomController.getRequestsStream(roomId: roomId);
-      // Update managerId from stream
       _roomStream?.listen((room) {
         if (room != null && mounted) {
           setState(() {
@@ -71,6 +79,11 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
         }
       });
     });
+  }
+
+  void _handleRoomTap(Room room) {
+    _roomIdController.text = room.roomId;
+    _roomTitleController.text = room.title;
   }
 
   Future<void> _createRoom() async {
@@ -94,7 +107,12 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   Future<void> _requestToJoin() async {
     final roomId = _roomIdController.text;
-    if (roomId.isEmpty) return;
+    if (roomId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a room first.')),
+        );
+      return;
+    }
     await _roomController.sendRequest(
       roomId: roomId,
       participantId: _userId,
@@ -108,7 +126,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   }
 
   Future<void> _approveRequest(RoomRequest request, Room currentRoom) async {
-    // Add participant to the room's list
     final newParticipants = List<String>.from(currentRoom.participants);
     if (!newParticipants.contains(request.participantId)) {
       newParticipants.add(request.participantId);
@@ -118,13 +135,11 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       data: {'participants': newParticipants},
     );
 
-    // Update the room body
     await _roomController.updateRoomBody(
       roomId: currentRoom.roomId,
       body: 'updated: $_managerId, requesterId: ${request.participantId}',
     );
 
-    // Delete the request
     await _roomController.deleteRequest(
         roomId: currentRoom.roomId, requestId: request.requestId);
   }
@@ -139,18 +154,31 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
         children: [
           Text('User ID: $_userId'),
           const Divider(),
-          // Room Creation Section
-          TextField(controller: _roomIdController, decoration: const InputDecoration(hintText: 'Enter Room ID (optional)')),
+
+          // Room Selection / Creation
+          TextField(controller: _roomIdController, decoration: const InputDecoration(hintText: 'Room ID')),
           TextField(controller: _roomTitleController, decoration: const InputDecoration(hintText: 'Room Title')),
           ElevatedButton(onPressed: _createRoom, child: const Text('Create Room')),
           const Divider(height: 30),
 
+          // All Rooms List
+          Text('All Rooms (Live)', style: Theme.of(context).textTheme.titleLarge),
+          SizedBox(
+            height: 200,
+            child: RoomsListWidget(
+              roomsStream: _allRoomsStream,
+              onRoomTap: _handleRoomTap,
+            ),
+          ),
+          const Divider(height: 30),
+          
           // Room Info Section
           _buildRoomInfo(),
           const Divider(height: 30),
 
           // Actions Section
-          if (!isManager) ElevatedButton(onPressed: _requestToJoin, child: const Text('Request to Join Room')),
+          if (!isManager && _roomIdController.text.isNotEmpty) 
+            ElevatedButton(onPressed: _requestToJoin, child: const Text('Request to Join Room')),
 
           // Manager Section
           if (isManager) _buildManagerView(),
@@ -164,7 +192,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       stream: _roomStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
-          return const Text('Enter a Room ID to see details.');
+          return const Text('Select a room from the list above or create a new one.');
         }
         final room = snapshot.data!;
         return Column(
@@ -199,7 +227,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
                   title: Text('Requester: ${request.participantId}'),
                   subtitle: Text('Action: ${request.body['action']}'),
                   trailing: StreamBuilder<Room?>(
-                    stream: _roomStream, // We need the current room to approve
+                    stream: _roomStream,
                     builder: (context, roomSnapshot) {
                       if (!roomSnapshot.hasData) return const SizedBox.shrink();
                       return ElevatedButton(
@@ -212,6 +240,53 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
               );
             }),
           ],
+        );
+      },
+    );
+  }
+}
+
+// A widget to display a clickable list of rooms
+class RoomsListWidget extends StatelessWidget {
+  final Stream<List<Room>>? roomsStream;
+  final Function(Room room) onRoomTap;
+
+  const RoomsListWidget({
+    Key? key,
+    required this.roomsStream,
+    required this.onRoomTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (roomsStream == null) {
+      return const Center(child: Text('Stream not available.'));
+    }
+    return StreamBuilder<List<Room>>(
+      stream: roomsStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final rooms = snapshot.data ?? [];
+        if (rooms.isEmpty) {
+          return const Center(child: Text('No rooms found. Create one!'));
+        }
+        return ListView.builder(
+          itemCount: rooms.length,
+          itemBuilder: (context, index) {
+            final room = rooms[index];
+            return Card(
+              child: ListTile(
+                title: Text(room.title),
+                subtitle: Text('ID: ${room.roomId}'),
+                onTap: () => onRoomTap(room),
+              ),
+            );
+          },
         );
       },
     );
