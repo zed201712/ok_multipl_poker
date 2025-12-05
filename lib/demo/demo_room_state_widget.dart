@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ok_multipl_poker/entities/room_state.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_room_state_controller.dart';
 
 import '../entities/room.dart';
@@ -25,9 +28,8 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   // State variables
   String _userId = '';
-  String _managerId = '';
-  Stream<Room?>? _roomStream;
-  Stream<List<RoomRequest>>? _requestsStream;
+  StreamSubscription<RoomState>? _roomStateSubscription;
+  RoomState? _currentRoomState;
   Stream<List<Room>>? _allRoomsStream;
 
   @override
@@ -41,6 +43,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   @override
   void dispose() {
     _roomIdController.removeListener(_onRoomIdChanged);
+    _roomStateSubscription?.cancel();
     _roomTitleController.dispose();
     _maxPlayersController.dispose();
     _roomIdController.dispose();
@@ -60,24 +63,22 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   void _onRoomIdChanged() {
     final roomId = _roomIdController.text;
+    _roomStateSubscription?.cancel(); // Cancel previous subscription
+
     if (roomId.isEmpty) {
       setState(() {
-        _roomStream = null;
-        _requestsStream = null;
-        _managerId = '';
+        _currentRoomState = null;
       });
       return;
     }
-    setState(() {
-      _roomStream = _roomController.roomStream(roomId: roomId);
-      _requestsStream = _roomController.getRequestsStream(roomId: roomId);
-      _roomStream?.listen((room) {
-        if (room != null && mounted) {
-          setState(() {
-            _managerId = room.managerUid;
-          });
-        }
-      });
+
+    final stream = _roomController.getRoomStateStream(roomId: roomId);
+    _roomStateSubscription = stream.listen((roomState) {
+      if (mounted) {
+        setState(() {
+          _currentRoomState = roomState;
+        });
+      }
     });
   }
 
@@ -96,9 +97,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       visibility: 'public',
     );
     if (mounted) {
-      setState(() {
-        _roomIdController.text = newRoomId;
-      });
+      _roomIdController.text = newRoomId; // This will trigger _onRoomIdChanged
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Room created: $newRoomId')),
       );
@@ -108,9 +107,9 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   Future<void> _requestToJoin() async {
     final roomId = _roomIdController.text;
     if (roomId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a room first.')),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a room first.')),
+      );
       return;
     }
     await _roomController.sendRequest(
@@ -125,7 +124,10 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
     }
   }
 
-  Future<void> _approveRequest(RoomRequest request, Room currentRoom) async {
+  Future<void> _approveRequest(RoomRequest request) async {
+    final currentRoom = _currentRoomState?.room;
+    if (currentRoom == null) return;
+
     final newParticipants = List<String>.from(currentRoom.participants);
     if (!newParticipants.contains(request.participantId)) {
       newParticipants.add(request.participantId);
@@ -137,7 +139,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
     await _roomController.updateRoomBody(
       roomId: currentRoom.roomId,
-      body: 'updated: $_managerId, requesterId: ${request.participantId}',
+      body: 'updated: ${currentRoom.managerUid}, requesterId: ${request.participantId}',
     );
 
     await _roomController.deleteRequest(
@@ -146,7 +148,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   @override
   Widget build(BuildContext context) {
-    bool isManager = _userId.isNotEmpty && _userId == _managerId;
+    final isManager = _userId.isNotEmpty && _currentRoomState?.room?.managerUid == _userId;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -156,13 +158,19 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
           const Divider(),
 
           // Room Selection / Creation
-          TextField(controller: _roomIdController, decoration: const InputDecoration(hintText: 'Room ID')),
-          TextField(controller: _roomTitleController, decoration: const InputDecoration(hintText: 'Room Title')),
-          ElevatedButton(onPressed: _createRoom, child: const Text('Create Room')),
+          TextField(
+              controller: _roomIdController,
+              decoration: const InputDecoration(hintText: 'Room ID')),
+          TextField(
+              controller: _roomTitleController,
+              decoration: const InputDecoration(hintText: 'Room Title')),
+          ElevatedButton(
+              onPressed: _createRoom, child: const Text('Create Room')),
           const Divider(height: 30),
 
           // All Rooms List
-          Text('All Rooms (Live)', style: Theme.of(context).textTheme.titleLarge),
+          Text('All Rooms (Live)',
+              style: Theme.of(context).textTheme.titleLarge),
           SizedBox(
             height: 200,
             child: RoomsListWidget(
@@ -171,14 +179,16 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
             ),
           ),
           const Divider(height: 30),
-          
+
           // Room Info Section
           _buildRoomInfo(),
           const Divider(height: 30),
 
           // Actions Section
-          if (!isManager && _roomIdController.text.isNotEmpty) 
-            ElevatedButton(onPressed: _requestToJoin, child: const Text('Request to Join Room')),
+          if (!isManager && _roomIdController.text.isNotEmpty)
+            ElevatedButton(
+                onPressed: _requestToJoin,
+                child: const Text('Request to Join Room')),
 
           // Manager Section
           if (isManager) _buildManagerView(),
@@ -188,60 +198,49 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   }
 
   Widget _buildRoomInfo() {
-    return StreamBuilder<Room?>(
-      stream: _roomStream,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null) {
-          return const Text('Select a room from the list above or create a new one.');
-        }
-        final room = snapshot.data!;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Room Details (Live)', style: Theme.of(context).textTheme.titleLarge),
-            Text('Body: ${room.body}'),
-            Text('Manager: ${room.managerUid}'),
-            Text('Participants: ${room.participants.join(", ")}'),
-            Text('Seats: ${room.seats.join(", ")}'),
-          ],
-        );
-      },
+    final room = _currentRoomState?.room;
+    if (room == null) {
+      return const Text('Select a room from the list above or create a new one.');
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Room Details (Live)',
+            style: Theme.of(context).textTheme.titleLarge),
+        Text('Body: ${room.body}'),
+        Text('Manager: ${room.managerUid}'),
+        Text('Participants: ${room.participants.join(", ")}'),
+        Text('Seats: ${room.seats.join(", ")}'),
+      ],
     );
   }
 
   Widget _buildManagerView() {
-    return StreamBuilder<List<RoomRequest>>(
-      stream: _requestsStream,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Text('No pending join requests.');
-        }
-        final requests = snapshot.data!;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Join Requests', style: Theme.of(context).textTheme.titleLarge),
-            ...requests.where((req) => req.body['action'] == 'join').map((request) {
-              return Card(
-                child: ListTile(
-                  title: Text('Requester: ${request.participantId}'),
-                  subtitle: Text('Action: ${request.body['action']}'),
-                  trailing: StreamBuilder<Room?>(
-                    stream: _roomStream,
-                    builder: (context, roomSnapshot) {
-                      if (!roomSnapshot.hasData) return const SizedBox.shrink();
-                      return ElevatedButton(
-                        onPressed: () => _approveRequest(request, roomSnapshot.data!),
-                        child: const Text('Approve'),
-                      );
-                    },
-                  ),
-                ),
-              );
-            }),
-          ],
-        );
-      },
+    final requests = _currentRoomState?.requests ?? [];
+    final joinRequests =
+        requests.where((req) => req.body['action'] == 'join').toList();
+
+    if (joinRequests.isEmpty) {
+      return const Text('No pending join requests.');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Join Requests', style: Theme.of(context).textTheme.titleLarge),
+        ...joinRequests.map((request) {
+          return Card(
+            child: ListTile(
+              title: Text('Requester: ${request.participantId}'),
+              subtitle: Text('Action: ${request.body['action']}'),
+              trailing: ElevatedButton(
+                onPressed: () => _approveRequest(request),
+                child: const Text('Approve'),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

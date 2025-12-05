@@ -59,6 +59,14 @@ class FirestoreRoomStateController {
     };
     await _firestore.collection(_collectionName).doc(roomId).update(updateData);
   }
+  
+  /// Updates the body of a room.
+  Future<void> updateRoomBody({
+    required String roomId,
+    required String body,
+  }) async {
+    await updateRoom(roomId: roomId, data: {'body': body});
+  }
 
   /// Deletes a room document.
   Future<void> deleteRoom({required String roomId}) async {
