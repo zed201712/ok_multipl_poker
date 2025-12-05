@@ -79,6 +79,103 @@ class FirestoreRoomStateController {
         (snapshot) => snapshot.docs.map((doc) => Room.fromFirestore(doc)).toList());
   }
 
+  // --- Room Lifecycle ---
+
+  /// Tries to find an open room to join. If no suitable room is found,
+  /// it creates a new one with the provided details.
+  Future<String> matchRoom({
+    required String userId,
+    required String title,
+    required int maxPlayers,
+    required String matchMode,
+    required String visibility,
+  }) async {
+    // 1. Find open rooms
+    final querySnapshot = await _firestore
+        .collection(_collectionName)
+        .where('state', isEqualTo: 'open')
+        .where('visibility', isEqualTo: 'public') // Assuming we only match with public rooms
+        .get();
+
+    // 2. Filter for rooms that are not full
+    final availableRooms = querySnapshot.docs.where((doc) {
+      final room = Room.fromFirestore(doc);
+      return room.participants.length < room.maxPlayers;
+    }).toList();
+
+    if (availableRooms.isNotEmpty) {
+      // 3. Join the first available room
+      final roomToJoin = Room.fromFirestore(availableRooms.first);
+      await updateRoom(
+        roomId: roomToJoin.roomId,
+        data: {
+          'participants': FieldValue.arrayUnion([userId]),
+          'seats': FieldValue.arrayUnion([userId]),
+        },
+      );
+      return roomToJoin.roomId;
+    } else {
+      // 4. No available rooms, create a new one
+      return await createRoom(
+        creatorUid: userId,
+        title: title,
+        maxPlayers: maxPlayers,
+        matchMode: matchMode,
+        visibility: visibility,
+      );
+    }
+  }
+
+  /// Handles the logic for a user leaving a room.
+  /// The behavior depends on whether the user is the manager or a participant.
+  Future<void> leaveRoom({
+    required String roomId,
+    required String userId,
+  }) async {
+    final roomDoc = await _firestore.collection(_collectionName).doc(roomId).get();
+    if (!roomDoc.exists) return;
+
+    final room = Room.fromFirestore(roomDoc);
+
+    if (room.managerUid == userId) {
+      // User is the manager
+      final otherParticipants = room.participants.where((p) => p != userId).toList();
+      if (otherParticipants.isNotEmpty) {
+        // 2.1. Transfer managership
+        await updateRoom(
+          roomId: roomId,
+          data: {
+            'managerUid': otherParticipants.first,
+            'participants': FieldValue.arrayRemove([userId]),
+            'seats': FieldValue.arrayRemove([userId]),
+          },
+        );
+      } else {
+        // 2.2. No one else in the room, delete it
+        await deleteRoom(roomId: roomId);
+      }
+    } else {
+      // 3. User is a participant, send a leave request
+      await sendRequest(
+        roomId: roomId,
+        participantId: userId,
+        body: {'action': 'leave'},
+      );
+    }
+  }
+
+  /// Sends a keep-alive ping to the room in the form of a RoomRequest.
+  Future<void> sendAlivePing({
+    required String roomId,
+    required String userId,
+  }) async {
+    await sendRequest(
+      roomId: roomId,
+      participantId: userId,
+      body: {'action': 'alive'},
+    );
+  }
+
   // --- Room State ---
 
   Stream<RoomState> getRoomStateStream({required String roomId}) {
