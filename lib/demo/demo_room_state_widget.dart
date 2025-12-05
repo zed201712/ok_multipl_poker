@@ -155,6 +155,9 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
           Text('User ID: $_userId'),
           const Divider(),
 
+          // Manager Section
+          if (isManager) _buildManagerView(),
+
           // Room Selection / Creation
           TextField(controller: _roomIdController, decoration: const InputDecoration(hintText: 'Room ID')),
           TextField(controller: _roomTitleController, decoration: const InputDecoration(hintText: 'Room Title')),
@@ -179,9 +182,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
           // Actions Section
           if (!isManager && _roomIdController.text.isNotEmpty) 
             ElevatedButton(onPressed: _requestToJoin, child: const Text('Request to Join Room')),
-
-          // Manager Section
-          if (isManager) _buildManagerView(),
         ],
       ),
     );

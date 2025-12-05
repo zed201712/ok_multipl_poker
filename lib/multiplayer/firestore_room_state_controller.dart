@@ -65,11 +65,16 @@ class FirestoreRoomStateController {
 
   /// Returns a stream of a specific room document.
   Stream<Room?> roomStream({required String roomId}) {
+    if (roomId.isEmpty) {
+      return Stream.value(null);
+    }
+
     return _firestore
         .collection(_collectionName)
         .doc(roomId)
         .snapshots()
-        .map((doc) => doc.exists ? Room.fromFirestore(doc) : null);
+        .map((doc) => doc.exists ? Room.fromFirestore(doc) : null)
+        .asBroadcastStream();
   }
 
   /// Returns a stream of all rooms.
