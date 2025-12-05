@@ -26,7 +26,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   // State variables
   String _userId = '';
   String _managerId = '';
-  String? _currentRoomId; // Track the current room the user is in
   Stream<Room?>? _roomStream;
   Stream<List<RoomRequest>>? _requestsStream;
   Stream<List<Room>>? _allRoomsStream;
@@ -74,11 +73,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       _requestsStream = _roomController.getRequestsStream(roomId: roomId);
       _roomStream?.listen((room) {
         if (room != null && mounted) {
-          if (room.participants.contains(_userId) && _currentRoomId == null) {
-            setState(() {
-              _currentRoomId = room.roomId;
-            });
-          }
           setState(() {
             _managerId = room.managerUid;
           });
@@ -101,16 +95,12 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       matchMode: 'casual',
       visibility: 'public',
     );
-    if (newRoomId != null && mounted) {
-      // Automatically join the room as a manager
-      await _roomController.joinRoom(newRoomId, isManager: true);
-      
-      // Setting the controller text will trigger the listener to update streams
-      // and switch to the in-room view.
-      _roomIdController.text = newRoomId;
-      
+    if (mounted) {
+      setState(() {
+        _roomIdController.text = newRoomId;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Room created and joined: $newRoomId')),
+        SnackBar(content: Text('Room created: $newRoomId')),
       );
     }
   }
@@ -132,27 +122,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Join request sent.')),
       );
-    }
-  }
-  
-  Future<void> _leaveRoom() async {
-    if (_currentRoomId == null || _roomStream == null) return;
-
-    final room = await _roomStream!.firstWhere((r) => r != null);
-    if (room == null) return;
-
-    final newParticipants = List<String>.from(room.participants)..remove(_userId);
-
-    await _roomController.updateRoom(
-      roomId: _currentRoomId!,
-      data: {'participants': newParticipants},
-    );
-
-    if (mounted) {
-      setState(() {
-        _currentRoomId = null;
-        _roomIdController.text = '';
-      });
     }
   }
 
@@ -177,14 +146,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_currentRoomId == null) {
-      return _buildLobbyView();
-    } else {
-      return _buildInRoomView();
-    }
-  }
-
-  Widget _buildLobbyView() {
+    bool isManager = _userId.isNotEmpty && _userId == _managerId;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -194,7 +156,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
           const Divider(),
 
           // Room Selection / Creation
-          TextField(controller: _roomIdController, decoration: const InputDecoration(hintText: 'Room ID (optional)')),
+          TextField(controller: _roomIdController, decoration: const InputDecoration(hintText: 'Room ID')),
           TextField(controller: _roomTitleController, decoration: const InputDecoration(hintText: 'Room Title')),
           ElevatedButton(onPressed: _createRoom, child: const Text('Create Room')),
           const Divider(height: 30),
@@ -210,28 +172,15 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
           ),
           const Divider(height: 30),
           
-          // Action to join selected room
-          if (_roomIdController.text.isNotEmpty) 
-            ElevatedButton(onPressed: _requestToJoin, child: const Text('Request to Join Room')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInRoomView() {
-    bool isManager = _userId.isNotEmpty && _userId == _managerId;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('User ID: $_userId'),
-          ElevatedButton(onPressed: _leaveRoom, child: const Text('Leave Room')),
-          const Divider(),
-
+          // Room Info Section
           _buildRoomInfo(),
           const Divider(height: 30),
 
+          // Actions Section
+          if (!isManager && _roomIdController.text.isNotEmpty) 
+            ElevatedButton(onPressed: _requestToJoin, child: const Text('Request to Join Room')),
+
+          // Manager Section
           if (isManager) _buildManagerView(),
         ],
       ),
@@ -243,15 +192,13 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       stream: _roomStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
-          return const Text('Loading room details...');
+          return const Text('Select a room from the list above or create a new one.');
         }
         final room = snapshot.data!;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Room Details (Live)', style: Theme.of(context).textTheme.titleLarge),
-            Text('Title: ${room.title}'),
-            Text('ID: ${room.roomId}'),
             Text('Body: ${room.body}'),
             Text('Manager: ${room.managerUid}'),
             Text('Participants: ${room.participants.join(", ")}'),
@@ -263,7 +210,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   }
 
   Widget _buildManagerView() {
-    return StreamBuilder<List<RoomRequest>> (
+    return StreamBuilder<List<RoomRequest>>(
       stream: _requestsStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
