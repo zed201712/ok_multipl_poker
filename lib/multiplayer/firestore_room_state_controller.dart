@@ -80,8 +80,7 @@ class FirestoreRoomStateController {
   /// Returns a stream of all rooms.
   Stream<List<Room>> roomsStream() {
     return _firestore.collection(_collectionName).snapshots().map(
-        (snapshot) => snapshot.docs.map((doc) => Room.fromFirestore(doc)).toList())
-        .asBroadcastStream();
+        (snapshot) => snapshot.docs.map((doc) => Room.fromFirestore(doc)).toList());
   }
 
   // --- Room State ---
@@ -100,8 +99,7 @@ class FirestoreRoomStateController {
         .collection(_collectionName)
         .doc(roomId)
         .snapshots()
-        .map((doc) => doc.exists ? Room.fromFirestore(doc).body : null)
-        .asBroadcastStream();
+        .map((doc) => doc.exists ? Room.fromFirestore(doc).body : null);
   }
 
   // --- Request / Response CRUD ---
@@ -141,8 +139,7 @@ class FirestoreRoomStateController {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) =>
-            snapshot.docs.map((doc) => RoomRequest.fromFirestore(doc)).toList())
-        .asBroadcastStream();
+            snapshot.docs.map((doc) => RoomRequest.fromFirestore(doc)).toList());
   }
 
   /// Sends a response to a request in a room.
@@ -182,7 +179,6 @@ class FirestoreRoomStateController {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) =>
-            snapshot.docs.map((doc) => RoomResponse.fromFirestore(doc)).toList())
-        .asBroadcastStream();
+            snapshot.docs.map((doc) => RoomResponse.fromFirestore(doc)).toList());
   }
 }
