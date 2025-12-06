@@ -23,19 +23,20 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   final _roomIdController = TextEditingController();
 
   // Firebase and Controller instances
-  final _auth = FirebaseAuth.instance;
   late final FirestoreRoomStateController _roomController;
 
   // State variables
-  String _userId = '';
+  String? _userId;
   StreamSubscription<RoomState?>? _roomStateSubscription;
+  StreamSubscription<String?>? _userIdSubscription;
   RoomState? _currentRoomState;
 
   @override
   void initState() {
     super.initState();
-    _roomController = FirestoreRoomStateController(FirebaseFirestore.instance, 'rooms');
-    _initUser();
+    _roomController = FirestoreRoomStateController(
+        FirebaseFirestore.instance, FirebaseAuth.instance, 'rooms');
+
     _roomIdController.addListener(_onRoomIdChanged);
 
     // Listen to the new roomStateStream
@@ -46,27 +47,27 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
         });
       }
     });
+
+    // Listen to the userIdStream
+    _userIdSubscription = _roomController.userIdStream.listen((userId) {
+      if (mounted) {
+        setState(() {
+          _userId = userId;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _roomIdController.removeListener(_onRoomIdChanged);
     _roomStateSubscription?.cancel();
+    _userIdSubscription?.cancel();
     _roomController.dispose(); // Dispose the controller!
     _roomTitleController.dispose();
     _maxPlayersController.dispose();
     _roomIdController.dispose();
     super.dispose();
-  }
-
-  Future<void> _initUser() async {
-    User? user = _auth.currentUser;
-    user ??= (await _auth.signInAnonymously()).user;
-    if (mounted) {
-      setState(() {
-        _userId = user!.uid;
-      });
-    }
   }
 
   void _onRoomIdChanged() {
@@ -82,7 +83,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   Future<void> _createRoom() async {
     final newRoomId = await _roomController.createRoom(
       roomId: _roomIdController.text.isEmpty ? null : _roomIdController.text,
-      creatorUid: _userId,
       title: _roomTitleController.text,
       maxPlayers: int.tryParse(_maxPlayersController.text) ?? 4,
       matchMode: 'casual',
@@ -106,7 +106,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
     }
     await _roomController.sendRequest(
       roomId: roomId,
-      participantId: _userId,
       body: {'action': 'join'},
     );
     if (mounted) {
@@ -139,7 +138,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   }
 
   Future<void> _matchRoom() async {
-    if (_userId.isEmpty) {
+    if (_userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User not initialized yet.')),
       );
@@ -151,7 +150,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
     );
 
     final roomId = await _roomController.matchRoom(
-      userId: _userId,
       title: _roomTitleController.text,
       maxPlayers: int.tryParse(_maxPlayersController.text) ?? 4,
       matchMode: 'casual',
@@ -171,14 +169,13 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
     final roomId = _roomIdController.text;
     if (roomId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a room first.')),
+        const SnackBar(content: Text('Please enter a room ID to leave.')),
       );
       return;
     }
 
     await _roomController.leaveRoom(
       roomId: roomId,
-      userId: _userId,
     );
 
     if (mounted) {
@@ -191,13 +188,13 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isManager = _userId.isNotEmpty && _currentRoomState?.room?.managerUid == _userId;
+    final isManager = _userId != null && _currentRoomState?.room?.managerUid == _userId;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('User ID: $_userId'),
+          Text('User ID: ${_userId ?? "Initializing..."}'),
           const Divider(),
 
           // Room Selection / Creation
