@@ -104,37 +104,14 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       );
       return;
     }
-    await _roomController.sendRequest(
+    await _roomController.requestToJoinRoom(
       roomId: roomId,
-      body: {'action': 'join'},
     );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Join request sent.')),
       );
     }
-  }
-
-  Future<void> _approveRequest(RoomRequest request) async {
-    final currentRoom = _currentRoomState?.room;
-    if (currentRoom == null) return;
-
-    final newParticipants = List<String>.from(currentRoom.participants);
-    if (!newParticipants.contains(request.participantId)) {
-      newParticipants.add(request.participantId);
-    }
-    await _roomController.updateRoom(
-      roomId: currentRoom.roomId,
-      data: {'participants': newParticipants},
-    );
-
-    await _roomController.updateRoomBody(
-      roomId: currentRoom.roomId,
-      body: 'updated: ${currentRoom.managerUid}, requesterId: ${request.participantId}',
-    );
-
-    await _roomController.deleteRequest(
-        roomId: currentRoom.roomId, requestId: request.requestId);
   }
 
   Future<void> _matchRoom() async {
@@ -292,10 +269,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
             child: ListTile(
               title: Text('Requester: ${request.participantId}'),
               subtitle: Text('Action: ${request.body['action']}'),
-              trailing: ElevatedButton(
-                onPressed: () => _approveRequest(request),
-                child: const Text('Approve'),
-              ),
             ),
           );
         }),

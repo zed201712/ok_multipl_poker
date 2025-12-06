@@ -79,6 +79,7 @@ class FirestoreRoomStateController {
 
     _roomStateSubscription = combinedStream.listen((roomState) {
       _roomStateController.add(roomState);
+      _managerRequestHandler(roomState);
     });
   }
 
@@ -258,6 +259,42 @@ class FirestoreRoomStateController {
     );
   }
 
+  // --- New Manager Auto-Approval ---
+
+  void _managerRequestHandler(RoomState roomState) {
+    final room = roomState.room;
+    if (room == null || room.managerUid != currentUserId) {
+      return;
+    }
+
+    final joinRequests = roomState.requests.where((req) => req.body['action'] == 'join');
+
+    for (final request in joinRequests) {
+      _approveJoinRequest(request, room);
+    }
+  }
+
+  Future<void> _approveJoinRequest(RoomRequest request, Room room) async {
+    if (room.participants.length >= room.maxPlayers) {
+      // Maybe send a "room full" response in the future.
+      return;
+    }
+
+    if (room.participants.contains(request.participantId)) {
+      await deleteRequest(roomId: room.roomId, requestId: request.requestId);
+      return;
+    }
+
+    final newParticipants = List<String>.from(room.participants)..add(request.participantId);
+
+    await updateRoom(
+      roomId: room.roomId,
+      data: {'participants': newParticipants},
+    );
+
+    await deleteRequest(roomId: room.roomId, requestId: request.requestId);
+  }
+
   // --- Private Firestore Streams ---
 
   Stream<Room?> _roomStream({required String roomId}) {
@@ -312,6 +349,14 @@ class FirestoreRoomStateController {
     };
     await docRef.set(requestData);
     return docRef.id;
+  }
+
+  /// Encapsulates the logic for sending a 'join' request.
+  Future<void> requestToJoinRoom({required String roomId}) async {
+    if (currentUserId == null) {
+      throw Exception('User not authenticated, cannot send a request.');
+    }
+    await sendRequest(roomId: roomId, body: {'action': 'join'});
   }
 
   Future<void> deleteRequest({
