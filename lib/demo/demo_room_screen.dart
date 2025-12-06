@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'demo_room_state_widget.dart';
-import 'demo_room_widget.dart';
 
 class RoomDemoScreen extends StatelessWidget {
   const RoomDemoScreen({super.key});

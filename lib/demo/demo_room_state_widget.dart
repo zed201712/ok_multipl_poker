@@ -146,6 +146,57 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
         roomId: currentRoom.roomId, requestId: request.requestId);
   }
 
+  Future<void> _matchRoom() async {
+    if (_userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not initialized yet.')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Searching for a room...')),
+    );
+
+    final roomId = await _roomController.matchRoom(
+      userId: _userId,
+      title: _roomTitleController.text,
+      maxPlayers: int.tryParse(_maxPlayersController.text) ?? 4,
+      matchMode: 'casual',
+      visibility: 'public',
+    );
+
+    if (mounted) {
+      _roomIdController.text = roomId; // This will trigger _onRoomIdChanged
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Matched! Joined room: $roomId')),
+      );
+    }
+  }
+
+  Future<void> _leaveRoom() async {
+    final roomId = _roomIdController.text;
+    if (roomId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a room first.')),
+      );
+      return;
+    }
+
+    await _roomController.leaveRoom(
+      roomId: roomId,
+      userId: _userId,
+    );
+
+    if (mounted) {
+       _roomIdController.text = ''; // Clear the room ID
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have left the room.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isManager = _userId.isNotEmpty && _currentRoomState?.room?.managerUid == _userId;
@@ -166,6 +217,25 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
               decoration: const InputDecoration(hintText: 'Room Title')),
           ElevatedButton(
               onPressed: _createRoom, child: const Text('Create Room')),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _matchRoom,
+                  child: const Text('Match Room'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _leaveRoom,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('Leave Room'),
+                ),
+              ),
+            ],
+          ),
           const Divider(height: 30),
 
           // All Rooms List
