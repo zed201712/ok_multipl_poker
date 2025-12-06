@@ -16,6 +16,9 @@ class FirestoreRoomStateController {
 
   /// Defines how long a room is considered active without an update.
   static const Duration _aliveTime = Duration(seconds: 30);
+  
+  // Grace period between each participant's attempt to take over the manager role.
+  static const Duration _managerTakeoverTimeout = Duration(seconds: 3);
 
   // Stream controllers for exposing streams to the UI
   final _roomsController = BehaviorSubject<List<Room>>();
@@ -75,6 +78,9 @@ class FirestoreRoomStateController {
     _roomStateSubscription = combinedStream.listen((roomState) {
       _roomStateController.add(roomState);
       _managerRequestHandler(roomState);
+      if (roomState.room != null) {
+        _handleManagerTakeover(roomState.room!);
+      }
     });
   }
 
@@ -216,20 +222,47 @@ class FirestoreRoomStateController {
     if (room.managerUid == userId) {
       final otherParticipants = room.participants.where((p) => p != userId).toList();
       if (otherParticipants.isNotEmpty) {
-        await updateRoom(
-          roomId: roomId,
-          data: {
-            'managerUid': otherParticipants.first,
-            'participants': FieldValue.arrayRemove([userId]),
-            'seats': FieldValue.arrayRemove([userId]),
-          },
-        );
+        await handoverRoomManager(roomId: roomId);
+        await sendRequest(roomId: roomId, body: {'action': 'leave'});
       } else {
         await deleteRoom(roomId: roomId);
       }
     } else {
       await sendRequest(roomId: roomId, body: {'action': 'leave'});
     }
+  }
+
+  Future<void> handoverRoomManager({required String roomId}) async {
+    final currentUserId = this.currentUserId;
+    if (currentUserId == null) {
+      throw Exception('User not authenticated.');
+    }
+
+    await _firestore.runTransaction((transaction) async {
+      final roomRef = _firestore.collection(_collectionName).doc(roomId);
+      final roomSnapshot = await transaction.get(roomRef);
+      if (!roomSnapshot.exists) {
+        throw Exception('Room not found.');
+      }
+
+      final room = Room.fromFirestore(roomSnapshot);
+
+      if (room.managerUid != currentUserId) {
+        throw Exception('Only the manager can handover the room management.');
+      }
+
+      if (room.participants.length < 2) {
+        // No one to handover to
+        return;
+      }
+
+      final newManager = room.participants.firstWhere((p) => p != currentUserId);
+
+      transaction.update(roomRef, {
+        'managerUid': newManager,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
   }
 
   // --- Manager Request Handling ---
@@ -295,6 +328,50 @@ class FirestoreRoomStateController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       transaction.delete(requestRef);
+    });
+  }
+
+  void _handleManagerTakeover(Room room) {
+    final currentUserId = this.currentUserId;
+    if (currentUserId == null) return;
+
+    if (room.managerUid == currentUserId) return;
+
+    final sinceUpdate = DateTime.now().difference(room.updatedAt.toDate());
+    if (sinceUpdate <= _aliveTime) return;
+
+    if (room.participants.length < 2) return;
+
+    final successors = room.participants.where((p) => p != room.managerUid).toList();
+    final mySuccessorRank = successors.indexOf(currentUserId);
+
+    if (mySuccessorRank < 0) return;
+
+    final takeoverDelay = _aliveTime + (_managerTakeoverTimeout * mySuccessorRank);
+
+    final timeSinceManagerLost = DateTime.now().difference(room.updatedAt.toDate());
+    if (timeSinceManagerLost >= takeoverDelay) {
+      _attemptToBecomeManager(room);
+    }
+  }
+
+  Future<void> _attemptToBecomeManager(Room room) async {
+    final currentUserId = this.currentUserId;
+    if (currentUserId == null) return;
+
+    await _firestore.runTransaction((transaction) async {
+      final roomRef = _firestore.collection(_collectionName).doc(room.roomId);
+      final freshRoomSnapshot = await transaction.get(roomRef);
+      if (!freshRoomSnapshot.exists) return;
+
+      final freshRoom = Room.fromFirestore(freshRoomSnapshot);
+
+      if (freshRoom.managerUid == room.managerUid) {
+        transaction.update(roomRef, {
+          'managerUid': currentUserId,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
     });
   }
 

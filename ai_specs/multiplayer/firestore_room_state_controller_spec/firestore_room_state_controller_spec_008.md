@@ -1,4 +1,4 @@
-| **任務 ID (Task ID)** | `FEAT-DEMO-ROOM-STATE-WIDGET-008` |
+| **任務 ID (Task ID)** | `FEAT-ROOM-STATE-CONTROLLER-008` |
 | **創建日期 (Date)** | `2025/12/06` |
 
 ### 1. 目的 (Objective)
