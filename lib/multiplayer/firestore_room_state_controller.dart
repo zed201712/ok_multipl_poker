@@ -15,7 +15,7 @@ class FirestoreRoomStateController {
   final String _collectionName;
 
   /// Defines how long a room is considered active without an update.
-  static const Duration _aliveTime = Duration(minutes: 2);
+  static const Duration _aliveTime = Duration(seconds: 30);
 
   // Stream controllers for exposing streams to the UI
   final _roomsController = BehaviorSubject<List<Room>>();
@@ -25,6 +25,7 @@ class FirestoreRoomStateController {
   // Internal subscriptions to Firestore streams
   StreamSubscription<List<Room>>? _roomsSubscription;
   StreamSubscription<RoomState>? _roomStateSubscription;
+  StreamSubscription? _dutiesSubscription;
 
   FirestoreRoomStateController(this._firestore, this._auth, this._collectionName) {
     _initializeUser();
@@ -44,6 +45,13 @@ class FirestoreRoomStateController {
     user ??= (await _auth.signInAnonymously()).user;
     _userIdController.add(user?.uid);
     _listenToRooms();
+
+    // Add a periodic check to ensure manager duties are performed reliably.
+    _dutiesSubscription = Stream.periodic(const Duration(seconds: 5)).listen((_) {
+      if (_roomsController.hasValue) {
+        _performManagerDuties(_roomsController.value);
+      }
+    });
   }
 
   void setRoomId(String? roomId) {
@@ -73,6 +81,7 @@ class FirestoreRoomStateController {
   void dispose() {
     _roomsSubscription?.cancel();
     _roomStateSubscription?.cancel();
+    _dutiesSubscription?.cancel();
     _roomsController.close();
     _roomStateController.close();
     _userIdController.close();
@@ -87,6 +96,7 @@ class FirestoreRoomStateController {
         .map((snapshot) => snapshot.docs.map((doc) => Room.fromFirestore(doc)).toList())
         .listen((rooms) {
       _roomsController.add(rooms);
+      // Perform duties immediately on change for responsiveness.
       _performManagerDuties(rooms);
     });
   }
