@@ -15,9 +15,8 @@ class RoomResponse with JsonSerializableMixin {
   Set<String> get timeKeys => {'createdAt'};
 
   final String requestId;
-
   final String responseId;
-
+  final String roomId;
   final String participantId;
   final Map<String, dynamic> body;
 
@@ -26,7 +25,8 @@ class RoomResponse with JsonSerializableMixin {
 
   RoomResponse({
     required this.requestId,
-    this.responseId = '', // Default for fromJson
+    this.responseId = '',
+    this.roomId = '',
     required this.participantId,
     required this.body,
     required this.createdAt,
@@ -43,6 +43,7 @@ class RoomResponse with JsonSerializableMixin {
   RoomResponse copyWith({
     String? requestId,
     String? responseId,
+    String? roomId,
     String? participantId,
     Map<String, dynamic>? body,
     Timestamp? createdAt,
@@ -50,6 +51,7 @@ class RoomResponse with JsonSerializableMixin {
     return RoomResponse(
       requestId: requestId ?? this.requestId,
       responseId: responseId ?? this.responseId,
+      roomId: roomId ?? this.roomId,
       participantId: participantId ?? this.participantId,
       body: body ?? this.body,
       createdAt: createdAt ?? this.createdAt,

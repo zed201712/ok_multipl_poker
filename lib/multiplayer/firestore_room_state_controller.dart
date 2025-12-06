@@ -14,6 +14,9 @@ class FirestoreRoomStateController {
   final FirebaseAuth _auth;
   final String _collectionName;
 
+  /// Defines how long a room is considered active without an update.
+  static const Duration _aliveTime = Duration(minutes: 2);
+
   // Stream controllers for exposing streams to the UI
   final _roomsController = BehaviorSubject<List<Room>>();
   final _roomStateController = BehaviorSubject<RoomState?>.seeded(null);
@@ -29,21 +32,13 @@ class FirestoreRoomStateController {
 
   // --- Public Streams & Properties ---
 
-  /// A stream of all rooms, updated in real-time.
   ValueStream<List<Room>> get roomsStream => _roomsController.stream;
-
-  /// A stream of the current room's state. Use [setRoomId] to switch rooms.
   ValueStream<RoomState?> get roomStateStream => _roomStateController.stream;
-
-  /// A stream of the current user's ID.
   ValueStream<String?> get userIdStream => _userIdController.stream;
-
-  /// The current user's ID, or null if not authenticated.
   String? get currentUserId => _userIdController.value;
 
   // --- Public Methods ---
 
-  /// Initializes the user by checking auth state and signing in anonymously if needed.
   Future<void> _initializeUser() async {
     User? user = _auth.currentUser;
     user ??= (await _auth.signInAnonymously()).user;
@@ -51,9 +46,6 @@ class FirestoreRoomStateController {
     _listenToRooms();
   }
 
-  /// Switches the room state stream to a new room ID.
-  ///
-  /// Pass null or an empty string to clear the stream.
   void setRoomId(String? roomId) {
     _roomStateSubscription?.cancel();
     if (roomId == null || roomId.isEmpty) {
@@ -61,20 +53,15 @@ class FirestoreRoomStateController {
       return;
     }
     if (currentUserId == null) {
-      throw Exception('User not authenticated, cannot match a room.');
+      throw Exception('User not authenticated.');
     }
 
     final combinedStream = CombineLatestStream.combine3(
       _roomStream(roomId: roomId),
       _getRequestsStream(roomId: roomId),
       _getResponsesStream(roomId: roomId),
-      (Room? room, List<RoomRequest> requests, List<RoomResponse> responses) {
-        return RoomState(
-          room: room,
-          requests: requests,
-          responses: responses,
-        );
-      },
+      (Room? room, List<RoomRequest> requests, List<RoomResponse> responses) =>
+          RoomState(room: room, requests: requests, responses: responses),
     );
 
     _roomStateSubscription = combinedStream.listen((roomState) {
@@ -83,7 +70,6 @@ class FirestoreRoomStateController {
     });
   }
 
-  /// Disposes the controller and releases all resources.
   void dispose() {
     _roomsSubscription?.cancel();
     _roomStateSubscription?.cancel();
@@ -92,7 +78,7 @@ class FirestoreRoomStateController {
     _userIdController.close();
   }
 
-  // --- Internal Stream Management ---
+  // --- Room Lifecycle & Management ---
 
   void _listenToRooms() {
     _roomsSubscription = _firestore
@@ -101,12 +87,26 @@ class FirestoreRoomStateController {
         .map((snapshot) => snapshot.docs.map((doc) => Room.fromFirestore(doc)).toList())
         .listen((rooms) {
       _roomsController.add(rooms);
+      _performManagerDuties(rooms);
     });
   }
 
-  // --- Room ---
+  void _performManagerDuties(List<Room> rooms) {
+    if (currentUserId == null) return;
 
-  /// Creates a new room document in Firestore.
+    for (final room in rooms) {
+      if (room.managerUid == currentUserId) {
+        final sinceUpdate = DateTime.now().difference(room.updatedAt.toDate());
+
+        if (sinceUpdate > _aliveTime) {
+          deleteRoom(roomId: room.roomId);
+        } else if (sinceUpdate.inSeconds > _aliveTime.inSeconds * 0.8) {
+          updateRoom(roomId: room.roomId, data: {});
+        }
+      }
+    }
+  }
+
   Future<String> createRoom({
     String? roomId,
     required String title,
@@ -116,7 +116,7 @@ class FirestoreRoomStateController {
   }) async {
     final creatorUid = currentUserId;
     if (creatorUid == null) {
-      throw Exception('User not authenticated, cannot create a room.');
+      throw Exception('User not authenticated.');
     }
 
     final docId = (roomId != null && roomId.isNotEmpty)
@@ -142,39 +142,18 @@ class FirestoreRoomStateController {
     return docId;
   }
 
-  /// Updates a room with the given data.
   Future<void> updateRoom({
     required String roomId,
     required Map<String, Object?> data,
   }) async {
-    if (currentUserId == null) {
-      throw Exception('User not authenticated, cannot match a room.');
-    }
-
-    final updateData = {
-      ...data,
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
+    final updateData = {...data, 'updatedAt': FieldValue.serverTimestamp()};
     await _firestore.collection(_collectionName).doc(roomId).update(updateData);
   }
 
-  /// Updates the body of a room.
-  Future<void> updateRoomBody({
-    required String roomId,
-    required String body,
-  }) async {
-    await updateRoom(roomId: roomId, data: {'body': body});
-  }
-
-  /// Deletes a room document.
   Future<void> deleteRoom({required String roomId}) async {
     await _firestore.collection(_collectionName).doc(roomId).delete();
   }
 
-  // --- Room Lifecycle ---
-
-  /// Tries to find an open room to join. If no suitable room is found,
-  /// it creates a new one with the provided details.
   Future<String> matchRoom({
     required String title,
     required int maxPlayers,
@@ -183,7 +162,7 @@ class FirestoreRoomStateController {
   }) async {
     final userId = currentUserId;
     if (userId == null) {
-      throw Exception('User not authenticated, cannot match a room.');
+      throw Exception('User not authenticated.');
     }
 
     final querySnapshot = await _firestore
@@ -194,7 +173,8 @@ class FirestoreRoomStateController {
 
     final availableRooms = querySnapshot.docs.where((doc) {
       final room = Room.fromFirestore(doc);
-      return room.participants.length < room.maxPlayers;
+      final isActive = DateTime.now().difference(room.updatedAt.toDate()) <= _aliveTime;
+      return isActive && room.participants.length < room.maxPlayers;
     }).toList();
 
     if (availableRooms.isNotEmpty) {
@@ -209,24 +189,18 @@ class FirestoreRoomStateController {
       return roomToJoin.roomId;
     } else {
       return await createRoom(
-        title: title,
-        maxPlayers: maxPlayers,
-        matchMode: matchMode,
-        visibility: visibility,
-      );
+          title: title, maxPlayers: maxPlayers, matchMode: matchMode, visibility: visibility);
     }
   }
 
-  /// Handles the logic for a user leaving a room.
   Future<void> leaveRoom({required String roomId}) async {
     final userId = currentUserId;
     if (userId == null) {
-      throw Exception('User not authenticated, cannot leave a room.');
+      throw Exception('User not authenticated.');
     }
 
     final roomDoc = await _firestore.collection(_collectionName).doc(roomId).get();
     if (!roomDoc.exists) return;
-
     final room = Room.fromFirestore(roomDoc);
 
     if (room.managerUid == userId) {
@@ -244,55 +218,74 @@ class FirestoreRoomStateController {
         await deleteRoom(roomId: roomId);
       }
     } else {
-      await sendRequest(
-        roomId: roomId,
-        body: {'action': 'leave'},
-      );
+      await sendRequest(roomId: roomId, body: {'action': 'leave'});
     }
   }
 
-  /// Sends a keep-alive ping to the room.
-  Future<void> sendAlivePing({required String roomId}) async {
-    await sendRequest(
-      roomId: roomId,
-      body: {'action': 'alive'},
-    );
-  }
-
-  // --- New Manager Auto-Approval ---
+  // --- Manager Request Handling ---
 
   void _managerRequestHandler(RoomState roomState) {
     final room = roomState.room;
-    if (room == null || room.managerUid != currentUserId) {
-      return;
-    }
+    if (room == null || room.managerUid != currentUserId) return;
 
-    final joinRequests = roomState.requests.where((req) => req.body['action'] == 'join');
-
-    for (final request in joinRequests) {
-      _approveJoinRequest(request, room);
+    for (final request in roomState.requests) {
+      final action = request.body['action'];
+      if (action == 'join') {
+        _approveJoinRequest(request);
+      } else if (action == 'leave') {
+        _handleLeaveRequest(request);
+      } else if (action == 'alive') {
+        deleteRequest(roomId: room.roomId, requestId: request.requestId);
+      }
     }
   }
 
-  Future<void> _approveJoinRequest(RoomRequest request, Room room) async {
-    if (room.participants.length >= room.maxPlayers) {
-      // Maybe send a "room full" response in the future.
-      return;
-    }
+  Future<void> _approveJoinRequest(RoomRequest request) async {
+    final roomRef = _firestore.collection(_collectionName).doc(request.roomId);
+    final requestRef = roomRef.collection('requests').doc(request.requestId);
 
-    if (room.participants.contains(request.participantId)) {
-      await deleteRequest(roomId: room.roomId, requestId: request.requestId);
-      return;
-    }
+    await _firestore.runTransaction((transaction) async {
+      final roomSnapshot = await transaction.get(roomRef);
+      if (!roomSnapshot.exists) return;
 
-    final newParticipants = List<String>.from(room.participants)..add(request.participantId);
+      final room = Room.fromFirestore(roomSnapshot);
 
-    await updateRoom(
-      roomId: room.roomId,
-      data: {'participants': newParticipants},
-    );
+      if (room.participants.contains(request.participantId)) {
+        transaction.delete(requestRef);
+        return;
+      }
 
-    await deleteRequest(roomId: room.roomId, requestId: request.requestId);
+      if (room.participants.length >= room.maxPlayers) {
+        await sendResponse(
+          roomId: room.roomId,
+          requestId: request.requestId,
+          body: {'status': 'denied', 'reason': 'room_full'},
+        );
+        transaction.delete(requestRef);
+        return;
+      }
+
+      transaction.update(roomRef, {
+        'participants': FieldValue.arrayUnion([request.participantId]),
+        'seats': FieldValue.arrayUnion([request.participantId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      transaction.delete(requestRef);
+    });
+  }
+
+  Future<void> _handleLeaveRequest(RoomRequest request) async {
+    final roomRef = _firestore.collection(_collectionName).doc(request.roomId);
+    final requestRef = roomRef.collection('requests').doc(request.requestId);
+
+    await _firestore.runTransaction((transaction) async {
+      transaction.update(roomRef, {
+        'participants': FieldValue.arrayRemove([request.participantId]),
+        'seats': FieldValue.arrayRemove([request.participantId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      transaction.delete(requestRef);
+    });
   }
 
   // --- Private Firestore Streams ---
@@ -312,8 +305,9 @@ class FirestoreRoomStateController {
         .collection('requests')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RoomRequest.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => RoomRequest.fromFirestore(doc).copyWith(roomId: roomId))
+            .toList());
   }
 
   Stream<List<RoomResponse>> _getResponsesStream({required String roomId}) {
@@ -323,47 +317,50 @@ class FirestoreRoomStateController {
         .collection('responses')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RoomResponse.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => RoomResponse.fromFirestore(doc).copyWith(roomId: roomId))
+            .toList());
   }
 
   // --- Request / Response CRUD ---
 
-  /// Sends a request to a room.
   Future<String> sendRequest({
     required String roomId,
     required Map<String, dynamic> body,
   }) async {
     final participantId = currentUserId;
     if (participantId == null) {
-      throw Exception('User not authenticated, cannot send a request.');
+      throw Exception('User not authenticated.');
     }
-
-    final requestCollection = _firestore.collection(_collectionName).doc(roomId).collection('requests');
-    final docRef = requestCollection.doc();
-    final requestData = {
-      'requestId': docRef.id,
+    final ref = _firestore.collection(_collectionName).doc(roomId).collection('requests').doc();
+    await ref.set({
+      'requestId': ref.id,
+      'roomId': roomId, // <--- Added roomId
       'participantId': participantId,
       'body': body,
       'createdAt': FieldValue.serverTimestamp(),
-    };
-    await docRef.set(requestData);
-    return docRef.id;
+    });
+    return ref.id;
   }
 
-  /// Encapsulates the logic for sending a 'join' request.
   Future<void> requestToJoinRoom({required String roomId}) async {
-    if (currentUserId == null) {
-      throw Exception('User not authenticated, cannot send a request.');
-    }
     await sendRequest(roomId: roomId, body: {'action': 'join'});
+  }
+
+  Future<void> sendAlivePing({required String roomId}) async {
+    await sendRequest(roomId: roomId, body: {'action': 'alive'});
   }
 
   Future<void> deleteRequest({
     required String roomId,
     required String requestId,
   }) async {
-    await _firestore.collection(_collectionName).doc(roomId).collection('requests').doc(requestId).delete();
+    await _firestore
+        .collection(_collectionName)
+        .doc(roomId)
+        .collection('requests')
+        .doc(requestId)
+        .delete();
   }
 
   Future<String> sendResponse({
@@ -373,26 +370,29 @@ class FirestoreRoomStateController {
   }) async {
     final participantId = currentUserId;
     if (participantId == null) {
-      throw Exception('User not authenticated, cannot send a response.');
+      throw Exception('User not authenticated.');
     }
-
-    final responseCollection = _firestore.collection(_collectionName).doc(roomId).collection('responses');
-    final docRef = responseCollection.doc();
-    final responseData = {
+    final ref = _firestore.collection(_collectionName).doc(roomId).collection('responses').doc();
+    await ref.set({
       'requestId': requestId,
-      'responseId': docRef.id,
+      'responseId': ref.id,
+      'roomId': roomId, // <--- Added roomId
       'participantId': participantId,
       'body': body,
       'createdAt': FieldValue.serverTimestamp(),
-    };
-    await docRef.set(responseData);
-    return docRef.id;
+    });
+    return ref.id;
   }
 
   Future<void> deleteResponse({
     required String roomId,
     required String responseId,
   }) async {
-    await _firestore.collection(_collectionName).doc(roomId).collection('responses').doc(responseId).delete();
+    await _firestore
+        .collection(_collectionName)
+        .doc(roomId)
+        .collection('responses')
+        .doc(responseId)
+        .delete();
   }
 }
