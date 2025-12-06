@@ -28,9 +28,8 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
   // State variables
   String _userId = '';
-  StreamSubscription<RoomState>? _roomStateSubscription;
+  StreamSubscription<RoomState?>? _roomStateSubscription;
   RoomState? _currentRoomState;
-  Stream<List<Room>>? _allRoomsStream;
 
   @override
   void initState() {
@@ -38,12 +37,22 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
     _roomController = FirestoreRoomStateController(FirebaseFirestore.instance, 'rooms');
     _initUser();
     _roomIdController.addListener(_onRoomIdChanged);
+
+    // Listen to the new roomStateStream
+    _roomStateSubscription = _roomController.roomStateStream.listen((roomState) {
+      if (mounted) {
+        setState(() {
+          _currentRoomState = roomState;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _roomIdController.removeListener(_onRoomIdChanged);
     _roomStateSubscription?.cancel();
+    _roomController.dispose(); // Dispose the controller!
     _roomTitleController.dispose();
     _maxPlayersController.dispose();
     _roomIdController.dispose();
@@ -53,7 +62,6 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   Future<void> _initUser() async {
     User? user = _auth.currentUser;
     user ??= (await _auth.signInAnonymously()).user;
-    _allRoomsStream = _roomController.roomsStream(); // Initialize the stream for all rooms
     if (mounted) {
       setState(() {
         _userId = user!.uid;
@@ -62,24 +70,8 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   }
 
   void _onRoomIdChanged() {
-    final roomId = _roomIdController.text;
-    _roomStateSubscription?.cancel(); // Cancel previous subscription
-
-    if (roomId.isEmpty) {
-      setState(() {
-        _currentRoomState = null;
-      });
-      return;
-    }
-
-    final stream = _roomController.getRoomStateStream(roomId: roomId);
-    _roomStateSubscription = stream.listen((roomState) {
-      if (mounted) {
-        setState(() {
-          _currentRoomState = roomState;
-        });
-      }
-    });
+    // When the text controller changes, update the controller's target room ID
+    _roomController.setRoomId(_roomIdController.text);
   }
 
   void _handleRoomTap(Room room) {
@@ -190,7 +182,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
     );
 
     if (mounted) {
-       _roomIdController.text = ''; // Clear the room ID
+      _roomIdController.text = ''; // Clear the room ID, this triggers _onRoomIdChanged
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You have left the room.')),
       );
@@ -244,7 +236,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
           SizedBox(
             height: 200,
             child: RoomsListWidget(
-              roomsStream: _allRoomsStream,
+              roomsStream: _roomController.roomsStream,
               onRoomTap: _handleRoomTap,
             ),
           ),
@@ -317,7 +309,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
 
 // A widget to display a clickable list of rooms
 class RoomsListWidget extends StatelessWidget {
-  final Stream<List<Room>>? roomsStream;
+  final Stream<List<Room>> roomsStream;
   final Function(Room room) onRoomTap;
 
   const RoomsListWidget({
@@ -328,9 +320,6 @@ class RoomsListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (roomsStream == null) {
-      return const Center(child: Text('Stream not available.'));
-    }
     return StreamBuilder<List<Room>>(
       stream: roomsStream,
       builder: (context, snapshot) {

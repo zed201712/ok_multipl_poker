@@ -12,7 +12,75 @@ class FirestoreRoomStateController {
   final FirebaseFirestore _firestore;
   final String _collectionName;
 
-  FirestoreRoomStateController(this._firestore, this._collectionName);
+  // Stream controllers for exposing streams to the UI
+  final _roomsController = BehaviorSubject<List<Room>>();
+  final _roomStateController = BehaviorSubject<RoomState?>.seeded(null);
+
+  // Internal subscriptions to Firestore streams
+  StreamSubscription<List<Room>>? _roomsSubscription;
+  StreamSubscription<RoomState>? _roomStateSubscription;
+
+  FirestoreRoomStateController(this._firestore, this._collectionName) {
+    _listenToRooms();
+  }
+
+  // --- Public Streams ---
+
+  /// A stream of all rooms, updated in real-time.
+  ValueStream<List<Room>> get roomsStream => _roomsController.stream;
+
+  /// A stream of the current room's state. Use [setRoomId] to switch rooms.
+  ValueStream<RoomState?> get roomStateStream => _roomStateController.stream;
+
+  // --- Public Methods ---
+
+  /// Switches the room state stream to a new room ID.
+  ///
+  /// Pass null or an empty string to clear the stream.
+  void setRoomId(String? roomId) {
+    _roomStateSubscription?.cancel();
+    if (roomId == null || roomId.isEmpty) {
+      _roomStateController.add(null);
+      return;
+    }
+
+    final combinedStream = CombineLatestStream.combine3(
+      _roomStream(roomId: roomId),
+      _getRequestsStream(roomId: roomId),
+      _getResponsesStream(roomId: roomId),
+      (Room? room, List<RoomRequest> requests, List<RoomResponse> responses) {
+        return RoomState(
+          room: room,
+          requests: requests,
+          responses: responses,
+        );
+      },
+    );
+
+    _roomStateSubscription = combinedStream.listen((roomState) {
+      _roomStateController.add(roomState);
+    });
+  }
+
+  /// Disposes the controller and releases all resources.
+  void dispose() {
+    _roomsSubscription?.cancel();
+    _roomStateSubscription?.cancel();
+    _roomsController.close();
+    _roomStateController.close();
+  }
+
+  // --- Internal Stream Management ---
+
+  void _listenToRooms() {
+    _roomsSubscription = _firestore
+        .collection(_collectionName)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Room.fromFirestore(doc)).toList())
+        .listen((rooms) {
+      _roomsController.add(rooms);
+    });
+  }
 
   // --- Room ---
 
@@ -59,7 +127,7 @@ class FirestoreRoomStateController {
     };
     await _firestore.collection(_collectionName).doc(roomId).update(updateData);
   }
-  
+
   /// Updates the body of a room.
   Future<void> updateRoomBody({
     required String roomId,
@@ -71,12 +139,6 @@ class FirestoreRoomStateController {
   /// Deletes a room document.
   Future<void> deleteRoom({required String roomId}) async {
     await _firestore.collection(_collectionName).doc(roomId).delete();
-  }
-
-  /// Returns a stream of all rooms.
-  Stream<List<Room>> roomsStream() {
-    return _firestore.collection(_collectionName).snapshots().map(
-        (snapshot) => snapshot.docs.map((doc) => Room.fromFirestore(doc)).toList());
   }
 
   // --- Room Lifecycle ---
@@ -176,22 +238,7 @@ class FirestoreRoomStateController {
     );
   }
 
-  // --- Room State ---
-
-  Stream<RoomState> getRoomStateStream({required String roomId}) {
-    return CombineLatestStream.combine3(
-      _roomStream(roomId: roomId),
-      _getRequestsStream(roomId: roomId),
-      _getResponsesStream(roomId: roomId),
-      (Room? room, List<RoomRequest> requests, List<RoomResponse> responses) {
-        return RoomState(
-          room: room,
-          requests: requests,
-          responses: responses,
-        );
-      },
-    );
-  }
+  // --- Private Firestore Streams ---
 
   /// Returns a stream of a specific room document.
   Stream<Room?> _roomStream({required String roomId}) {
@@ -200,6 +247,30 @@ class FirestoreRoomStateController {
         .doc(roomId)
         .snapshots()
         .map((doc) => doc.exists ? Room.fromFirestore(doc) : null);
+  }
+
+  /// Returns a stream of all requests in a room.
+  Stream<List<RoomRequest>> _getRequestsStream({required String roomId}) {
+    return _firestore
+        .collection(_collectionName)
+        .doc(roomId)
+        .collection('requests')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => RoomRequest.fromFirestore(doc)).toList());
+  }
+
+  /// Returns a stream of all responses in a room.
+  Stream<List<RoomResponse>> _getResponsesStream({required String roomId}) {
+    return _firestore
+        .collection(_collectionName)
+        .doc(roomId)
+        .collection('responses')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => RoomResponse.fromFirestore(doc)).toList());
   }
 
   // --- Request / Response CRUD ---
@@ -230,18 +301,6 @@ class FirestoreRoomStateController {
     await _firestore.collection(_collectionName).doc(roomId).collection('requests').doc(requestId).delete();
   }
 
-  /// Returns a stream of all requests in a room.
-  Stream<List<RoomRequest>> _getRequestsStream({required String roomId}) {
-    return _firestore
-        .collection(_collectionName)
-        .doc(roomId)
-        .collection('requests')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RoomRequest.fromFirestore(doc)).toList());
-  }
-
   /// Sends a response to a request in a room.
   Future<String> sendResponse({
     required String roomId,
@@ -268,17 +327,5 @@ class FirestoreRoomStateController {
     required String responseId,
   }) async {
     await _firestore.collection(_collectionName).doc(roomId).collection('responses').doc(responseId).delete();
-  }
-
-  /// Returns a stream of all responses in a room.
-  Stream<List<RoomResponse>> _getResponsesStream({required String roomId}) {
-    return _firestore
-        .collection(_collectionName)
-        .doc(roomId)
-        .collection('responses')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RoomResponse.fromFirestore(doc)).toList());
   }
 }
