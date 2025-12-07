@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/entities/room_request.dart';
 import 'package:ok_multipl_poker/entities/room_state.dart';
+import 'package:ok_multipl_poker/services/error_message_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'firestore_room_state_controller.dart';
@@ -13,6 +14,7 @@ import 'turn_based_game_state.dart';
 class FirestoreTurnBasedGameController<T> {
   final FirestoreRoomStateController _roomStateController;
   final TurnBasedGameDelegate<T> _delegate;
+  final ErrorMessageService _errorMessageService;
 
   final _gameStateController = BehaviorSubject<TurnBasedGameState<T>?>.seeded(null);
   StreamSubscription? _roomStateSubscription;
@@ -20,6 +22,7 @@ class FirestoreTurnBasedGameController<T> {
   FirestoreTurnBasedGameController(
     this._roomStateController,
     this._delegate,
+    this._errorMessageService,
   ) {
     _roomStateSubscription = _roomStateController.roomStateStream.listen(_onRoomStateChanged);
   }
@@ -27,14 +30,25 @@ class FirestoreTurnBasedGameController<T> {
   ValueStream<TurnBasedGameState<T>?> get gameStateStream => _gameStateController.stream;
 
   void _onRoomStateChanged(RoomState? roomState) {
-    if (roomState?.room == null || roomState!.room!.body.isEmpty) {
+    if (roomState == null || roomState.room == null) {
       _gameStateController.add(null);
       return;
     }
 
     final room = roomState.room!;
-    final TurnBasedGameState<T> gameState = _parseGameState(room.body);
-    _gameStateController.add(gameState);
+    TurnBasedGameState<T>? gameState;
+
+    if (room.body.isNotEmpty) {
+      try {
+        gameState = _parseGameState(room.body);
+        _gameStateController.add(gameState);
+      } catch (e) {
+        _errorMessageService.showError("Failed to parse game state: $e");
+        _gameStateController.add(null);
+      }
+    } else {
+      _gameStateController.add(null);
+    }
 
     // Only the manager processes requests.
     if (_roomStateController.currentUserId == room.managerUid) {
@@ -42,14 +56,17 @@ class FirestoreTurnBasedGameController<T> {
     }
   }
 
-  void _processRequests(TurnBasedGameState<T> currentState, List<RoomRequest> requests) {
+  void _processRequests(TurnBasedGameState<T>? currentState, List<RoomRequest> requests) {
     for (final request in requests) {
       final action = request.body['action'];
       if (action == 'start_game') {
         _handleStartGame(request);
       } else if (action == 'game_action') {
-        _handleGameAction(currentState, request);
-      }      // Clean up processed request
+        if (currentState != null) {
+          _handleGameAction(currentState, request);
+        }
+      }
+      // Clean up processed request
       _roomStateController.deleteRequest(roomId: request.roomId, requestId: request.requestId);
     }
   }
@@ -106,44 +123,66 @@ class FirestoreTurnBasedGameController<T> {
 
   // --- Public Methods ---
 
-  Future<String> matchAndJoinRoom() {
-    return _roomStateController.matchRoom(
-      title: 'Turn Based Game',
-      maxPlayers: 2,
-      matchMode: 'turn_based',
-      visibility: 'public',
-    );
-  }
-  
-  void setRoomId(String roomId) {
-      _roomStateController.setRoomId(roomId);
+  Future<String> matchAndJoinRoom() async {
+    try {
+      return await _roomStateController.matchRoom(
+        title: 'Turn Based Game',
+        maxPlayers: 2,
+        matchMode: 'turn_based',
+        visibility: 'public',
+      );
+    } catch (e) {
+      _errorMessageService.showError("Failed to match room: $e");
+      rethrow;
+    }
   }
 
-  Future<void> leaveRoom() {
+  void setRoomId(String roomId) {
+    _roomStateController.setRoomId(roomId);
+  }
+
+  Future<void> leaveRoom() async {
     final roomId = _roomStateController.roomStateStream.value?.room?.roomId;
     if (roomId != null) {
-      return _roomStateController.leaveRoom(roomId: roomId);
+      try {
+        await _roomStateController.leaveRoom(roomId: roomId);
+      } catch (e) {
+        _errorMessageService.showError("Failed to leave room: $e");
+      }
     }
-    return Future.value();
   }
 
-  Future<void> startGame() {
+  Future<void> startGame() async {
     final roomId = _roomStateController.roomStateStream.value?.room?.roomId;
-    if (roomId == null) throw Exception("Not in a room");
-    return _roomStateController.sendRequest(roomId: roomId, body: {'action': 'start_game'});
+    if (roomId == null) {
+      _errorMessageService.showError("You are not currently in a room");
+      return;
+    }
+    try {
+      await _roomStateController.sendRequest(roomId: roomId, body: {'action': 'start_game'});
+    } catch (e) {
+      _errorMessageService.showError("Failed to send request: $e");
+    }
   }
 
-  Future<void> sendGameAction(String action, {Map<String, dynamic>? payload}) {
+  Future<void> sendGameAction(String action, {Map<String, dynamic>? payload}) async {
     final roomId = _roomStateController.roomStateStream.value?.room?.roomId;
-    if (roomId == null) throw Exception("Not in a room");
-    return _roomStateController.sendRequest(
-      roomId: roomId,
-      body: {
-        'action': 'game_action',
-        'name': action,
-        'payload': payload ?? {},
-      },
-    );
+    if (roomId == null) {
+      _errorMessageService.showError("You are not currently in a room");
+      return;
+    }
+    try {
+      await _roomStateController.sendRequest(
+        roomId: roomId,
+        body: {
+          'action': 'game_action',
+          'name': action,
+          'payload': payload ?? {},
+        },
+      );
+    } catch (e) {
+      _errorMessageService.showError("Failed to send game action: $e");
+    }
   }
 
   void dispose() {

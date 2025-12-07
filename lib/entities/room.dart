@@ -5,8 +5,8 @@ import '../core/mixins/json_serializable_mixin.dart';
 part 'room.g.dart';
 
 // Helper function to convert Firestore Timestamp to/from JSON.
-Timestamp _timestampFromJson(dynamic json) => json as Timestamp;
-Timestamp _timestampToJson(Timestamp timestamp) => timestamp;
+Timestamp? _timestampFromJson(dynamic json) => json is Timestamp ? json : null;
+Timestamp? _timestampToJson(Timestamp? timestamp) => timestamp;
 
 // --- Data Models ---
 @JsonSerializable(explicitToJson: true)
@@ -29,10 +29,10 @@ class Room with JsonSerializableMixin {
   final List<String> participants;
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-  final Timestamp createdAt;
+  final Timestamp? createdAt;
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-  final Timestamp updatedAt;
+  final Timestamp? updatedAt;
 
   Room({
     this.roomId = '', // Default value for when creating from json
@@ -46,8 +46,8 @@ class Room with JsonSerializableMixin {
     required this.visibility,
     this.seats = const [],
     this.participants = const [],
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   /// Creates a Room instance from a Firestore document.

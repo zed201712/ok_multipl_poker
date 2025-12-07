@@ -111,8 +111,8 @@ class FirestoreRoomStateController {
     if (currentUserId == null) return;
 
     for (final room in rooms) {
-      if (room.managerUid == currentUserId) {
-        final sinceUpdate = DateTime.now().difference(room.updatedAt.toDate());
+      if (room.managerUid == currentUserId && room.updatedAt != null) {
+        final sinceUpdate = DateTime.now().difference(room.updatedAt!.toDate());
 
         if (sinceUpdate > _aliveTime) {
           deleteRoom(roomId: room.roomId);
@@ -189,7 +189,8 @@ class FirestoreRoomStateController {
 
     final availableRooms = querySnapshot.docs.where((doc) {
       final room = Room.fromFirestore(doc);
-      final isActive = DateTime.now().difference(room.updatedAt.toDate()) <= _aliveTime;
+      if (room.updatedAt == null) return true;
+      final isActive = DateTime.now().difference(room.updatedAt!.toDate()) <= _aliveTime;
       return isActive && room.participants.length < room.maxPlayers;
     }).toList();
 
@@ -333,11 +334,12 @@ class FirestoreRoomStateController {
 
   void _handleManagerTakeover(Room room) {
     final currentUserId = this.currentUserId;
+    if (room.updatedAt == null) return;
     if (currentUserId == null) return;
 
     if (room.managerUid == currentUserId) return;
 
-    final sinceUpdate = DateTime.now().difference(room.updatedAt.toDate());
+    final sinceUpdate = DateTime.now().difference(room.updatedAt!.toDate());
     if (sinceUpdate <= _aliveTime) return;
 
     if (room.participants.length < 2) return;
@@ -349,7 +351,7 @@ class FirestoreRoomStateController {
 
     final takeoverDelay = _aliveTime + (_managerTakeoverTimeout * mySuccessorRank);
 
-    final timeSinceManagerLost = DateTime.now().difference(room.updatedAt.toDate());
+    final timeSinceManagerLost = DateTime.now().difference(room.updatedAt!.toDate());
     if (timeSinceManagerLost >= takeoverDelay) {
       _attemptToBecomeManager(room);
     }
