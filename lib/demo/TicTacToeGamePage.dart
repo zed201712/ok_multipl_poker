@@ -135,6 +135,8 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   late final FirestoreTurnBasedGameController<TicTacToeState> _gameController;
   late final FirestoreRoomStateController _roomStateController;
   late final ErrorMessageService _errorMessageService;
+  bool _isGameMatching = false;
+  String _currentRoomId = "";
 
   @override
   void initState() {
@@ -157,8 +159,6 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       _errorMessageService, // ErrorMessageService 的實例
     );
 
-    // 開始配對或加入房間
-    _gameController.matchAndJoinRoom();
   }
 
   @override
@@ -169,6 +169,19 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       builder: (context, snapshot) {
         final gameState = snapshot.data;
         if (gameState == null) {
+
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 渲染遊戲板 (省略實作細節)
+              Center(child: Text(_isGameMatching ? "等待遊戲開始..." : "")),
+
+              ElevatedButton(
+              onPressed: () => _isGameMatching ? _leaveRoom() : _matchRoom(),
+              child: Text(_isGameMatching ? "離開房間" : "配對"),
+              ),
+            ],
+          );
           return const Center(child: Text("等待遊戲開始..."));
         }
 
@@ -206,6 +219,65 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
         );
       },
     );
+  }
+
+  Future<void> _matchRoom() async {
+    if (FirebaseAuth.instance.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not initialized yet.')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Searching for a room...')),
+    );
+
+    final roomId = await _roomStateController.matchRoom(
+      title: "TicTacToeGame",
+      maxPlayers: 2,
+      matchMode: 'casual',
+      visibility: 'public',
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Matched! Joined room: $roomId')),
+      );
+      setState(() {
+        _currentRoomId = roomId;
+        _isGameMatching = true;
+      });
+    }
+  }
+
+  Future<void> _leaveRoom() async {
+    if (_currentRoomId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('_currentRoomId.isEmpty')),
+      );
+      return;
+    }
+    if (FirebaseAuth.instance.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not initialized yet.')),
+      );
+      return;
+    }
+
+    await _roomStateController.leaveRoom(roomId: _currentRoomId);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('leave room $_currentRoomId')),
+      );
+      setState(() {
+        _currentRoomId = "";
+        _isGameMatching = false;
+      });
+    }
   }
 
   @override
