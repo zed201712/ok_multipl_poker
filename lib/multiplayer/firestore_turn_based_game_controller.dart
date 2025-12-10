@@ -75,10 +75,13 @@ class FirestoreTurnBasedGameController<T> {
     final room = _roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
-    final initialCustomState = _delegate.initializeGame(room.participants);
+    // Create a new list from participants to avoid modifying the original list.
+    List<String> turnOrder = List.from(room.participants);
+    turnOrder.shuffle();
+    final initialCustomState = _delegate.initializeGame(turnOrder);
     final newGameState = TurnBasedGameState(
       gameStatus: _delegate.getGameStatus(initialCustomState),
-      turnOrder: room.participants,
+      turnOrder: turnOrder,
       currentPlayerId: _delegate.getCurrentPlayer(initialCustomState),
       winner: null,
       customState: initialCustomState,
