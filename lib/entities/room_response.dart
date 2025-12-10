@@ -5,8 +5,8 @@ import '../core/mixins/json_serializable_mixin.dart';
 part 'room_response.g.dart';
 
 // Helper function to convert Firestore Timestamp to/from JSON.
-Timestamp _timestampFromJson(dynamic json) => json as Timestamp;
-Timestamp _timestampToJson(Timestamp timestamp) => timestamp;
+Timestamp? _timestampFromJson(dynamic json) => json is Timestamp ? json : null;
+Timestamp? _timestampToJson(Timestamp? timestamp) => timestamp;
 
 @JsonSerializable(explicitToJson: true)
 class RoomResponse with JsonSerializableMixin {
@@ -21,7 +21,7 @@ class RoomResponse with JsonSerializableMixin {
   final Map<String, dynamic> body;
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-  final Timestamp createdAt;
+  final Timestamp? createdAt;
 
   RoomResponse({
     required this.requestId,
