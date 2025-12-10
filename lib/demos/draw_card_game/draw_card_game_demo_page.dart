@@ -83,7 +83,7 @@ class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
     return Center(
       child: ElevatedButton(
         onPressed: () async {
-          final roomId = await _gameController.matchAndJoinRoom();
+          final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 2);
           setState(() {
             _roomId = roomId;
           });

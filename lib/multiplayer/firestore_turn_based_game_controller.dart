@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/entities/room_request.dart';
 import 'package:ok_multipl_poker/entities/room_state.dart';
+import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/services/error_message_service.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -15,6 +16,8 @@ class FirestoreTurnBasedGameController<T> {
   final FirestoreRoomStateController _roomStateController;
   final TurnBasedGameDelegate<T> _delegate;
   final ErrorMessageService _errorMessageService;
+
+  int _maxPlayers = 0;
 
   final _gameStateController = BehaviorSubject<TurnBasedGameState<T>?>.seeded(null);
   StreamSubscription? _roomStateSubscription;
@@ -28,6 +31,10 @@ class FirestoreTurnBasedGameController<T> {
   }
 
   ValueStream<TurnBasedGameState<T>?> get gameStateStream => _gameStateController.stream;
+
+  bool _isCurrentUserTheManager(Room room) {
+    return _roomStateController.currentUserId == room.managerUid;
+  }
 
   void _onRoomStateChanged(RoomState? roomState) {
     if (roomState == null || roomState.room == null) {
@@ -47,11 +54,26 @@ class FirestoreTurnBasedGameController<T> {
         _gameStateController.add(null);
       }
     } else {
+      if (_isCurrentUserTheManager(room)) {
+        final initialCustomState = _delegate.initializeGame([]);
+        final newGameState = TurnBasedGameState(
+          gameStatus: GameStatus.matching,
+          turnOrder: [],
+          customState: initialCustomState,
+        );
+        _updateRoomWithState(newGameState);
+        return; 
+      }
       _gameStateController.add(null);
     }
 
-    // Only the manager processes requests.
-    if (_roomStateController.currentUserId == room.managerUid) {
+    if (_isCurrentUserTheManager(room)) {
+      if (gameState?.gameStatus == GameStatus.matching &&
+          room.participants.length >= _maxPlayers &&
+          _maxPlayers > 0) {
+        _handleStartGame(null);
+        return;
+      }
       _processRequests(gameState, roomState.requests);
     }
   }
@@ -60,27 +82,27 @@ class FirestoreTurnBasedGameController<T> {
     for (final request in requests) {
       final action = request.body['action'];
       if (action == 'start_game') {
-        _handleStartGame(request);
+        if (currentState?.gameStatus == GameStatus.matching) {
+          _handleStartGame(request);
+        }
       } else if (action == 'game_action') {
-        if (currentState != null) {
+        if (currentState != null && currentState.gameStatus == GameStatus.playing) {
           _handleGameAction(currentState, request);
         }
       }
-      // Clean up processed request
       _roomStateController.deleteRequest(roomId: request.roomId, requestId: request.requestId);
     }
   }
 
-  void _handleStartGame(RoomRequest request) {
+  void _handleStartGame(RoomRequest? request) {
     final room = _roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
-    // Create a new list from participants to avoid modifying the original list.
     List<String> turnOrder = List.from(room.participants);
     turnOrder.shuffle();
     final initialCustomState = _delegate.initializeGame(turnOrder);
     final newGameState = TurnBasedGameState(
-      gameStatus: _delegate.getGameStatus(initialCustomState),
+      gameStatus: GameStatus.playing,
       turnOrder: turnOrder,
       currentPlayerId: _delegate.getCurrentPlayer(initialCustomState),
       winner: null,
@@ -88,6 +110,16 @@ class FirestoreTurnBasedGameController<T> {
     );
 
     _updateRoomWithState(newGameState);
+    
+    if (request == null) {
+        final pendingRequests = _roomStateController.roomStateStream.value?.requests ?? [];
+        final roomId = room.roomId;
+        for (final req in pendingRequests) {
+            if (req.body['action'] == 'start_game') {
+                _roomStateController.deleteRequest(roomId: roomId, requestId: req.requestId);
+            }
+        }
+    }
   }
 
   void _handleGameAction(TurnBasedGameState<T> currentState, RoomRequest request) {
@@ -100,13 +132,15 @@ class FirestoreTurnBasedGameController<T> {
       request.participantId,
       payload,
     );
-    
+
+    final winner = _delegate.getWinner(updatedCustomState);
+    final newStatus = winner != null ? GameStatus.finished : GameStatus.playing;
+
     final newGameState = currentState.copyWith(
-        gameStatus: _delegate.getGameStatus(updatedCustomState),
+        gameStatus: newStatus,
         currentPlayerId: _delegate.getCurrentPlayer(updatedCustomState),
-        winner: _delegate.getWinner(updatedCustomState),
-        customState: updatedCustomState
-    );
+        winner: winner,
+        customState: updatedCustomState);
 
     _updateRoomWithState(newGameState);
   }
@@ -124,13 +158,12 @@ class FirestoreTurnBasedGameController<T> {
     return TurnBasedGameState.fromJson(decodedBody, _delegate);
   }
 
-  // --- Public Methods ---
-
-  Future<String> matchAndJoinRoom() async {
+  Future<String> matchAndJoinRoom({required int maxPlayers}) async {
+    _maxPlayers = maxPlayers;
     try {
       return await _roomStateController.matchRoom(
         title: 'Turn Based Game',
-        maxPlayers: 2,
+        maxPlayers: maxPlayers,
         matchMode: 'turn_based',
         visibility: 'public',
       );

@@ -23,9 +23,6 @@ abstract class TurnBasedGameDelegate<T> {
   /// Returns the ID of the winner, if the game has ended.
   String? getWinner(T state);
 
-  /// Returns the current status of the game (e.g., 'playing', 'finished').
-  String getGameStatus(T state);
-
   // --- Serialization ---
 
   /// Deserializes the custom game state from JSON.
