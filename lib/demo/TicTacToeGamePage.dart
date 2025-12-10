@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
+import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -168,7 +169,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       stream: _gameController.gameStateStream,
       builder: (context, snapshot) {
         final gameState = snapshot.data;
-        if (gameState == null) {
+        if (gameState == null || gameState.gameStatus != GameStatus.playing) {
 
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -182,7 +183,6 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
               ),
             ],
           );
-          return const Center(child: Text("等待遊戲開始..."));
         }
 
         final customState = gameState.customState; // 這就是您的 TicTacToeState
