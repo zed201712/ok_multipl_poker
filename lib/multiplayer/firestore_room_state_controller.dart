@@ -155,6 +155,7 @@ class FirestoreRoomStateController {
     };
 
     await _firestore.collection(_collectionName).doc(docId).set(roomData);
+    setRoomId(docId);
     return docId;
   }
 
