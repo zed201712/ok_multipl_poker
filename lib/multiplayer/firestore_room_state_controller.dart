@@ -155,7 +155,6 @@ class FirestoreRoomStateController {
     };
 
     await _firestore.collection(_collectionName).doc(docId).set(roomData);
-    setRoomId(docId);
     return docId;
   }
 
@@ -204,10 +203,13 @@ class FirestoreRoomStateController {
           'seats': FieldValue.arrayUnion([userId]),
         },
       );
+      setRoomId(roomToJoin.roomId);
       return roomToJoin.roomId;
     } else {
-      return await createRoom(
+      String roomId = await createRoom(
           title: title, maxPlayers: maxPlayers, matchMode: matchMode, visibility: visibility);
+      setRoomId(roomId);
+      return roomId;
     }
   }
 
