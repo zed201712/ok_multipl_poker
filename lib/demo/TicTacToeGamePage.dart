@@ -233,12 +233,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       const SnackBar(content: Text('Searching for a room...')),
     );
 
-    final roomId = await _roomStateController.matchRoom(
-      title: "TicTacToeGame",
-      maxPlayers: 2,
-      matchMode: 'casual',
-      visibility: 'public',
-    );
+    final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 2);
 
     if (mounted) {
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
