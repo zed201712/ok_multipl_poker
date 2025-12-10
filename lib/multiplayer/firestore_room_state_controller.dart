@@ -116,7 +116,7 @@ class FirestoreRoomStateController {
 
         if (sinceUpdate > _aliveTime) {
           deleteRoom(roomId: room.roomId);
-        } else if (sinceUpdate.inSeconds > _aliveTime.inSeconds * 0.8) {
+        } else if (sinceUpdate.inSeconds > _aliveTime.inSeconds * 0.5) {
           updateRoom(roomId: room.roomId, data: {});
         }
       }
