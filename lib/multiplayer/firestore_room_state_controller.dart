@@ -196,13 +196,7 @@ class FirestoreRoomStateController {
 
     if (availableRooms.isNotEmpty) {
       final roomToJoin = Room.fromFirestore(availableRooms.first);
-      await updateRoom(
-        roomId: roomToJoin.roomId,
-        data: {
-          'participants': FieldValue.arrayUnion([userId]),
-          'seats': FieldValue.arrayUnion([userId]),
-        },
-      );
+      await sendRequest(roomId: roomToJoin.roomId, body: {'action': 'join'});;
       setRoomId(roomToJoin.roomId);
       return roomToJoin.roomId;
     } else {
