@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
+import 'package:ok_multipl_poker/multiplayer/mock_firestore_room_state_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 
@@ -172,6 +172,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
     _gameController = FirestoreTurnBasedGameController(
       delegate: ticTacToeDelegate,
       collectionName: 'rooms'
+      //collectionName: 'rooms', controller: MockFirestoreRoomStateController()
     );
   }
 
@@ -208,7 +209,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
         }
 
         final customState = gameState.customState;
-        final isMyTurn = gameState.currentPlayerId == FirebaseAuth.instance.currentUser?.uid;
+        final isMyTurn = gameState.currentPlayerId == _gameController.roomStateController.currentUserId;
         final winner = customState.winner;
         
         return Column(
@@ -285,7 +286,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
             : customState.restartRequesters.join(', '),
       ),
       if (!customState.restartRequesters
-          .contains(FirebaseAuth.instance.currentUser?.uid))
+          .contains(_gameController.roomStateController.currentUserId))
         ElevatedButton(
           onPressed: () =>
               _gameController.sendGameAction('request_restart'),
@@ -295,7 +296,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   }
 
   Future<void> _matchRoom() async {
-    if (FirebaseAuth.instance.currentUser == null) {
+    if (_gameController.roomStateController.currentUserId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User not initialized yet.')),
       );

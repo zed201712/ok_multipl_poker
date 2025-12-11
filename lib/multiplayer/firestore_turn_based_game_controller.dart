@@ -16,13 +16,11 @@ import 'turn_based_game_state.dart';
 
 class FirestoreTurnBasedGameController<T> {
   final TurnBasedGameDelegate<T> _delegate;
-  final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   late final FirestoreRoomStateController roomStateController;
   final ErrorMessageService errorMessageService = ErrorMessageService();
 
-  Room? _currentRoom = null;
+  Room? _currentRoom;
   int _maxPlayers = 0;
 
   final _gameStateController = BehaviorSubject<TurnBasedGameState<T>?>.seeded(null);
@@ -31,9 +29,15 @@ class FirestoreTurnBasedGameController<T> {
   FirestoreTurnBasedGameController({
     required TurnBasedGameDelegate<T> delegate,
     required String collectionName,
-  })  : _delegate = delegate {
-    roomStateController = FirestoreRoomStateController(_firebaseFirestore, _firebaseAuth, collectionName);
-
+    FirestoreRoomStateController? controller,
+  }) : _delegate = delegate {
+    if (controller != null) {
+      roomStateController = controller;
+    } else {
+      final FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
+      final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+      roomStateController = FirestoreRoomStateController(firebaseFirestore, firebaseAuth, collectionName);
+    }
     _roomStateSubscription = roomStateController.roomStateStream.listen(_onRoomStateChanged);
   }
 
