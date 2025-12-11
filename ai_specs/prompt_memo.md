@@ -20,6 +20,18 @@ _____
 整理容易理解的文字內容, 而不是程式碼, 並寫回到firestore_turn_based_game_controller_spec_003.md檔案
 _____
 
+參考 @demo_room_state_widget_spec.md 寫1個spec檔案
+
+| **任務 ID (Task ID)** | `FEAT-DEMO-TIC-TAC-TOE-GAME-PAGE-001` |
+| **創建日期 (Date)** | `2025/12/11` |
+
+目的:
+分析下列檔案相關內容
+整理容易理解的文字內容, 而不是程式碼
+
+@tic_tac_toe_game_page.dart
+_____
+
 寫提示詞, 用來產生 @ai_dev_spec_template.md 風格的 spec
 我要製作一個4人poker card遊戲, bigtwo操作頁面的bigtwo_board_widget.dart
 提示詞要怎麼寫

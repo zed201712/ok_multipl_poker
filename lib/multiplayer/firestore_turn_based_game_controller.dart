@@ -22,6 +22,7 @@ class FirestoreTurnBasedGameController<T> {
   late final FirestoreRoomStateController roomStateController;
   final ErrorMessageService errorMessageService = ErrorMessageService();
 
+  Room? _currentRoom = null;
   int _maxPlayers = 0;
 
   final _gameStateController = BehaviorSubject<TurnBasedGameState<T>?>.seeded(null);
@@ -38,11 +39,17 @@ class FirestoreTurnBasedGameController<T> {
 
   ValueStream<TurnBasedGameState<T>?> get gameStateStream => _gameStateController.stream;
 
+  bool isCurrentUserManager() {
+    if (_currentRoom == null) return false;
+    return _isCurrentUserTheManager(_currentRoom!);
+  }
+
   bool _isCurrentUserTheManager(Room room) {
     return roomStateController.currentUserId == room.managerUid;
   }
 
   void _onRoomStateChanged(RoomState? roomState) {
+    _currentRoom = roomState?.room;
     if (roomState == null || roomState.room == null) {
       _gameStateController.add(null);
       return;

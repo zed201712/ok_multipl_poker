@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:ok_multipl_poker/multiplayer/firestore_room_state_controller.dart';
-import 'package:ok_multipl_poker/services/error_message_service.dart';
 
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 
@@ -64,8 +61,8 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
   @override
   TicTacToeState processAction(TicTacToeState currentState, String actionName,
       String participantId, Map<String, dynamic> payload) {
-    // 只有輪到目前玩家才能動作
-    if (participantId != getCurrentPlayer(currentState)) {
+    // 遊戲結束後或非目前玩家，則不處理動作
+    if (currentState.winner != null || participantId != getCurrentPlayer(currentState)) {
       return currentState; // 動作無效，回傳原狀態
     }
 
@@ -81,7 +78,6 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
       final mark = _playerIds.indexOf(participantId) == 0 ? 'X' : 'O';
       newBoard[index] = mark;
 
-      // 檢查是否有贏家... (此處省略檢查邏輯)
       String? winner = _checkWinner(newBoard);
 
       return TicTacToeState(board: newBoard, winner: winner);
@@ -94,13 +90,9 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
   String getCurrentPlayer(TicTacToeState state) {
     if (getWinner(state) != null) return ''; // 遊戲結束
     // 計算 'X' 和 'O' 的數量來決定輪到誰
-    int xCount = state.board
-        .where((m) => m == 'X')
-        .length;
-    int oCount = state.board
-        .where((m) => m == 'O')
-        .length;
-    // playerIds 是從 TurnBasedGameDelegate 繼承的
+    int xCount = state.board.where((m) => m == 'X').length;
+    int oCount = state.board.where((m) => m == 'O').length;
+    
     return xCount > oCount ? _playerIds[1] : _playerIds[0];
   }
 
@@ -118,8 +110,24 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
 
   // (輔助方法，檢查贏家)
   String? _checkWinner(List<String> board) {
-    // ... 實作檢查井字遊戲勝利條件的邏輯 ...
-    return null; // 暫時回傳 null
+    const List<List<int>> winningLines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // 橫排
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // 豎排
+      [0, 4, 8], [2, 4, 6]             // 對角線
+    ];
+
+    for (var line in winningLines) {
+      final first = board[line[0]];
+      if (first.isNotEmpty && first == board[line[1]] && first == board[line[2]]) {
+        return first; // 回傳 'X' 或 'O'
+      }
+    }
+
+    if (!board.contains('')) {
+      return 'DRAW';
+    }
+
+    return null;
   }
 }
 
@@ -141,70 +149,103 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   void initState() {
     super.initState();
 
-    // --- 核心整合部分 ---
-    // 1. 建立您自訂的 Delegate
     final ticTacToeDelegate = TicTacToeDelegate();
-
-    // 2. 將 Delegate 傳入 Controller 的建構子
     _gameController = FirestoreTurnBasedGameController(
-      delegate: ticTacToeDelegate, // 您剛建立的遊戲規則 Delegate
+      delegate: ticTacToeDelegate,
       collectionName: 'rooms'
     );
-
   }
 
   @override
   Widget build(BuildContext context) {
-    // 監聽遊戲狀態的變化
     return StreamBuilder<TurnBasedGameState<TicTacToeState>?>(
       stream: _gameController.gameStateStream,
       builder: (context, snapshot) {
         final gameState = snapshot.data;
-        if (gameState == null || gameState.gameStatus != GameStatus.playing) {
-
+        
+        if (gameState == null || gameState.gameStatus != GameStatus.playing || !_isGameMatching) {
+          String message = "歡迎來到井字棋！";
+          if (_isGameMatching) {
+            message = "等待玩家加入...";
+          }
+          if (gameState?.gameStatus == GameStatus.finished && gameState?.customState.winner != null) {
+              final winner = gameState!.customState.winner;
+              message = winner == 'DRAW' ? '平手！' : '贏家是 $winner！';
+          }
+          
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 渲染遊戲板 (省略實作細節)
-              Center(child: Text(_isGameMatching ? "等待遊戲開始..." : "")),
-
+              Center(child: Text(message)),
               ElevatedButton(
-              onPressed: () => _isGameMatching ? _leaveRoom() : _matchRoom(),
-              child: Text(_isGameMatching ? "離開房間" : "配對"),
+                onPressed: () => _isGameMatching ? _leaveRoom() : _matchRoom(),
+                child: Text(_isGameMatching ? "離開房間" : "配對"),
               ),
             ],
           );
         }
 
-        final customState = gameState.customState; // 這就是您的 TicTacToeState
-
+        final customState = gameState.customState;
+        final isMyTurn = gameState.currentPlayerId == FirebaseAuth.instance.currentUser?.uid;
+        final winner = customState.winner;
+        
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 渲染遊戲板 (省略實作細節)
-            Text("輪到: ${gameState.currentPlayerId}"),
+            if (winner != null)
+              Text(winner == 'DRAW' ? '遊戲結束: 平手' : "贏家是: $winner", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),)
+            else
+              Text("輪到: ${isMyTurn ? '你' : '對手'}", style: const TextStyle(fontSize: 20)),
+            
+            const SizedBox(height: 20),
 
-            // 玩家點擊遊戲板的格子時，呼叫 sendGameAction
-            GestureDetector(
-              onTap: () {
-                // 假設玩家點擊了第一個格子 (index 0)
-                _gameController.sendGameAction(
-                    'place_mark',
-                    payload: {'index': 0}
-                );
-              },
-              child: Container(
-                width: 100,
-                height: 100,
-                color: Colors.blue,
-                child: Center(child: Text(customState.board[0])),
+            AbsorbPointer(
+              absorbing: !isMyTurn || winner != null,
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                    ),
+                    itemCount: 9,
+                    itemBuilder: (context, i) {
+                      return GestureDetector(
+                        onTap: () {
+                          _gameController.sendGameAction(
+                              'place_mark',
+                              payload: {'index': i}
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black),
+                          ),
+                          child: Center(
+                            child: Text(
+                              customState.board[i],
+                              style: const TextStyle(fontSize: 40),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
 
-            // 只有房主可以看到開始遊戲的按鈕
+            const SizedBox(height: 20),
+
+            if (_gameController.isCurrentUserManager() && gameState.gameStatus != GameStatus.playing)
+              ElevatedButton(
+                onPressed: () => _gameController.startGame(),
+                child: const Text("開始遊戲"),
+              ),
             ElevatedButton(
-              onPressed: () => _gameController.startGame(),
-              child: const Text("開始遊戲"),
+              onPressed: () => _leaveRoom(),
+              child: Text("離開房間"),
             ),
           ],
         );
@@ -221,7 +262,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Searching for a room...')),
+      const SnackBar(content: Text('正在尋找房間...')),
     );
 
     final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 2);
@@ -229,7 +270,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
     if (mounted) {
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Matched! Joined room: $roomId')),
+        SnackBar(content: Text('配對成功！已加入房間: $roomId')),
       );
       setState(() {
         _currentRoomId = roomId;
@@ -239,25 +280,14 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   }
 
   Future<void> _leaveRoom() async {
-    if (_currentRoomId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('_currentRoomId.isEmpty')),
-      );
-      return;
-    }
-    if (FirebaseAuth.instance.currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not initialized yet.')),
-      );
-      return;
-    }
-
+    if (_currentRoomId.isEmpty) return;
+    
     await _gameController.leaveRoom();
 
     if (mounted) {
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('leave room $_currentRoomId')),
+        SnackBar(content: Text('已離開房間 $_currentRoomId')),
       );
       setState(() {
         _currentRoomId = "";
