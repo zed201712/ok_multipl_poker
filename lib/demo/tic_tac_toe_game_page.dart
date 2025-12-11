@@ -13,8 +13,9 @@ class TicTacToeState {
   final List<String> board;
   final String? winner;
   final List<String> restartRequesters;
+  final List<String> playerIds;
 
-  TicTacToeState({required this.board, this.winner, this.restartRequesters = const []});
+  TicTacToeState({required this.board, this.winner, this.restartRequesters = const [], this.playerIds = const []});
 
   // 工廠建構子，用於從 JSON 建立物件
   factory TicTacToeState.fromJson(Map<String, dynamic> json) {
@@ -22,6 +23,7 @@ class TicTacToeState {
       board: List<String>.from(json['board']),
       winner: json['winner'],
       restartRequesters: json['restartRequesters'] != null ? List<String>.from(json['restartRequesters']) : [],
+      playerIds: json['playerIds'] != null ? List<String>.from(json['playerIds']) : [],
     );
   }
 
@@ -31,6 +33,7 @@ class TicTacToeState {
       'board': board,
       'winner': winner,
       'restartRequesters': restartRequesters,
+      'playerIds': playerIds,
     };
   }
 }
@@ -38,7 +41,6 @@ class TicTacToeState {
 
 // 2. 實現遊戲規則
 class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
-  List<String> _playerIds = [];
 
   // 從 JSON 還原遊戲狀態
   @override
@@ -55,9 +57,8 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
   // 開始新遊戲，回傳初始狀態
   @override
   TicTacToeState initializeGame(List<String> playerIds) {
-    _playerIds = playerIds;
     // 建立一個 3x3 的空遊戲板
-    return TicTacToeState(board: List.filled(9, ''), winner: null, restartRequesters: []);
+    return TicTacToeState(board: List.filled(9, ''), winner: null, restartRequesters: [], playerIds: playerIds);
   }
 
   // 處理玩家的動作（例如，下棋）
@@ -71,14 +72,15 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
       }
 
       // 檢查是否所有玩家都已請求重新開始
-      if (_playerIds.isNotEmpty && newRequesters.length >= _playerIds.length) {
-        return initializeGame(_playerIds); // 重置遊戲
+      if (currentState.playerIds.isNotEmpty && newRequesters.length >= currentState.playerIds.length) {
+        return initializeGame(currentState.playerIds); // 重置遊戲
       }
 
       return TicTacToeState(
         board: currentState.board,
         winner: currentState.winner,
         restartRequesters: newRequesters,
+        playerIds: currentState.playerIds,
       );
     }
 
@@ -96,7 +98,7 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
 
       final newBoard = List<String>.from(currentState.board);
       // 根據玩家順序決定是 'X' 還是 'O'
-      final mark = _playerIds.indexOf(participantId) == 0 ? 'X' : 'O';
+      final mark = currentState.playerIds.indexOf(participantId) == 0 ? 'X' : 'O';
       newBoard[index] = mark;
 
       String? winner = _checkWinner(newBoard);
@@ -104,7 +106,8 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
       return TicTacToeState(
         board: newBoard, 
         winner: winner,
-        restartRequesters: currentState.restartRequesters
+        restartRequesters: currentState.restartRequesters,
+        playerIds: currentState.playerIds,
       );
     }
     return currentState;
@@ -114,11 +117,13 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
   @override
   String getCurrentPlayer(TicTacToeState state) {
     if (getWinner(state) != null) return ''; // 遊戲結束
+    if (state.playerIds.length < 2) return ''; // 玩家不足
+
     // 計算 'X' 和 'O' 的數量來決定輪到誰
     int xCount = state.board.where((m) => m == 'X').length;
     int oCount = state.board.where((m) => m == 'O').length;
     
-    return xCount > oCount ? _playerIds[1] : _playerIds[0];
+    return xCount > oCount ? state.playerIds[1] : state.playerIds[0];
   }
 
   // 取得贏家
