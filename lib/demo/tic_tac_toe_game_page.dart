@@ -12,14 +12,16 @@ class TicTacToeState {
   // 3x3 的遊戲板，'X', 'O', 或 '' (空)
   final List<String> board;
   final String? winner;
+  final List<String> restartRequesters;
 
-  TicTacToeState({required this.board, this.winner});
+  TicTacToeState({required this.board, this.winner, this.restartRequesters = const []});
 
   // 工廠建構子，用於從 JSON 建立物件
   factory TicTacToeState.fromJson(Map<String, dynamic> json) {
     return TicTacToeState(
       board: List<String>.from(json['board']),
       winner: json['winner'],
+      restartRequesters: json['restartRequesters'] != null ? List<String>.from(json['restartRequesters']) : [],
     );
   }
 
@@ -28,6 +30,7 @@ class TicTacToeState {
     return {
       'board': board,
       'winner': winner,
+      'restartRequesters': restartRequesters,
     };
   }
 }
@@ -54,13 +57,31 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
   TicTacToeState initializeGame(List<String> playerIds) {
     _playerIds = playerIds;
     // 建立一個 3x3 的空遊戲板
-    return TicTacToeState(board: List.filled(9, ''), winner: null);
+    return TicTacToeState(board: List.filled(9, ''), winner: null, restartRequesters: []);
   }
 
   // 處理玩家的動作（例如，下棋）
   @override
   TicTacToeState processAction(TicTacToeState currentState, String actionName,
       String participantId, Map<String, dynamic> payload) {
+    if (actionName == 'request_restart') {
+      final newRequesters = List<String>.from(currentState.restartRequesters);
+      if (!newRequesters.contains(participantId)) {
+        newRequesters.add(participantId);
+      }
+
+      // 檢查是否所有玩家都已請求重新開始
+      if (_playerIds.isNotEmpty && newRequesters.length >= _playerIds.length) {
+        return initializeGame(_playerIds); // 重置遊戲
+      }
+
+      return TicTacToeState(
+        board: currentState.board,
+        winner: currentState.winner,
+        restartRequesters: newRequesters,
+      );
+    }
+
     // 遊戲結束後或非目前玩家，則不處理動作
     if (currentState.winner != null || participantId != getCurrentPlayer(currentState)) {
       return currentState; // 動作無效，回傳原狀態
@@ -80,7 +101,11 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
 
       String? winner = _checkWinner(newBoard);
 
-      return TicTacToeState(board: newBoard, winner: winner);
+      return TicTacToeState(
+        board: newBoard, 
+        winner: winner,
+        restartRequesters: currentState.restartRequesters
+      );
     }
     return currentState;
   }
@@ -94,12 +119,6 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
     int oCount = state.board.where((m) => m == 'O').length;
     
     return xCount > oCount ? _playerIds[1] : _playerIds[0];
-  }
-
-  // 取得遊戲狀態 (進行中/已結束)
-  @override
-  String getGameStatus(TicTacToeState state) {
-    return getWinner(state) != null ? 'finished' : 'playing';
   }
 
   // 取得贏家
@@ -181,6 +200,9 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
                 onPressed: () => _isGameMatching ? _leaveRoom() : _matchRoom(),
                 child: Text(_isGameMatching ? "離開房間" : "配對"),
               ),
+
+              if (gameState != null && gameState.gameStatus == GameStatus.finished) ..._resetBox(
+                  gameState.customState),
             ],
           );
         }
@@ -251,6 +273,25 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
         );
       },
     );
+  }
+
+  List<Widget> _resetBox(TicTacToeState customState) {
+    return [
+      const SizedBox(height: 20),
+      Text("請求重新開始的玩家:"),
+      Text(
+        customState.restartRequesters.isEmpty
+            ? "尚無"
+            : customState.restartRequesters.join(', '),
+      ),
+      if (!customState.restartRequesters
+          .contains(FirebaseAuth.instance.currentUser?.uid))
+        ElevatedButton(
+          onPressed: () =>
+              _gameController.sendGameAction('request_restart'),
+          child: Text("重新開始"),
+        ),
+    ];
   }
 
   Future<void> _matchRoom() async {

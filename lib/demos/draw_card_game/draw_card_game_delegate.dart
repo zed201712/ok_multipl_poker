@@ -29,15 +29,6 @@ class DrawCardGameDelegate extends TurnBasedGameDelegate<DrawCardGameState> {
     }
     return currentState;
   }
-  
-  @override
-  String getGameStatus(DrawCardGameState state) {
-     // If all players have drawn a card, the game is finished.
-    if (state.playerCards.values.every((card) => card != null)) {
-      return 'finished';
-    }
-    return 'playing';
-  }
 
   @override
   String? getCurrentPlayer(DrawCardGameState state) {
@@ -53,10 +44,6 @@ class DrawCardGameDelegate extends TurnBasedGameDelegate<DrawCardGameState> {
 
   @override
   String? getWinner(DrawCardGameState state) {
-    if (getGameStatus(state) != 'finished') {
-      return null;
-    }
-
     String? winnerId;
     PlayingCard? winningCard;
 

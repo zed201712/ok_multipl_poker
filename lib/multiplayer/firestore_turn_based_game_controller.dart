@@ -99,7 +99,7 @@ class FirestoreTurnBasedGameController<T> {
           _handleStartGame(request);
         }
       } else if (action == 'game_action') {
-        if (currentState != null && currentState.gameStatus == GameStatus.playing) {
+        if (currentState != null) {
           _handleGameAction(currentState, request);
         }
       }
