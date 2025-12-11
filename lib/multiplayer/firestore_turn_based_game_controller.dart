@@ -234,6 +234,31 @@ class FirestoreTurnBasedGameController<T> {
     }
   }
 
+  void setTurnOrder(List<String> turnOrder) {
+    if (!isCurrentUserManager()) {
+      errorMessageService.showError("Only the manager can set the turn order.");
+      return;
+    }
+    final currentState = _gameStateController.value;
+    if (currentState != null) {
+      final newGameState = currentState.copyWith(turnOrder: turnOrder);
+      _updateRoomWithState(newGameState);
+    }
+  }
+
+  void shuffleTurnOrder() {
+    if (!isCurrentUserManager()) {
+      errorMessageService.showError("Only the manager can shuffle the turn order.");
+      return;
+    }
+    final currentState = _gameStateController.value;
+    final room = _currentRoom;
+    if (currentState != null && room != null) {
+      final shuffledList = List<String>.from(room.participants);
+      setTurnOrder(shuffledList);
+    }
+  }
+
   void dispose() {
     _roomStateSubscription?.cancel();
     _gameStateController.close();
