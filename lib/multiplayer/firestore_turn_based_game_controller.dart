@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/entities/room_request.dart';
 import 'package:ok_multipl_poker/entities/room_state.dart';
@@ -13,27 +15,31 @@ import 'turn_based_game_delegate.dart';
 import 'turn_based_game_state.dart';
 
 class FirestoreTurnBasedGameController<T> {
-  final FirestoreRoomStateController _roomStateController;
   final TurnBasedGameDelegate<T> _delegate;
-  final ErrorMessageService _errorMessageService;
+  final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
+  late final FirestoreRoomStateController roomStateController;
+  final ErrorMessageService errorMessageService = ErrorMessageService();
 
   int _maxPlayers = 0;
 
   final _gameStateController = BehaviorSubject<TurnBasedGameState<T>?>.seeded(null);
   StreamSubscription? _roomStateSubscription;
 
-  FirestoreTurnBasedGameController(
-    this._roomStateController,
-    this._delegate,
-    this._errorMessageService,
-  ) {
-    _roomStateSubscription = _roomStateController.roomStateStream.listen(_onRoomStateChanged);
+  FirestoreTurnBasedGameController({
+    required TurnBasedGameDelegate<T> delegate,
+    required String collectionName,
+  })  : _delegate = delegate {
+    roomStateController = FirestoreRoomStateController(_firebaseFirestore, _firebaseAuth, collectionName);
+
+    _roomStateSubscription = roomStateController.roomStateStream.listen(_onRoomStateChanged);
   }
 
   ValueStream<TurnBasedGameState<T>?> get gameStateStream => _gameStateController.stream;
 
   bool _isCurrentUserTheManager(Room room) {
-    return _roomStateController.currentUserId == room.managerUid;
+    return roomStateController.currentUserId == room.managerUid;
   }
 
   void _onRoomStateChanged(RoomState? roomState) {
@@ -50,7 +56,7 @@ class FirestoreTurnBasedGameController<T> {
         gameState = _parseGameState(room.body);
         _gameStateController.add(gameState);
       } catch (e) {
-        _errorMessageService.showError("Failed to parse game state: $e");
+        errorMessageService.showError("Failed to parse game state: $e");
         _gameStateController.add(null);
       }
     } else {
@@ -62,7 +68,7 @@ class FirestoreTurnBasedGameController<T> {
           customState: initialCustomState,
         );
         _updateRoomWithState(newGameState);
-        return; 
+        return;
       }
       _gameStateController.add(null);
     }
@@ -90,12 +96,12 @@ class FirestoreTurnBasedGameController<T> {
           _handleGameAction(currentState, request);
         }
       }
-      _roomStateController.deleteRequest(roomId: request.roomId, requestId: request.requestId);
+      roomStateController.deleteRequest(roomId: request.roomId, requestId: request.requestId);
     }
   }
 
   void _handleStartGame(RoomRequest? request) {
-    final room = _roomStateController.roomStateStream.value?.room;
+    final room = roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
     List<String> turnOrder = List.from(room.participants);
@@ -110,13 +116,13 @@ class FirestoreTurnBasedGameController<T> {
     );
 
     _updateRoomWithState(newGameState);
-    
+
     if (request == null) {
-        final pendingRequests = _roomStateController.roomStateStream.value?.requests ?? [];
+        final pendingRequests = roomStateController.roomStateStream.value?.requests ?? [];
         final roomId = room.roomId;
         for (final req in pendingRequests) {
             if (req.body['action'] == 'start_game') {
-                _roomStateController.deleteRequest(roomId: roomId, requestId: req.requestId);
+                roomStateController.deleteRequest(roomId: roomId, requestId: req.requestId);
             }
         }
     }
@@ -146,11 +152,11 @@ class FirestoreTurnBasedGameController<T> {
   }
 
   void _updateRoomWithState(TurnBasedGameState<T> gameState) {
-    final room = _roomStateController.roomStateStream.value?.room;
+    final room = roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
     final serializedState = jsonEncode(gameState.toJson(_delegate));
-    _roomStateController.updateRoom(roomId: room.roomId, data: {'body': serializedState});
+    roomStateController.updateRoom(roomId: room.roomId, data: {'body': serializedState});
   }
 
   TurnBasedGameState<T> _parseGameState(String body) {
@@ -161,54 +167,54 @@ class FirestoreTurnBasedGameController<T> {
   Future<String> matchAndJoinRoom({required int maxPlayers}) async {
     _maxPlayers = maxPlayers;
     try {
-      return await _roomStateController.matchRoom(
+      return await roomStateController.matchRoom(
         title: 'Turn Based Game',
         maxPlayers: maxPlayers,
         matchMode: 'turn_based',
         visibility: 'public',
       );
     } catch (e) {
-      _errorMessageService.showError("Failed to match room: $e");
+      errorMessageService.showError("Failed to match room: $e");
       rethrow;
     }
   }
 
   void setRoomId(String roomId) {
-    _roomStateController.setRoomId(roomId);
+    roomStateController.setRoomId(roomId);
   }
 
   Future<void> leaveRoom() async {
-    final roomId = _roomStateController.roomStateStream.value?.room?.roomId;
+    final roomId = roomStateController.roomStateStream.value?.room?.roomId;
     if (roomId != null) {
       try {
-        await _roomStateController.leaveRoom(roomId: roomId);
+        await roomStateController.leaveRoom(roomId: roomId);
       } catch (e) {
-        _errorMessageService.showError("Failed to leave room: $e");
+        errorMessageService.showError("Failed to leave room: $e");
       }
     }
   }
 
   Future<void> startGame() async {
-    final roomId = _roomStateController.roomStateStream.value?.room?.roomId;
+    final roomId = roomStateController.roomStateStream.value?.room?.roomId;
     if (roomId == null) {
-      _errorMessageService.showError("You are not currently in a room");
+      errorMessageService.showError("You are not currently in a room");
       return;
     }
     try {
-      await _roomStateController.sendRequest(roomId: roomId, body: {'action': 'start_game'});
+      await roomStateController.sendRequest(roomId: roomId, body: {'action': 'start_game'});
     } catch (e) {
-      _errorMessageService.showError("Failed to send request: $e");
+      errorMessageService.showError("Failed to send request: $e");
     }
   }
 
   Future<void> sendGameAction(String action, {Map<String, dynamic>? payload}) async {
-    final roomId = _roomStateController.roomStateStream.value?.room?.roomId;
+    final roomId = roomStateController.roomStateStream.value?.room?.roomId;
     if (roomId == null) {
-      _errorMessageService.showError("You are not currently in a room");
+      errorMessageService.showError("You are not currently in a room");
       return;
     }
     try {
-      await _roomStateController.sendRequest(
+      await roomStateController.sendRequest(
         roomId: roomId,
         body: {
           'action': 'game_action',
@@ -217,12 +223,13 @@ class FirestoreTurnBasedGameController<T> {
         },
       );
     } catch (e) {
-      _errorMessageService.showError("Failed to send game action: $e");
+      errorMessageService.showError("Failed to send game action: $e");
     }
   }
 
   void dispose() {
     _roomStateSubscription?.cancel();
     _gameStateController.close();
+    errorMessageService.dispose();
   }
 }

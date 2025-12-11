@@ -17,8 +17,6 @@ class DrawCardGameDemoPage extends StatefulWidget {
 }
 
 class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
-  late final ErrorMessageService _errorMessageService;
-  late final FirestoreRoomStateController _roomStateController;
   late final FirestoreTurnBasedGameController<DrawCardGameState> _gameController;
   String? _roomId;
 
@@ -26,23 +24,16 @@ class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
   void initState() {
     super.initState();
     // In a real app, these would be provided by a dependency injection framework.
-    final firestore = FirebaseFirestore.instance;
-    final auth = FirebaseAuth.instance;
-    _errorMessageService = ErrorMessageService();
 
-    _roomStateController = FirestoreRoomStateController(firestore, auth, 'rooms');
     _gameController = FirestoreTurnBasedGameController(
-      _roomStateController,
-      DrawCardGameDelegate(),
-      _errorMessageService,
+      delegate: DrawCardGameDelegate(),
+      collectionName: 'rooms'
     );
   }
 
   @override
   void dispose() {
     _gameController.dispose();
-    _roomStateController.dispose();
-    _errorMessageService.dispose();
     super.dispose();
   }
 
@@ -73,7 +64,7 @@ class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
               return _buildGameView(gameState);
             },
           ),
-          ErrorOverlayWidget(errorMessageService: _errorMessageService),
+          ErrorOverlayWidget(errorMessageService: _gameController.errorMessageService),
         ],
       ),
     );
@@ -95,8 +86,8 @@ class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
   }
 
   Widget _buildWaitingForGameView() {
-    final roomState = _roomStateController.roomStateStream.value;
-    final isManager = roomState?.room?.managerUid == _roomStateController.currentUserId;
+    final roomState = _gameController.roomStateController.roomStateStream.value;
+    final isManager = roomState?.room?.managerUid == _gameController.roomStateController.currentUserId;
     final participants = roomState?.room?.participants ?? [];
 
     return Center(
@@ -117,7 +108,7 @@ class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
   }
 
   Widget _buildGameView(TurnBasedGameState<DrawCardGameState> gameState) {
-    final myId = _roomStateController.currentUserId;
+    final myId = _gameController.roomStateController.currentUserId;
     final isMyTurn = gameState.currentPlayerId == myId;
 
     return Padding(

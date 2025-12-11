@@ -9,13 +9,15 @@ _____
 參考 @demo_room_widget.dart
 製作一個demo_room_state_widget
 
-@firestore_room_state_controller.dart
-增加一個function updateRoomBody
+檢查有無邏輯錯誤, 並提供改善建議
+_____
+我review了, @firestore_turn_based_game_controller_spec_003.md的修改
+並對下列檔案進行了修改
+@firestore_turn_based_game_controller.dart
+@draw_card_game_demo_page.dart
 
-createRoom的裝置, listen room_request, 接收到新的request, 會將room的body改成 'updated: $ManagerId, requesterId: $request.participantId'
-
-當另一個participant 請求join room, 不再建立collection room/{participant}, 而是participant 用FirestoreRoomStateController sendRequest, body: 'join'
-roomManager會將participantId加入, updateRoom 將participantId加入 room的participants
+對它們進行git diff, 分析相關內容
+整理容易理解的文字內容, 而不是程式碼, 並寫回到firestore_turn_based_game_controller_spec_003.md檔案
 _____
 
 寫提示詞, 用來產生 @ai_dev_spec_template.md 風格的 spec
@@ -33,6 +35,3 @@ _____
 然後洗牌
 
 並且在test新增一個 test的dart檔案, 來測試這個功能, 並新增測試項目
-_____
-產生 @ai_dev_spec_template.md 風格的 spec
-分析 @RoomDemoScreen.dart 的內容, 產生 room_demo_screen_spec.md

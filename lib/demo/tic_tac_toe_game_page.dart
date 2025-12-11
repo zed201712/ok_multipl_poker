@@ -134,8 +134,6 @@ class TicTacToeGamePage extends StatefulWidget {
 
 class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   late final FirestoreTurnBasedGameController<TicTacToeState> _gameController;
-  late final FirestoreRoomStateController _roomStateController;
-  late final ErrorMessageService _errorMessageService;
   bool _isGameMatching = false;
   String _currentRoomId = "";
 
@@ -146,18 +144,11 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
     // --- 核心整合部分 ---
     // 1. 建立您自訂的 Delegate
     final ticTacToeDelegate = TicTacToeDelegate();
-    final firestore = FirebaseFirestore.instance;
-    final auth = FirebaseAuth.instance;
-    _errorMessageService = ErrorMessageService();
-
-    _roomStateController = FirestoreRoomStateController(firestore, auth, 'rooms');
 
     // 2. 將 Delegate 傳入 Controller 的建構子
-    // (假設 _roomStateController 和 _errorMessageService 已經被建立)
     _gameController = FirestoreTurnBasedGameController(
-      _roomStateController, // FirestoreRoomStateController 的實例
-      ticTacToeDelegate, // 您剛建立的遊戲規則 Delegate
-      _errorMessageService, // ErrorMessageService 的實例
+      delegate: ticTacToeDelegate, // 您剛建立的遊戲規則 Delegate
+      collectionName: 'rooms'
     );
 
   }
@@ -261,7 +252,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       return;
     }
 
-    await _roomStateController.leaveRoom(roomId: _currentRoomId);
+    await _gameController.leaveRoom();
 
     if (mounted) {
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
