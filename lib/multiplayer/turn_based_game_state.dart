@@ -1,6 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
-
+import 'dart:convert';
 /// Represents the generic state of a turn-based game.
 ///
 /// @param T The type of the custom game state object, managed by a delegate.
@@ -64,4 +65,37 @@ class TurnBasedGameState<T> {
       'customState': delegate.stateToJson(customState),
     };
   }
+
+  String forPrintJson(TurnBasedGameDelegate<T> delegate) {
+    final data ={
+      'gameStatus': gameStatus.name,
+      'turnOrder': turnOrder,
+      'currentPlayerId': currentPlayerId,
+      'customState': delegate.stateToJson(customState)
+    };
+    final encoder = JsonEncoder.withIndent('  ', (object) {
+      if (object is Timestamp) {
+        return object.toDate().toIso8601String();
+      }
+      return object;
+    });
+    return encoder.convert(data);
+  }
+
+  // void printJson() {
+  //   final data = {
+  //     'rooms': _rooms.map((e) => e.toJson()).toList(),
+  //     'requests': _requests.map((key, value) => MapEntry(key, value.map((e) => e.toJson()).toList())),
+  //     'responses': _responses.map((key, value) => MapEntry(key, value.map((e) => e.toJson()).toList())),
+  //   };
+  //
+  //   final encoder = JsonEncoder.withIndent('  ', (object) {
+  //     if (object is Timestamp) {
+  //       return object.toDate().toIso8601String();
+  //     }
+  //     return object;
+  //   });
+  //
+  //   print(encoder.convert(data));
+  // }
 }
