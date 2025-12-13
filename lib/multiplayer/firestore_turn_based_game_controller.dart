@@ -261,7 +261,7 @@ class FirestoreTurnBasedGameController<T> {
     final currentState = _gameStateController.value;
     final room = _currentRoom;
     if (currentState != null && room != null) {
-      final shuffledList = List<String>.from(room.participants);
+      final shuffledList = List<String>.from(room.participants)..shuffle();
       await setTurnOrder(shuffledList);
     }
   }
