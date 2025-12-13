@@ -20,7 +20,7 @@ void main() {
     late FirestoreTurnBasedGameController<TicTacToeState> gameControllerP2;
 
     setUp(() {
-      print("setUp\n____________");
+      print("____________\nsetUp");
       store = FakeFirebaseFirestore();
       authP1 = MockFirebaseAuth();
       authP2 = MockFirebaseAuth();
@@ -40,38 +40,19 @@ void main() {
       );
     });
 
-    Future<void> expectWithCallback(
-        Object matcher,
-        Matcher expectation,
-        void Function(Object error, StackTrace st) onFail,
-        ) async {
-      try {
-        await expectLater(matcher, expectation);
-      } catch (e, st) {
-        onFail(e, st);
-        rethrow;
-      }
-    }
-
-    Future<void> expectWithP1Json(
-        Object matcher,
-        Matcher expectation,) async {
-      expectWithCallback(matcher, expectation, (e, st) {
-        //print(gameControllerP1.gameStateStream.value?.forPrintJson(delegate) ?? 'nil');
-      });
+    Future<void> waitStreamPredicate(StreamPredicate<TurnBasedGameState<TicTacToeState>?> streamPredicate) async {
+      final start = DateTime.now();
+      await StreamAsserter<TurnBasedGameState<TicTacToeState>?>(
+        gameControllerP1.gameStateStream,
+        [
+          streamPredicate,
+        ],
+      ).expectWait(timeout: Duration(seconds: 1));
+      print("wait ${streamPredicate.reason}, cost time: ${DateTime.now().difference(start).inMilliseconds} ms");
     }
 
     test('full game flow: match, start, play, and leave', () async {
       final start = DateTime.now();
-
-      // gameControllerP1.gameStateStream.listen((state) {
-      //   // print(state?.forPrintJson(delegate) ?? 'nil');
-      //   //
-      //   final json = state?.toJson(delegate);
-      //   final game = json?["customState"];
-      //   print(game?['board'] ?? "nil");
-      //   print(DateTime.now().difference(start).inMilliseconds);
-      // });
 
       // 驗證玩家一的遊戲狀態流
       final p1Expectation = StreamAsserter<TurnBasedGameState<TicTacToeState>?>(
@@ -136,65 +117,73 @@ void main() {
       gameControllerP2.dispose();
     });
 
-    // TODO race condition
-    // test('game restart flow', () async {
-    //   // 先完成一個遊戲
-    //   await gameControllerP1.matchAndJoinRoom(maxPlayers: 2, shuffleTurnOrder: false);
-    //   await gameControllerP2.matchAndJoinRoom(maxPlayers: 2);
-    //
-    //   final start = DateTime.now();
-    //
-    //   // 驗證玩家一的遊戲狀態流
-    //   final p1Expectation = StreamAsserter<TurnBasedGameState<TicTacToeState>?>(
-    //     gameControllerP1.gameStateStream,
-    //     [
-    //       // 初始 null 狀態
-    //       StreamPredicate(predicate: (val) => val == null, reason: 'Should be null'),
-    //       // 成功加入房間，等待其他玩家
-    //       StreamPredicate(predicate: (val) => val?.gameStatus == GameStatus.matching, reason: 'matching'),
-    //       // 驗證棋盤
-    //       StreamPredicate(predicate: (val) => val?.customState.board[0] == 'X', reason: 'board[0]'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board[1] == 'O', reason: 'board[1]'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board[2] == 'X', reason: 'board[2]'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board[3] == 'O', reason: 'board[3]'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board[4] == 'X', reason: 'board[4]'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board[5] == 'O', reason: 'board[5]'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board[6] == 'X', reason: 'board[6]'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board[6] == 'X', reason: 'board[6]'),
-    //       StreamPredicate(predicate: (val) => val?.gameStatus == GameStatus.finished &&
-    //           val?.customState.winner != null, reason: 'winner'),
-    //       StreamPredicate(predicate: (val) => val?.customState.board == List.filled(9, ''), reason: 'reset board'),
-    //     ],
-    //     onData: (data) {
-    //
-    //       print(data?.customState.restartRequesters ?? 'nil');
-    //     }
-    //   );
-    //
-    //   // X O X
-    //   // O X O
-    //   // X
-    //   await gameControllerP1.sendGameAction('place_mark', payload: {'index': 0}); // X
-    //   await gameControllerP2.sendGameAction('place_mark', payload: {'index': 1}); // O
-    //   await gameControllerP1.sendGameAction('place_mark', payload: {'index': 2}); // X
-    //   await gameControllerP2.sendGameAction('place_mark', payload: {'index': 3}); // O
-    //   await gameControllerP1.sendGameAction('place_mark', payload: {'index': 4}); // X
-    //   await gameControllerP2.sendGameAction('place_mark', payload: {'index': 5}); // O
-    //   await gameControllerP1.sendGameAction('place_mark', payload: {'index': 6}); // X wins
-    //
-    //   // 1. 玩家二請求重置
-    //   await gameControllerP2.sendGameAction('request_restart');
-    //   // 2. 玩家一請求重置
-    //   await gameControllerP1.sendGameAction('request_restart');
-    //
-    //   final p1Assert = await p1Expectation.expectWait(timeout: Duration(seconds: 1));
-    //   print("cost time: ${DateTime.now().difference(start).inMilliseconds}");
-    //   print("p1 PendingReasons: ${p1Expectation.getPendingReasons()}");
-    //   expect(p1Assert, isTrue);
-    //
-    //   gameControllerP1.dispose();
-    //   gameControllerP2.dispose();
-    // });
+    test('game restart flow', () async {
+      // 先完成一個遊戲
+      await gameControllerP1.matchAndJoinRoom(maxPlayers: 2, shuffleTurnOrder: false);
+      await gameControllerP2.matchAndJoinRoom(maxPlayers: 2);
+
+      final start = DateTime.now();
+
+      // 驗證玩家一的遊戲狀態流
+      final p1Expectation = StreamAsserter<TurnBasedGameState<TicTacToeState>?>(
+        gameControllerP1.gameStateStream,
+        [
+          // 初始 null 狀態
+          StreamPredicate(predicate: (val) => val == null, reason: 'Should be null'),
+          // 成功加入房間，等待其他玩家
+          StreamPredicate(predicate: (val) => val?.gameStatus == GameStatus.matching, reason: 'matching'),
+          // 驗證棋盤
+          StreamPredicate(predicate: (val) => val?.customState.board[0] == 'X', reason: 'board[0]'),
+          StreamPredicate(predicate: (val) => val?.customState.board[1] == 'O', reason: 'board[1]'),
+          StreamPredicate(predicate: (val) => val?.customState.board[2] == 'X', reason: 'board[2]'),
+          StreamPredicate(predicate: (val) => val?.customState.board[3] == 'O', reason: 'board[3]'),
+          StreamPredicate(predicate: (val) => val?.customState.board[4] == 'X', reason: 'board[4]'),
+          StreamPredicate(predicate: (val) => val?.customState.board[5] == 'O', reason: 'board[5]'),
+          StreamPredicate(predicate: (val) => val?.customState.board[6] == 'X', reason: 'board[6]'),
+          StreamPredicate(predicate: (val) => val?.customState.board[6] == 'X', reason: 'board[6]'),
+          StreamPredicate(predicate: (val) => val?.gameStatus == GameStatus.finished &&
+              val?.customState.winner != null, reason: 'winner'),
+          StreamPredicate(predicate: (val) => equals(List.filled(9, "")).matches(val?.customState.board, {}), reason: 'reset board'),
+        ],
+        onData: (data) {
+          //print(data?.forPrintJson(delegate) ?? 'nil');
+          //print(data?.customState.restartRequesters ?? 'nil');
+        }
+      );
+
+      // X O X
+      // O X O
+      // X
+      await gameControllerP1.sendGameAction('place_mark', payload: {'index': 0}); // X
+      await gameControllerP2.sendGameAction('place_mark', payload: {'index': 1}); // O
+      await gameControllerP1.sendGameAction('place_mark', payload: {'index': 2}); // X
+      await gameControllerP2.sendGameAction('place_mark', payload: {'index': 3}); // O
+      await gameControllerP1.sendGameAction('place_mark', payload: {'index': 4}); // X
+      await gameControllerP2.sendGameAction('place_mark', payload: {'index': 5}); // O
+      await gameControllerP1.sendGameAction('place_mark', payload: {'index': 6}); // X wins
+
+      await waitStreamPredicate(
+          StreamPredicate(predicate: (val) => val?.gameStatus == GameStatus.finished &&
+              val?.customState.winner != null, reason: 'winner')
+      );
+
+      // 1. 玩家二請求重置
+      await gameControllerP2.sendGameAction('request_restart');
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => (val?.customState.restartRequesters.length ?? 0) > 0, reason: 'reset board'),
+      );
+
+      // 2. 玩家一請求重置
+      await gameControllerP1.sendGameAction('request_restart');
+
+      final p1Assert = await p1Expectation.expectWait(timeout: Duration(seconds: 1));
+      print("cost time: ${DateTime.now().difference(start).inMilliseconds}");
+      print("p1 PendingReasons: ${p1Expectation.getPendingReasons()}");
+      expect(p1Assert, isTrue);
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
 
   });
 }
