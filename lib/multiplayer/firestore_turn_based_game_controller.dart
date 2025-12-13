@@ -22,22 +22,19 @@ class FirestoreTurnBasedGameController<T> {
 
   Room? _currentRoom;
   int _maxPlayers = 0;
+  bool _shuffleTurnOrderFlag = true;
 
   final _gameStateController = BehaviorSubject<TurnBasedGameState<T>?>.seeded(null);
   StreamSubscription? _roomStateSubscription;
 
   FirestoreTurnBasedGameController({
+    required FirebaseAuth auth,
+    required FirebaseFirestore store,
     required TurnBasedGameDelegate<T> delegate,
     required String collectionName,
-    FirestoreRoomStateController? controller,
   }) : _delegate = delegate {
-    if (controller != null) {
-      roomStateController = controller;
-    } else {
-      final FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
-      final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
-      roomStateController = FirestoreRoomStateController(firebaseFirestore, firebaseAuth, collectionName);
-    }
+      roomStateController = FirestoreRoomStateController(store, auth, collectionName);
+
     _roomStateSubscription = roomStateController.roomStateStream.listen(_onRoomStateChanged);
   }
 
@@ -116,7 +113,9 @@ class FirestoreTurnBasedGameController<T> {
     if (room == null) return;
 
     List<String> turnOrder = List.from(room.participants);
-    turnOrder.shuffle();
+    if (_shuffleTurnOrderFlag) {
+      turnOrder.shuffle();
+    }
     final initialCustomState = _delegate.initializeGame(turnOrder);
     final newGameState = TurnBasedGameState(
       gameStatus: GameStatus.playing,
@@ -162,12 +161,12 @@ class FirestoreTurnBasedGameController<T> {
     _updateRoomWithState(newGameState);
   }
 
-  void _updateRoomWithState(TurnBasedGameState<T> gameState) {
+  Future<void> _updateRoomWithState(TurnBasedGameState<T> gameState) async {
     final room = roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
     final serializedState = jsonEncode(gameState.toJson(_delegate));
-    roomStateController.updateRoom(roomId: room.roomId, data: {'body': serializedState});
+    await roomStateController.updateRoom(roomId: room.roomId, data: {'body': serializedState});
   }
 
   TurnBasedGameState<T> _parseGameState(String body) {
@@ -175,8 +174,12 @@ class FirestoreTurnBasedGameController<T> {
     return TurnBasedGameState.fromJson(decodedBody, _delegate);
   }
 
-  Future<String> matchAndJoinRoom({required int maxPlayers}) async {
+  Future<String> matchAndJoinRoom({
+    required int maxPlayers,
+    bool shuffleTurnOrder = true
+  }) async {
     _maxPlayers = maxPlayers;
+    _shuffleTurnOrderFlag = shuffleTurnOrder;
     try {
       return await roomStateController.matchRoom(
         title: 'Turn Based Game',
@@ -238,7 +241,7 @@ class FirestoreTurnBasedGameController<T> {
     }
   }
 
-  void setTurnOrder(List<String> turnOrder) {
+  Future<void> setTurnOrder(List<String> turnOrder) async {
     if (!isCurrentUserManager()) {
       errorMessageService.showError("Only the manager can set the turn order.");
       return;
@@ -250,7 +253,7 @@ class FirestoreTurnBasedGameController<T> {
     }
   }
 
-  void shuffleTurnOrder() {
+  Future<void> shuffleTurnOrder() async {
     if (!isCurrentUserManager()) {
       errorMessageService.showError("Only the manager can shuffle the turn order.");
       return;
@@ -259,7 +262,7 @@ class FirestoreTurnBasedGameController<T> {
     final room = _currentRoom;
     if (currentState != null && room != null) {
       final shuffledList = List<String>.from(room.participants);
-      setTurnOrder(shuffledList);
+      await setTurnOrder(shuffledList);
     }
   }
 

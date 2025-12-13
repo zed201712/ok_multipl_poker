@@ -44,9 +44,7 @@ class FirestoreRoomStateController {
   // --- Public Methods ---
 
   Future<void> _initializeUser() async {
-    User? user = _auth.currentUser;
-    user ??= (await _auth.signInAnonymously()).user;
-    _userIdController.add(user?.uid);
+    _signInAnonymously();
     _listenToRooms();
 
     // Add a periodic check to ensure manager duties are performed reliably.
@@ -55,6 +53,12 @@ class FirestoreRoomStateController {
         _performManagerDuties(_roomsController.value);
       }
     });
+  }
+
+  void _signInAnonymously() async {
+    User? user = _auth.currentUser;
+    user ??= (await _auth.signInAnonymously()).user;
+    _userIdController.add(user?.uid);
   }
 
   void setRoomId(String? roomId) {
@@ -176,8 +180,8 @@ class FirestoreRoomStateController {
     required String matchMode,
     required String visibility,
   }) async {
-    final userId = currentUserId;
-    if (userId == null) {
+    _signInAnonymously();
+    if (currentUserId == null) {
       throw Exception('User not authenticated.');
     }
 

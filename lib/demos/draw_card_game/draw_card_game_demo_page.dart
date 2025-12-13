@@ -26,6 +26,8 @@ class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
     // In a real app, these would be provided by a dependency injection framework.
 
     _gameController = FirestoreTurnBasedGameController(
+      auth: FirebaseAuth.instance,
+      store: FirebaseFirestore.instance,
       delegate: DrawCardGameDelegate(),
       collectionName: 'rooms'
     );
