@@ -1,11 +1,91 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
+import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
-import 'package:ok_multipl_poker/multiplayer/mock_firestore_room_state_controller.dart';
+import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 
-import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
+class TicTacToeGameAI {
+  late final FirestoreTurnBasedGameController<TicTacToeState> _gameController;
+  late final StreamSubscription _gameStateSubscription;
+  late final StreamSubscription _roomsSubscription;
+  final FirebaseFirestore _firestore;
+  final MockFirebaseAuth _auth =
+      MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'ai-player'));
+  bool _isRoomJoined = false;
 
+  TicTacToeGameAI(this._firestore) {
+    _gameController = FirestoreTurnBasedGameController(
+      store: _firestore,
+      auth: _auth,
+      delegate: TicTacToeDelegate(),
+      collectionName: 'rooms',
+    );
+
+    _gameStateSubscription = _gameController.gameStateStream.listen(_onGameStateUpdate);
+    _roomsSubscription =
+        _firestore.collection('rooms').snapshots().listen(_onRoomsSnapshot);
+  }
+
+  void _onRoomsSnapshot(QuerySnapshot snapshot) {
+    if (_isRoomJoined) return; // Already in a room
+
+    for (final doc in snapshot.docs) {
+      final roomData = doc.data() as Map<String, dynamic>;
+      final room = Room.fromJson(roomData);
+
+      if (room.participants.length < room.maxPlayers &&
+          !room.participants.contains(_auth.currentUser!.uid)) {
+        _gameController.matchAndJoinRoom(maxPlayers: 2);
+        _isRoomJoined = true;
+        break; // Join the first one found
+      }
+    }
+  }
+
+  void _onGameStateUpdate(TurnBasedGameState<TicTacToeState>? gameState) {
+    if (gameState == null) return;
+
+    // AI's turn to play
+    if (gameState.gameStatus == GameStatus.playing &&
+        gameState.currentPlayerId == _auth.currentUser?.uid) {
+      final board = gameState.customState.board;
+      final index = board.indexWhere((cell) => cell.isEmpty);
+      if (index != -1) {
+        // Add a slight delay to simulate thinking
+        Future.delayed(const Duration(milliseconds: 500), () {
+          //if (!_gameController.gameStateStream.isClosed) {
+            _gameController.sendGameAction('place_mark', payload: {'index': index});
+          //}
+        });
+      }
+    }
+
+    // Game is finished, request a restart
+    if (gameState.gameStatus == GameStatus.finished) {
+      if (!gameState.customState.restartRequesters
+          .contains(_auth.currentUser?.uid)) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          //if (!_gameController.gameStateStream.isClosed) {
+            _gameController.sendGameAction('request_restart');
+          //}
+        });
+      }
+    }
+  }
+
+  void dispose() {
+    _gameStateSubscription.cancel();
+    _roomsSubscription.cancel();
+    _gameController.dispose();
+  }
+}
 
 // 1. 定義遊戲狀態物件
 class TicTacToeState {
@@ -104,7 +184,7 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
       String? winner = _checkWinner(newBoard);
 
       return TicTacToeState(
-        board: newBoard, 
+        board: newBoard,
         winner: winner,
         restartRequesters: currentState.restartRequesters,
         playerIds: currentState.playerIds,
@@ -122,7 +202,7 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
     // 計算 'X' 和 'O' 的數量來決定輪到誰
     int xCount = state.board.where((m) => m == 'X').length;
     int oCount = state.board.where((m) => m == 'O').length;
-    
+
     return xCount > oCount ? state.playerIds[1] : state.playerIds[0];
   }
 
@@ -135,9 +215,9 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
   // (輔助方法，檢查贏家)
   String? _checkWinner(List<String> board) {
     const List<List<int>> winningLines = [
-      [0, 1, 2], [3, 4, 5], [6, 7, 8], // 橫排
-      [0, 3, 6], [1, 4, 7], [2, 5, 8], // 豎排
-      [0, 4, 8], [2, 4, 6]             // 對角線
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+      [0, 4, 8], [2, 4, 6] // diagonals
     ];
 
     for (var line in winningLines) {
@@ -155,8 +235,6 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
   }
 }
 
-
-// 3
 class TicTacToeGamePage extends StatefulWidget {
   const TicTacToeGamePage({super.key});
 
@@ -165,20 +243,52 @@ class TicTacToeGamePage extends StatefulWidget {
 }
 
 class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
-  late final FirestoreTurnBasedGameController<TicTacToeState> _gameController;
+  late FirestoreTurnBasedGameController<TicTacToeState> _gameController;
+  TicTacToeGameAI? _aiPlayer;
+  FakeFirebaseFirestore? _fakeFirestore;
+  bool _isAiMode = false;
   bool _isGameMatching = false;
   String _currentRoomId = "";
 
   @override
   void initState() {
     super.initState();
+    _setupControllers();
+  }
 
+  void _setupControllers() {
     final ticTacToeDelegate = TicTacToeDelegate();
-    _gameController = FirestoreTurnBasedGameController(
-      delegate: ticTacToeDelegate,
-      collectionName: 'rooms'
-      //collectionName: 'rooms', controller: MockFirestoreRoomStateController()
-    );
+    if (_isAiMode) {
+      _fakeFirestore = FakeFirebaseFirestore();
+      _gameController = FirestoreTurnBasedGameController(
+        store: _fakeFirestore!,
+        auth: MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'human-player')),
+        delegate: ticTacToeDelegate,
+        collectionName: 'rooms',
+      );
+      _aiPlayer = TicTacToeGameAI(_fakeFirestore!);
+    } else {
+      _gameController = FirestoreTurnBasedGameController(
+        store: FirebaseFirestore.instance,
+        auth: FirebaseAuth.instance,
+        delegate: ticTacToeDelegate,
+        collectionName: 'rooms',
+      );
+    }
+  }
+
+  void _onAiModeChanged(bool value) {
+    setState(() {
+      _gameController.dispose();
+      _aiPlayer?.dispose();
+      _aiPlayer = null;
+
+      _isAiMode = value;
+      _setupControllers();
+
+      _isGameMatching = false;
+      _currentRoomId = "";
+    });
   }
 
   @override
@@ -187,28 +297,31 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       stream: _gameController.gameStateStream,
       builder: (context, snapshot) {
         final gameState = snapshot.data;
-        
-        if (gameState == null || gameState.gameStatus != GameStatus.playing || !_isGameMatching) {
+
+        if (gameState == null ||
+            gameState.gameStatus != GameStatus.playing ||
+            !_isGameMatching) {
           String message = "歡迎來到井字棋！";
           if (_isGameMatching) {
             message = "等待玩家加入...";
           }
-          if (gameState?.gameStatus == GameStatus.finished && gameState?.customState.winner != null) {
-              final winner = gameState!.customState.winner;
-              message = winner == 'DRAW' ? '平手！' : '贏家是 $winner！';
+          if (gameState?.gameStatus == GameStatus.finished &&
+              gameState?.customState.winner != null) {
+            final winner = gameState!.customState.winner;
+            message = winner == 'DRAW' ? '平手！' : '贏家是 $winner！';
           }
-          
+
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              //_aiModeSwitchWidget(),
               Center(child: Text(message)),
               ElevatedButton(
                 onPressed: () => _isGameMatching ? _leaveRoom() : _matchRoom(),
                 child: Text(_isGameMatching ? "離開房間" : "配對"),
               ),
-
-              if (gameState != null && gameState.gameStatus == GameStatus.finished) ..._resetBox(
-                  gameState.customState),
+              if (gameState != null && gameState.gameStatus == GameStatus.finished)
+                ..._resetBox(gameState.customState),
             ],
           );
         }
@@ -216,17 +329,19 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
         final customState = gameState.customState;
         final isMyTurn = gameState.currentPlayerId == _gameController.roomStateController.currentUserId;
         final winner = customState.winner;
-        
+        final playerMark = customState.playerIds.indexOf(_gameController.roomStateController.currentUserId ?? '') == 0 ? 'X' : 'O';
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (winner != null)
-              Text(winner == 'DRAW' ? '遊戲結束: 平手' : "贏家是: $winner", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),)
+              Text(
+                winner == 'DRAW' ? '遊戲結束: 平手' : "贏家是: $winner",
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              )
             else
-              Text("輪到: ${isMyTurn ? '你' : '對手'}", style: const TextStyle(fontSize: 20)),
-            
+              Text("輪到: ${isMyTurn ? '你 ($playerMark)' : '對手'}", style: const TextStyle(fontSize: 20)),
             const SizedBox(height: 20),
-
             AbsorbPointer(
               absorbing: !isMyTurn || winner != null,
               child: Center(
@@ -241,10 +356,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
                     itemBuilder: (context, i) {
                       return GestureDetector(
                         onTap: () {
-                          _gameController.sendGameAction(
-                              'place_mark',
-                              payload: {'index': i}
-                          );
+                          _gameController.sendGameAction('place_mark', payload: {'index': i});
                         },
                         child: Container(
                           decoration: BoxDecoration(
@@ -263,9 +375,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             if (_gameController.isCurrentUserManager() && gameState.gameStatus != GameStatus.playing)
               ElevatedButton(
                 onPressed: () => _gameController.startGame(),
@@ -273,11 +383,24 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
               ),
             ElevatedButton(
               onPressed: () => _leaveRoom(),
-              child: Text("離開房間"),
+              child: const Text("離開房間"),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _aiModeSwitchWidget() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("與 AI 對戰"),
+        Switch(
+          value: _isAiMode,
+          onChanged: _isGameMatching ? null : _onAiModeChanged,
+        ),
+      ],
     );
   }
 
@@ -286,16 +409,13 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       const SizedBox(height: 20),
       Text("請求重新開始的玩家:"),
       Text(
-        customState.restartRequesters.isEmpty
-            ? "尚無"
-            : customState.restartRequesters.join(', '),
+        customState.restartRequesters.isEmpty ? "尚無" : customState.restartRequesters.join(', '),
       ),
       if (!customState.restartRequesters
           .contains(_gameController.roomStateController.currentUserId))
         ElevatedButton(
-          onPressed: () =>
-              _gameController.sendGameAction('request_restart'),
-          child: Text("重新開始"),
+          onPressed: () => _gameController.sendGameAction('request_restart'),
+          child: const Text("重新開始"),
         ),
     ];
   }
@@ -328,7 +448,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
 
   Future<void> _leaveRoom() async {
     if (_currentRoomId.isEmpty) return;
-    
+
     await _gameController.leaveRoom();
 
     if (mounted) {
@@ -339,6 +459,9 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       setState(() {
         _currentRoomId = "";
         _isGameMatching = false;
+        if (_isAiMode) {
+          _onAiModeChanged(true);
+        }
       });
     }
   }
@@ -346,6 +469,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   @override
   void dispose() {
     _gameController.dispose();
+    _aiPlayer?.dispose();
     super.dispose();
   }
 }

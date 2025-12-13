@@ -267,6 +267,7 @@ class FirestoreTurnBasedGameController<T> {
   }
 
   void dispose() {
+    roomStateController.dispose();
     _roomStateSubscription?.cancel();
     _gameStateController.close();
     errorMessageService.dispose();
