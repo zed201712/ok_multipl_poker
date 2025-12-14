@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../game_internals/big_two_board_state.dart';
-import './player_hand_widget.dart';
 import './playing_area_widget.dart';
 import '../style/my_button.dart';
+import './selectable_player_hand_widget.dart';
 
 /// A widget that displays the main game board for a 4-player Big Two game.
 ///
@@ -27,6 +27,26 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     const String player2Name = 'Player 2';
     const String player3Name = 'Player 3';
     const String player4Name = 'Player 4';
+
+    // The types of hands that can be played, based on the spec.
+    const handTypes = ['Single', 'Pair', 'Full House', 'Straight', 'Straight Flush'];
+    final handTypeButtons = handTypes
+        .map((type) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: OutlinedButton(
+                onPressed: () {
+                  // TODO: Handle hand type selection logic.
+                  // This might filter the player's hand or set a mode.
+                },
+                style: OutlinedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(type),
+              ),
+            ))
+        .toList();
 
     return Scaffold(
       body: Stack(
@@ -80,15 +100,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Row of buttons to select the hand type.
-                  _buildHandTypeSelector(),
-                  const SizedBox(height: 10),
-                  // The local player's interactive hand.
-                  const PlayerHandWidget(/* cards: state.localPlayer.hand */),
-                ],
+              child: SelectablePlayerHandWidget(
+                buttonWidgets: handTypeButtons,
               ),
             ),
           ),
@@ -108,33 +121,6 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           ),
         ],
       ),
-    );
-  }
-
-  /// Builds a row of buttons for selecting the current hand combination type.
-  Widget _buildHandTypeSelector() {
-    // The types of hands that can be played, based on the spec.
-    const handTypes = ['Single', 'Pair', 'Full House', 'Straight', 'Straight Flush'];
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: handTypes
-          .map((type) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: OutlinedButton(
-                  onPressed: () {
-                    // TODO: Handle hand type selection logic.
-                    // This might filter the player's hand or set a mode.
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(type),
-                ),
-              ))
-          .toList(),
     );
   }
 }

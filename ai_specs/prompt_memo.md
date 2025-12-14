@@ -1,9 +1,12 @@
 根據 @firestore_message_controller_spec.md 生成程式碼
 _____
 
-根據 @firestore_room_state_controller_spec.md 寫一個spec
+根據 @firestore_room_state_controller_spec.md 寫1個spec
 | **任務 ID (Task ID)** | `FEAT-DEMO-ROOM-STATE-WIDGET-001` |
 | **創建日期 (Date)** | `2025/12/05` |
+
+狀態管理, 使用Provider
+遵循 `effective_dart` 程式碼風格
 
 目的:
 參考 @demo_room_widget.dart
