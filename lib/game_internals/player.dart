@@ -9,19 +9,9 @@ class Player extends ChangeNotifier {
     maxCards,
     (index) => PlayingCard.random(),
   );
-  final List<PlayingCard> selectedCards = [];
 
   void removeCard(PlayingCard card) {
     hand.remove(card);
-    notifyListeners();
-  }
-
-  void toggleCardSelection(PlayingCard card) {
-    if (selectedCards.contains(card)) {
-      selectedCards.remove(card);
-    } else {
-      selectedCards.add(card);
-    }
     notifyListeners();
   }
 }

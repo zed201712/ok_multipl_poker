@@ -1,47 +1,52 @@
 import 'package:flutter/foundation.dart';
+import 'package:ok_multipl_poker/game_internals/card_board_state.dart';
 
 import 'card_player.dart';
-import 'playing_area.dart';
 import 'playing_card.dart';
 
 /// A class that holds the state of a Big Two game board.
 ///
 /// This includes the state of the local player, other players, and the
 /// central playing area.
-class BigTwoBoardState {
+class BigTwoBoardState implements CardBoardState {
   /// The total number of players in the game.
   final int playerCount;
 
+  final centerAreaIndex;
+
+  @override
+  final localPlayerIndex;
+
+  @override
+  // TODO: implement onWin
+  VoidCallback get onWin => throw UnimplementedError();
+
   /// The state of the player at the bottom of the screen (the local player).
-  final CardPlayer player;
+  @override
+  CardPlayer get player => allPlayers[localPlayerIndex];
+
+  CardPlayer get centerPlayingArea => allPlayers[centerAreaIndex];
 
   /// The states of the other players in the game.
-  final List<CardPlayer> otherPlayers;
+  @override
+  final List<CardPlayer> allPlayers;
 
-  /// The state of the central area where cards are played.
-  final PlayingArea centerPlayingArea = PlayingArea();
-
-  BigTwoBoardState({this.playerCount = 4})
-      : player = CardPlayer(),
-        otherPlayers =
-        List.generate(playerCount - 1, (_) => CardPlayer(), growable: false);
+  BigTwoBoardState({required this.playerCount, required this.allPlayers, required this.localPlayerIndex})
+      : centerAreaIndex = playerCount;
 
   /// Resets the game to its initial state, dealing new cards to all players.
   void restartGame() {
     final deck = PlayingCard.createDeck();
 
     // Clear all hands and the playing area.
-    player.clearHand();
-    for (final p in otherPlayers) {
+    for (final p in allPlayers) {
       p.clearHand();
     }
-    centerPlayingArea.replaceWith([]);
 
     // Deal cards.
-    final allPlayers = [player, ...otherPlayers];
-    final cardsPerPlayer = deck.length ~/ allPlayers.length;
+    final cardsPerPlayer = deck.length ~/ playerCount;
 
-    for (int i = 0; i < allPlayers.length; i++) {
+    for (int i = 0; i < playerCount; i++) {
       final p = allPlayers[i];
       final startIndex = i * cardsPerPlayer;
       final endIndex = (i + 1) * cardsPerPlayer;
@@ -49,18 +54,18 @@ class BigTwoBoardState {
     }
 
     // Add any remaining cards to the center area.
-    final remainingCards = deck.length % allPlayers.length;
+    final remainingCards = deck.length % playerCount;
     if (remainingCards > 0) {
-      centerPlayingArea.replaceWith(centerPlayingArea.cards + deck.sublist(deck.length - remainingCards));
+      centerPlayingArea.replaceWith(deck.sublist(deck.length - remainingCards));
     }
 
     player.addListener(_handlePlayerChange);
   }
 
   /// 釋放資源。
+  @override
   void dispose() {
     player.removeListener(_handlePlayerChange);
-    centerPlayingArea.dispose();
   }
 
   /// 處理玩家狀態的變更。

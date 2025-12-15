@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../game_internals/big_two_board_state.dart';
@@ -48,13 +49,18 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             ))
         .toList();
 
+    final edgeSize = 50.0;
     return Scaffold(
       body: Stack(
         children: [
           // 1. Central playing area for cards that have been played.
-          Align(
-            alignment: Alignment.center,
-            child: PlayingAreaWidget(boardState.centerPlayingArea),
+          Positioned.fromRelativeRect(
+            rect: RelativeRect.fromLTRB(edgeSize, edgeSize, edgeSize, edgeSize),
+            child:
+            Align(
+              alignment: Alignment.center,
+              child: ShowOnlyCardAreaWidget(cardPlayer: boardState.centerPlayingArea),
+            ),
           ),
 
           // 2. Opponent players' hands (top, left, right).

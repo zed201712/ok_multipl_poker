@@ -10,6 +10,7 @@ import '../audio/audio_controller.dart';
 import '../audio/sounds.dart';
 import '../game_internals/big_two_board_state.dart';
 import '../game_internals/board_state.dart';
+import '../game_internals/card_player.dart';
 import '../game_internals/score.dart';
 import '../multiplayer/firestore_controller.dart';
 import '../style/confetti.dart';
@@ -120,7 +121,12 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     _startOfPlay = DateTime.now();
 
     _boardState = BoardState(onWin: _playerWon);
-    _bigTwoBoardState = BigTwoBoardState();
+    // TODO: BigTwoBoardState
+    _bigTwoBoardState = BigTwoBoardState(
+        playerCount: 4,
+        allPlayers: List.generate(5, (_) => CardPlayer(), growable: false),
+        localPlayerIndex: 0
+    );
     _bigTwoBoardState.restartGame();
 
     final firestore = context.read<FirebaseFirestore?>();

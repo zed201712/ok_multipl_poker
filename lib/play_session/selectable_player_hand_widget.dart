@@ -2,8 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../game_internals/board_state.dart';
-import '../game_internals/player.dart';
+import '../game_internals/big_two_board_state.dart';
 import 'playing_card_widget.dart';
 
 /// A widget that displays a player's hand and allows for card selection.
@@ -19,7 +18,7 @@ class SelectablePlayerHandWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final boardState = context.watch<BoardState>();
+    final boardState = context.watch<BigTwoBoardState>();
     final player = boardState.player;
 
     return Column(
@@ -51,7 +50,7 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                       },
                       child: Transform.translate(
                         offset: Offset(0, isSelected ? -10.0 : 0),
-                        child: PlayingCardWidget(card, player: player),
+                        child: PlayingCardWidget(card),
                       ),
                     );
                   }).toList(),
