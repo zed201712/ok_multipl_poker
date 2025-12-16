@@ -32,6 +32,8 @@ _____
 分析下列檔案相關內容
 整理容易理解的文字內容, 而不是程式碼
 
+風格: 遵循 `effective_dart` 程式碼風格，並為新的類別和公共方法添加 DartDoc 註解。
+
 @tic_tac_toe_game_page.dart
 _____
 
