@@ -9,6 +9,9 @@ import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/services/error_message_service.dart';
 import 'package:ok_multipl_poker/widgets/error_overlay_widget.dart';
 
+import '../../settings/settings.dart';
+import 'package:provider/provider.dart';
+
 class DrawCardGameDemoPage extends StatefulWidget {
   const DrawCardGameDemoPage({super.key});
 
@@ -25,11 +28,13 @@ class _DrawCardGameDemoPageState extends State<DrawCardGameDemoPage> {
     super.initState();
     // In a real app, these would be provided by a dependency injection framework.
 
+    final settingsController = context.read<SettingsController>();
     _gameController = FirestoreTurnBasedGameController(
       auth: FirebaseAuth.instance,
       store: FirebaseFirestore.instance,
       delegate: DrawCardGameDelegate(),
-      collectionName: 'rooms'
+      collectionName: 'rooms',
+      settingsController: settingsController,
     );
   }
 

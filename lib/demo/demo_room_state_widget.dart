@@ -9,6 +9,9 @@ import 'package:ok_multipl_poker/multiplayer/firestore_room_state_controller.dar
 import '../entities/room.dart';
 import '../entities/room_request.dart';
 
+import '../settings/settings.dart';
+import 'package:provider/provider.dart';
+
 class DemoRoomStateWidget extends StatefulWidget {
   const DemoRoomStateWidget({super.key});
 
@@ -34,8 +37,13 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
   @override
   void initState() {
     super.initState();
+    final settingsController = context.read<SettingsController>();
     _roomController = FirestoreRoomStateController(
-        FirebaseFirestore.instance, FirebaseAuth.instance, 'rooms');
+      FirebaseFirestore.instance,
+      FirebaseAuth.instance,
+      'rooms',
+      settingsController,
+    );
 
     _roomIdController.addListener(_onRoomIdChanged);
 

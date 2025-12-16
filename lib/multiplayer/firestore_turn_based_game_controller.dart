@@ -10,6 +10,7 @@ import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/services/error_message_service.dart';
 import 'package:rxdart/rxdart.dart';
 
+import '../settings/settings.dart';
 import 'firestore_room_state_controller.dart';
 import 'turn_based_game_delegate.dart';
 import 'turn_based_game_state.dart';
@@ -32,8 +33,9 @@ class FirestoreTurnBasedGameController<T> {
     required FirebaseFirestore store,
     required TurnBasedGameDelegate<T> delegate,
     required String collectionName,
+    required SettingsController settingsController,
   }) : _delegate = delegate {
-      roomStateController = FirestoreRoomStateController(store, auth, collectionName);
+      roomStateController = FirestoreRoomStateController(store, auth, collectionName, settingsController);
 
     _roomStateSubscription = roomStateController.roomStateStream.listen(_onRoomStateChanged);
   }
@@ -112,7 +114,7 @@ class FirestoreTurnBasedGameController<T> {
     final room = roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
-    List<String> turnOrder = List.from(room.participants);
+    List<String> turnOrder = room.participants.map((p) => p.id).toList();
     if (_shuffleTurnOrderFlag) {
       turnOrder.shuffle();
     }
@@ -261,7 +263,7 @@ class FirestoreTurnBasedGameController<T> {
     final currentState = _gameStateController.value;
     final room = _currentRoom;
     if (currentState != null && room != null) {
-      final shuffledList = List<String>.from(room.participants)..shuffle();
+      final shuffledList = room.participants.map((p) => p.id).toList()..shuffle();
       await setTurnOrder(shuffledList);
     }
   }

@@ -7,16 +7,18 @@ import '../entities/room.dart';
 import '../entities/room_request.dart';
 import '../entities/room_response.dart';
 import '../entities/room_state.dart';
+import '../settings/settings.dart';
 
 /// Manages all Firestore operations related to room state, requests, and responses.
 class FirestoreRoomStateController {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final String _collectionName;
+  final SettingsController _settingsController;
 
   /// Defines how long a room is considered active without an update.
   static const Duration _aliveTime = Duration(seconds: 30);
-  
+
   // Grace period between each participant's attempt to take over the manager role.
   static const Duration _managerTakeoverTimeout = Duration(seconds: 3);
 
@@ -30,7 +32,7 @@ class FirestoreRoomStateController {
   StreamSubscription<RoomState>? _roomStateSubscription;
   StreamSubscription? _dutiesSubscription;
 
-  FirestoreRoomStateController(this._firestore, this._auth, this._collectionName) {
+  FirestoreRoomStateController(this._firestore, this._auth, this._collectionName, this._settingsController) {
     _initializeUser();
   }
 
@@ -143,6 +145,7 @@ class FirestoreRoomStateController {
         ? roomId
         : _firestore.collection(_collectionName).doc().id;
 
+    final playerName = _settingsController.playerName.value;
     final roomData = {
       'creatorUid': creatorUid,
       'managerUid': creatorUid,
@@ -152,7 +155,9 @@ class FirestoreRoomStateController {
       'body': '',
       'matchMode': matchMode,
       'visibility': visibility,
-      'participants': [creatorUid],
+      'participants': [
+        {'id': creatorUid, 'name': playerName}
+      ],
       'seats': [creatorUid],
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -200,7 +205,8 @@ class FirestoreRoomStateController {
 
     if (availableRooms.isNotEmpty) {
       final roomToJoin = Room.fromFirestore(availableRooms.first);
-      await sendRequest(roomId: roomToJoin.roomId, body: {'action': 'join'});;
+      final playerName = _settingsController.playerName.value;
+      await sendRequest(roomId: roomToJoin.roomId, body: {'action': 'join', 'name': playerName});
       setRoomId(roomToJoin.roomId);
       return roomToJoin.roomId;
     } else {
@@ -222,7 +228,7 @@ class FirestoreRoomStateController {
     final room = Room.fromFirestore(roomDoc);
 
     if (room.managerUid == userId) {
-      final otherParticipants = room.participants.where((p) => p != userId).toList();
+      final otherParticipants = room.participants.where((p) => p.id != userId).toList();
       if (otherParticipants.isNotEmpty) {
         await handoverRoomManager(roomId: roomId);
         await sendRequest(roomId: roomId, body: {'action': 'leave'});
@@ -258,10 +264,10 @@ class FirestoreRoomStateController {
         return;
       }
 
-      final newManager = room.participants.firstWhere((p) => p != currentUserId);
+      final newManagerId = room.participants.firstWhere((p) => p.id != currentUserId).id;
 
       transaction.update(roomRef, {
-        'managerUid': newManager,
+        'managerUid': newManagerId,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
@@ -295,7 +301,7 @@ class FirestoreRoomStateController {
 
       final room = Room.fromFirestore(roomSnapshot);
 
-      if (room.participants.contains(request.participantId)) {
+      if (room.participants.any((p) => p.id == request.participantId)) {
         transaction.delete(requestRef);
         return;
       }
@@ -310,8 +316,13 @@ class FirestoreRoomStateController {
         return;
       }
 
+      final newParticipant = {
+        'id': request.participantId,
+        'name': request.body['name'] ?? ''
+      };
+
       transaction.update(roomRef, {
-        'participants': FieldValue.arrayUnion([request.participantId]),
+        'participants': FieldValue.arrayUnion([newParticipant]),
         'seats': FieldValue.arrayUnion([request.participantId]),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -324,11 +335,22 @@ class FirestoreRoomStateController {
     final requestRef = roomRef.collection('requests').doc(request.requestId);
 
     await _firestore.runTransaction((transaction) async {
-      transaction.update(roomRef, {
-        'participants': FieldValue.arrayRemove([request.participantId]),
-        'seats': FieldValue.arrayRemove([request.participantId]),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final roomSnapshot = await transaction.get(roomRef);
+      if (!roomSnapshot.exists) {
+        transaction.delete(requestRef);
+        return;
+      }
+      final room = Room.fromFirestore(roomSnapshot);
+      final participantsToRemove =
+          room.participants.where((p) => p.id == request.participantId).toList();
+
+      if (participantsToRemove.isNotEmpty) {
+        transaction.update(roomRef, {
+          'participants': FieldValue.arrayRemove([participantsToRemove.first.toJson()]),
+          'seats': FieldValue.arrayRemove([request.participantId]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
       transaction.delete(requestRef);
     });
   }
@@ -345,7 +367,7 @@ class FirestoreRoomStateController {
 
     if (room.participants.length < 2) return;
 
-    final successors = room.participants.map((p)=>p.id).where((p) => p != room.managerUid).toList();
+    final successors = room.participants.where((p) => p.id != room.managerUid).map((p) => p.id).toList();
     final mySuccessorRank = successors.indexOf(currentUserId);
 
     if (mySuccessorRank < 0) return;
@@ -434,7 +456,8 @@ class FirestoreRoomStateController {
   }
 
   Future<void> requestToJoinRoom({required String roomId}) async {
-    await sendRequest(roomId: roomId, body: {'action': 'join'});
+    final playerName = _settingsController.playerName.value;
+    await sendRequest(roomId: roomId, body: {'action': 'join', 'name': playerName});
   }
 
   Future<void> sendAlivePing({required String roomId}) async {
@@ -466,7 +489,7 @@ class FirestoreRoomStateController {
     await ref.set({
       'requestId': requestId,
       'responseId': ref.id,
-      'roomId': roomId, // <--- Added roomId
+      'roomId': roomId,
       'participantId': participantId,
       'body': body,
       'createdAt': FieldValue.serverTimestamp(),

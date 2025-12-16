@@ -11,6 +11,9 @@ import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 
+import '../settings/settings.dart';
+import 'package:provider/provider.dart';
+
 class TicTacToeGameAI {
   late final FirestoreTurnBasedGameController<TicTacToeState> _gameController;
   late final StreamSubscription _gameStateSubscription;
@@ -20,12 +23,13 @@ class TicTacToeGameAI {
       MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'ai-player'));
   bool _isRoomJoined = false;
 
-  TicTacToeGameAI(this._firestore) {
+  TicTacToeGameAI(this._firestore, {required SettingsController settingsController}) {
     _gameController = FirestoreTurnBasedGameController(
       store: _firestore,
       auth: _auth,
       delegate: TicTacToeDelegate(),
       collectionName: 'rooms',
+      settingsController: settingsController,
     );
 
     _gameStateSubscription = _gameController.gameStateStream.listen(_onGameStateUpdate);
@@ -258,6 +262,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
 
   void _setupControllers() {
     final ticTacToeDelegate = TicTacToeDelegate();
+    final settingsController = context.read<SettingsController>();
     if (_isAiMode) {
       _fakeFirestore = FakeFirebaseFirestore();
       _gameController = FirestoreTurnBasedGameController(
@@ -265,14 +270,19 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
         auth: MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'human-player')),
         delegate: ticTacToeDelegate,
         collectionName: 'rooms',
+        settingsController: settingsController,
       );
-      _aiPlayer = TicTacToeGameAI(_fakeFirestore!);
+      _aiPlayer = TicTacToeGameAI(
+          _fakeFirestore!,
+          settingsController: settingsController,
+      );
     } else {
       _gameController = FirestoreTurnBasedGameController(
         store: FirebaseFirestore.instance,
         auth: FirebaseAuth.instance,
         delegate: ticTacToeDelegate,
         collectionName: 'rooms',
+        settingsController: settingsController,
       );
     }
   }

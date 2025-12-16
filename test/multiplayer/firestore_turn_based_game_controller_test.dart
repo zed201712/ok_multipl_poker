@@ -5,9 +5,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ok_multipl_poker/demo/tic_tac_toe_game_page.dart';
+import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
+import 'package:ok_multipl_poker/settings/fake_settings_controller.dart';
 import 'package:ok_multipl_poker/test/stream_asserter.dart';
 
 void main() {
@@ -19,17 +21,25 @@ void main() {
     late FirestoreTurnBasedGameController<TicTacToeState> gameControllerP1;
     late FirestoreTurnBasedGameController<TicTacToeState> gameControllerP2;
 
+    final p1Name = 'PlayerOne';
+    final p2Name = 'PlayerTwo';
+
     setUp(() {
       print("____________\nsetUp");
       store = FakeFirebaseFirestore();
       authP1 = MockFirebaseAuth();
       authP2 = MockFirebaseAuth();
 
+      final p1Settings = FakeSettingsController();
+      p1Settings.setPlayerName(p1Name);
+      final p2Settings = FakeSettingsController();
+      p2Settings.setPlayerName(p2Name);
       gameControllerP1 = FirestoreTurnBasedGameController<TicTacToeState>(
         store: store,
         auth: authP1,
         delegate: delegate,
         collectionName: 'rooms',
+        settingsController: p1Settings,
       );
 
       gameControllerP2 = FirestoreTurnBasedGameController<TicTacToeState>(
@@ -37,6 +47,7 @@ void main() {
         auth: authP2,
         delegate: delegate,
         collectionName: 'rooms',
+        settingsController: p2Settings,
       );
     });
 
@@ -44,6 +55,17 @@ void main() {
       final start = DateTime.now();
       await StreamAsserter<TurnBasedGameState<TicTacToeState>?>(
         gameControllerP1.gameStateStream,
+        [
+          streamPredicate,
+        ],
+      ).expectWait(timeout: Duration(seconds: 1));
+      print("wait ${streamPredicate.reason}, cost time: ${DateTime.now().difference(start).inMilliseconds} ms");
+    }
+
+    Future<void> waitStreamRoomPredicate(StreamPredicate<List<Room>?> streamPredicate) async {
+      final start = DateTime.now();
+      await StreamAsserter<List<Room>?>(
+        gameControllerP1.roomStateController.roomsStream,
         [
           streamPredicate,
         ],
@@ -104,6 +126,12 @@ void main() {
       await gameControllerP2.sendGameAction('place_mark', payload: {'index': 1});
       // 玩家二離開房間
       await gameControllerP2.leaveRoom();
+
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (val) => (val?.firstOrNull?.participants.length ?? 2) < 2, reason: 'leaveRoom')
+      );
+      final participantsCount = gameControllerP1.roomStateController.roomsStream.value.firstOrNull?.participants.length;
+      expect((participantsCount ?? -1), 1);
 
       final p1Assert = await p1Expectation.expectWait(timeout: Duration(seconds: 1));
       final p2Assert = await p2Expectation.expectWait(timeout: Duration(seconds: 1));
@@ -180,6 +208,133 @@ void main() {
       print("cost time: ${DateTime.now().difference(start).inMilliseconds}");
       print("p1 PendingReasons: ${p1Expectation.getPendingReasons()}");
       expect(p1Assert, isTrue);
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
+
+    test('matchAndJoinRoom: creates new room for first player and joins for second', () async {
+      // 1. Player 1 matches and should create a new room.
+      final roomId = await gameControllerP1.matchAndJoinRoom(maxPlayers: 2);
+      expect(roomId, isNotEmpty);
+
+      // Wait for the room to appear in the stream for P1
+      await waitStreamRoomPredicate(
+        StreamPredicate(
+          predicate: (rooms) => rooms != null && rooms.isNotEmpty && rooms.first.roomId == roomId,
+          reason: 'P1 creates a room'
+        )
+      );
+
+      var room = gameControllerP1.roomStateController.roomsStream.value.first;
+      expect(room.participants.length, 1);
+      expect(room.participants.first.id, authP1.currentUser!.uid);
+      expect(room.participants.first.name, p1Name);
+      expect(room.managerUid, authP1.currentUser!.uid);
+
+      // 2. Player 2 matches and should join the existing room.
+      final p2RoomId = await gameControllerP2.matchAndJoinRoom(maxPlayers: 2);
+      expect(p2RoomId, roomId);
+
+      // Wait for P2 to appear in the participants list
+      await waitStreamRoomPredicate(
+        StreamPredicate(
+          predicate: (rooms) => rooms!.first.participants.length == 2,
+          reason: 'P2 joins the room'
+        )
+      );
+
+      room = gameControllerP1.roomStateController.roomsStream.value.first;
+      expect(room.participants.length, 2);
+      expect(room.participants.any((p) => p.id == authP2.currentUser!.uid && p.name == p2Name), isTrue);
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
+
+    test('leaveRoom: non-manager leaves', () async {
+      // Setup: Create and join a 2-player room
+      await gameControllerP1.matchAndJoinRoom(maxPlayers: 2);
+      await gameControllerP2.matchAndJoinRoom(maxPlayers: 2);
+      await waitStreamRoomPredicate(
+        StreamPredicate(predicate: (rooms) => rooms!.first.participants.length == 2, reason: 'Wait for P2 to join')
+      );
+      
+      final p1Uid = authP1.currentUser!.uid;
+      var room = gameControllerP1.roomStateController.roomsStream.value.first;
+      expect(room.managerUid, p1Uid); // P1 is the manager
+
+      // Action: P2 (non-manager) leaves
+      await gameControllerP2.leaveRoom();
+
+      // Verification
+      await waitStreamRoomPredicate(
+        StreamPredicate(predicate: (rooms) => rooms!.first.participants.length == 1, reason: 'Wait for P2 to leave')
+      );
+
+      room = gameControllerP1.roomStateController.roomsStream.value.first;
+      expect(room.participants.length, 1);
+      expect(room.participants.first.id, p1Uid);
+      expect(room.managerUid, p1Uid); // Manager should not change
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
+
+    test('leaveRoom: manager leaves with successor', () async {
+      // Setup: Create and join a 2-player room
+      await gameControllerP1.matchAndJoinRoom(maxPlayers: 2);
+      await gameControllerP2.matchAndJoinRoom(maxPlayers: 2);
+      await waitStreamRoomPredicate(
+        StreamPredicate(predicate: (rooms) => rooms!.first.participants.length == 2, reason: 'Wait for P2 to join')
+      );
+
+      final p1Uid = authP1.currentUser!.uid;
+      final p2Uid = authP2.currentUser!.uid;
+      var room = gameControllerP1.roomStateController.roomsStream.value.first;
+      expect(room.managerUid, p1Uid); // P1 is the manager
+
+      // Action: P1 (manager) leaves
+      await gameControllerP1.leaveRoom();
+      
+      // Verification: P2 should become the new manager
+      await waitStreamRoomPredicate(
+        StreamPredicate(
+          predicate: (rooms) => rooms!.first.managerUid == p2Uid && rooms.first.participants.length == 1, 
+          reason: 'Wait for manager handover and P1 leave'
+        )
+      );
+
+      room = gameControllerP1.roomStateController.roomsStream.value.first;
+      expect(room.participants.length, 1);
+      expect(room.participants.first.id, p2Uid);
+      expect(room.managerUid, p2Uid); // P2 is the new manager
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
+
+    test('leaveRoom: last player leaves, deleting the room', () async {
+      // Setup: Create a 1-player room
+      final roomId = await gameControllerP1.matchAndJoinRoom(maxPlayers: 2);
+      await waitStreamRoomPredicate(
+        StreamPredicate(predicate: (rooms) => rooms!.isNotEmpty, reason: 'Wait for room creation')
+      );
+
+      var rooms = gameControllerP1.roomStateController.roomsStream.value;
+      expect(rooms.length, 1);
+      expect(rooms.first.roomId, roomId);
+
+      // Action: The last player leaves
+      await gameControllerP1.leaveRoom();
+
+      // Verification: The room should be deleted
+      await waitStreamRoomPredicate(
+        StreamPredicate(predicate: (rooms) => rooms!.isEmpty, reason: 'Wait for room deletion')
+      );
+
+      rooms = gameControllerP1.roomStateController.roomsStream.value;
+      expect(rooms, isEmpty);
 
       gameControllerP1.dispose();
       gameControllerP2.dispose();
