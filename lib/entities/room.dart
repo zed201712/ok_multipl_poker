@@ -29,6 +29,8 @@ class Room with JsonSerializableMixin {
   final List<String> seats;
   final List<ParticipantInfo> participants;
 
+  List<String> get playerIds => participants.map((p) => p.id).toList();
+
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp? createdAt;
 

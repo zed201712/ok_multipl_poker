@@ -140,9 +140,13 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
 
   // 開始新遊戲，回傳初始狀態
   @override
-  TicTacToeState initializeGame(List<String> playerIds) {
+  TicTacToeState initializeGame(Room room) {
+    return _initializeGame(room.playerIds);
+  }
+
+  TicTacToeState _initializeGame(List<String> playerIds) {
     // 建立一個 3x3 的空遊戲板
-    return TicTacToeState(board: List.filled(9, ''), winner: null, restartRequesters: [], playerIds: playerIds);
+    return TicTacToeState(board: List.filled(9, ''), winner: null, restartRequesters: [], playerIds: playerIds..shuffle());
   }
 
   // 處理玩家的動作（例如，下棋）
@@ -157,7 +161,7 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
 
       // 檢查是否所有玩家都已請求重新開始
       if (currentState.playerIds.isNotEmpty && newRequesters.length >= currentState.playerIds.length) {
-        return initializeGame(currentState.playerIds); // 重置遊戲
+        return _initializeGame(currentState.playerIds); // 重置遊戲
       }
 
       return TicTacToeState(

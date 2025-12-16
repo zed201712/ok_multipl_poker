@@ -1,3 +1,5 @@
+import '../entities/room.dart';
+
 /// Delegate for handling game-specific logic in a turn-based game.
 ///
 /// Implement this class to define the rules of your specific game.
@@ -5,7 +7,7 @@
 /// @param T The type of the custom game state object.
 abstract class TurnBasedGameDelegate<T> {
   /// Creates and returns the initial state of the game based on the players.
-  T initializeGame(List<String> playerIds);
+  T initializeGame(Room room);
 
   /// Processes a player's action and returns the updated game state.
   ///

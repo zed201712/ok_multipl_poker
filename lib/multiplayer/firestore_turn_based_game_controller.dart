@@ -71,7 +71,7 @@ class FirestoreTurnBasedGameController<T> {
       }
     } else {
       if (_isCurrentUserTheManager(room)) {
-        final initialCustomState = _delegate.initializeGame([]);
+        final initialCustomState = _delegate.initializeGame(room);
         final newGameState = TurnBasedGameState(
           gameStatus: GameStatus.matching,
           turnOrder: [],
@@ -87,19 +87,19 @@ class FirestoreTurnBasedGameController<T> {
       if (gameState?.gameStatus == GameStatus.matching &&
           room.participants.length >= _maxPlayers &&
           _maxPlayers > 0) {
-        _handleStartGame(null);
+        _handleStartGame(room, null);
         return;
       }
-      _processRequests(gameState, roomState.requests);
+      _processRequests(room, gameState, roomState.requests);
     }
   }
 
-  void _processRequests(TurnBasedGameState<T>? currentState, List<RoomRequest> requests) {
+  void _processRequests(Room room, TurnBasedGameState<T>? currentState, List<RoomRequest> requests) {
     for (final request in requests) {
       final action = request.body['action'];
       if (action == 'start_game') {
         if (currentState?.gameStatus == GameStatus.matching) {
-          _handleStartGame(request);
+          _handleStartGame(room, request);
         }
       } else if (action == 'game_action') {
         if (currentState != null) {
@@ -110,7 +110,7 @@ class FirestoreTurnBasedGameController<T> {
     }
   }
 
-  void _handleStartGame(RoomRequest? request) {
+  void _handleStartGame(Room room, RoomRequest? request) {
     final room = roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
@@ -118,7 +118,7 @@ class FirestoreTurnBasedGameController<T> {
     if (_shuffleTurnOrderFlag) {
       turnOrder.shuffle();
     }
-    final initialCustomState = _delegate.initializeGame(turnOrder);
+    final initialCustomState = _delegate.initializeGame(room);
     final newGameState = TurnBasedGameState(
       gameStatus: GameStatus.playing,
       turnOrder: turnOrder,
