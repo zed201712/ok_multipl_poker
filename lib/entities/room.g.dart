@@ -21,7 +21,7 @@ Room _$RoomFromJson(Map<String, dynamic> json) => Room(
       const [],
   participants:
       (json['participants'] as List<dynamic>?)
-          ?.map((e) => e as String)
+          ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   createdAt: _timestampFromJson(json['createdAt']),
@@ -39,7 +39,7 @@ Map<String, dynamic> _$RoomToJson(Room instance) => <String, dynamic>{
   'matchMode': instance.matchMode,
   'visibility': instance.visibility,
   'seats': instance.seats,
-  'participants': instance.participants,
+  'participants': instance.participants.map((e) => e.toJson()).toList(),
   'createdAt': _timestampToJson(instance.createdAt),
   'updatedAt': _timestampToJson(instance.updatedAt),
 };

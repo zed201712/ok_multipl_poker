@@ -345,7 +345,7 @@ class FirestoreRoomStateController {
 
     if (room.participants.length < 2) return;
 
-    final successors = room.participants.where((p) => p != room.managerUid).toList();
+    final successors = room.participants.map((p)=>p.id).where((p) => p != room.managerUid).toList();
     final mySuccessorRank = successors.indexOf(currentUserId);
 
     if (mySuccessorRank < 0) return;

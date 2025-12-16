@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
 import '../core/mixins/json_serializable_mixin.dart';
+import 'participant_info.dart';
 
 part 'room.g.dart';
 
@@ -26,7 +27,7 @@ class Room with JsonSerializableMixin {
   final String matchMode;
   final String visibility;
   final List<String> seats;
-  final List<String> participants;
+  final List<ParticipantInfo> participants;
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp? createdAt;
@@ -71,7 +72,7 @@ class Room with JsonSerializableMixin {
     String? matchMode,
     String? visibility,
     List<String>? seats,
-    List<String>? participants,
+    List<ParticipantInfo>? participants,
     Timestamp? createdAt,
     Timestamp? updatedAt,
   }) {
