@@ -41,6 +41,21 @@ class PlayingCard {
       2 + random.nextInt(9),
     );
   }
+  
+  factory PlayingCard.fromString(String cardStr) {
+    final suitChar = cardStr.substring(0, 1);
+    final value = int.parse(cardStr.substring(1));
+    CardSuit suit;
+    switch (suitChar) {
+      case 'C': suit = CardSuit.clubs; break;
+      case 'D': suit = CardSuit.diamonds; break;
+      case 'H': suit = CardSuit.hearts; break;
+      case 'S': suit = CardSuit.spades; break;
+      default: throw ArgumentError('Invalid card string: $cardStr');
+    }
+    return PlayingCard(suit, value);
+  }
+
 
   /// Creates a full, shuffled deck of 52 cards.
   static List<PlayingCard> createDeck() {
@@ -52,6 +67,17 @@ class PlayingCard {
     }
     deck.shuffle();
     return deck;
+  }
+  
+  static String cardToString(PlayingCard card) {
+    String suitChar;
+    switch (card.suit) {
+      case CardSuit.clubs: suitChar = 'C'; break;
+      case CardSuit.diamonds: suitChar = 'D'; break;
+      case CardSuit.hearts: suitChar = 'H'; break;
+      case CardSuit.spades: suitChar = 'S'; break;
+    }
+    return '$suitChar${card.value}';
   }
 
   @override

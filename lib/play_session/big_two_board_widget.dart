@@ -59,7 +59,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             child:
             Align(
               alignment: Alignment.center,
-              child: ShowOnlyCardAreaWidget(cardPlayer: boardState.centerPlayingArea),
+              child: ShowOnlyCardAreaWidget(cards: boardState.centerPlayingArea.hand),
             ),
           ),
 
