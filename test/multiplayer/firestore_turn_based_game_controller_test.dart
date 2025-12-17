@@ -111,7 +111,7 @@ void main() {
       );
 
       // 玩家一配對房間
-      final p1MatchFuture = gameControllerP1.matchAndJoinRoom(maxPlayers: 2, shuffleTurnOrder: false);
+      final p1MatchFuture = gameControllerP1.matchAndJoinRoom(maxPlayers: 2, randomizeSeats: false);
       final roomId = await p1MatchFuture;
       expect(roomId, isNotEmpty);
 
@@ -147,7 +147,7 @@ void main() {
 
     test('game restart flow', () async {
       // 先完成一個遊戲
-      await gameControllerP1.matchAndJoinRoom(maxPlayers: 2, shuffleTurnOrder: false);
+      await gameControllerP1.matchAndJoinRoom(maxPlayers: 2, randomizeSeats: false);
       await gameControllerP2.matchAndJoinRoom(maxPlayers: 2);
 
       final start = DateTime.now();

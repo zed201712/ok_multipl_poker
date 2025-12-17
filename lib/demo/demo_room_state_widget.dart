@@ -95,6 +95,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       maxPlayers: int.tryParse(_maxPlayersController.text) ?? 4,
       matchMode: 'casual',
       visibility: 'public',
+      randomizeSeats: true,
     );
     if (mounted) {
       _roomIdController.text = newRoomId; // This will trigger _onRoomIdChanged
@@ -139,6 +140,7 @@ class _DemoRoomStateWidgetState extends State<DemoRoomStateWidget> {
       maxPlayers: int.tryParse(_maxPlayersController.text) ?? 4,
       matchMode: 'casual',
       visibility: 'public',
+      randomizeSeats: true,
     );
 
     if (mounted) {

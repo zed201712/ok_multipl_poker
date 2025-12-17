@@ -26,10 +26,10 @@ class Room with JsonSerializableMixin {
   final String body;
   final String matchMode;
   final String visibility;
-  final List<String> seats;
+  final bool randomizeSeats;
   final List<ParticipantInfo> participants;
 
-  List<String> get playerIds => participants.map((p) => p.id).toList();
+  List<String> get seats => participants.map((p) => p.id).toList();
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp? createdAt;
@@ -47,7 +47,7 @@ class Room with JsonSerializableMixin {
     required this.body,
     required this.matchMode,
     required this.visibility,
-    this.seats = const [],
+    required this.randomizeSeats,
     this.participants = const [],
     this.createdAt,
     this.updatedAt,
@@ -73,7 +73,7 @@ class Room with JsonSerializableMixin {
     String? body,
     String? matchMode,
     String? visibility,
-    List<String>? seats,
+    bool? randomizeSeats,
     List<ParticipantInfo>? participants,
     Timestamp? createdAt,
     Timestamp? updatedAt,
@@ -88,7 +88,7 @@ class Room with JsonSerializableMixin {
       body: body ?? this.body,
       matchMode: matchMode ?? this.matchMode,
       visibility: visibility ?? this.visibility,
-      seats: seats ?? this.seats,
+      randomizeSeats: randomizeSeats ?? this.randomizeSeats,
       participants: participants ?? this.participants,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

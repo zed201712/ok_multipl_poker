@@ -16,9 +16,7 @@ Room _$RoomFromJson(Map<String, dynamic> json) => Room(
   body: json['body'] as String,
   matchMode: json['matchMode'] as String,
   visibility: json['visibility'] as String,
-  seats:
-      (json['seats'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const [],
+  randomizeSeats: json['randomizeSeats'] as bool,
   participants:
       (json['participants'] as List<dynamic>?)
           ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
@@ -38,7 +36,7 @@ Map<String, dynamic> _$RoomToJson(Room instance) => <String, dynamic>{
   'body': instance.body,
   'matchMode': instance.matchMode,
   'visibility': instance.visibility,
-  'seats': instance.seats,
+  'randomizeSeats': instance.randomizeSeats,
   'participants': instance.participants.map((e) => e.toJson()).toList(),
   'createdAt': _timestampToJson(instance.createdAt),
   'updatedAt': _timestampToJson(instance.updatedAt),

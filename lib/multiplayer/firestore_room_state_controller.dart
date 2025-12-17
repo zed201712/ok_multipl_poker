@@ -135,6 +135,7 @@ class FirestoreRoomStateController {
     required int maxPlayers,
     required String matchMode,
     required String visibility,
+    required bool randomizeSeats,
   }) async {
     final creatorUid = currentUserId;
     if (creatorUid == null) {
@@ -155,6 +156,7 @@ class FirestoreRoomStateController {
       'body': '',
       'matchMode': matchMode,
       'visibility': visibility,
+      'randomizeSeats': randomizeSeats,
       'participants': [
         {'id': creatorUid, 'name': playerName}
       ],
@@ -184,6 +186,7 @@ class FirestoreRoomStateController {
     required int maxPlayers,
     required String matchMode,
     required String visibility,
+    required bool randomizeSeats,
   }) async {
     await _signInAnonymously();
     if (currentUserId == null) {
@@ -211,7 +214,7 @@ class FirestoreRoomStateController {
       return roomToJoin.roomId;
     } else {
       String roomId = await createRoom(
-          title: title, maxPlayers: maxPlayers, matchMode: matchMode, visibility: visibility);
+          title: title, maxPlayers: maxPlayers, matchMode: matchMode, visibility: visibility, randomizeSeats: randomizeSeats);
       setRoomId(roomId);
       return roomId;
     }

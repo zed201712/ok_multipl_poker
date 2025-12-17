@@ -23,7 +23,6 @@ class FirestoreTurnBasedGameController<T> {
 
   Room? _currentRoom;
   int _maxPlayers = 0;
-  bool _shuffleTurnOrderFlag = true;
 
   final _gameStateController = BehaviorSubject<TurnBasedGameState<T>?>.seeded(null);
   StreamSubscription? _roomStateSubscription;
@@ -74,7 +73,6 @@ class FirestoreTurnBasedGameController<T> {
         final initialCustomState = _delegate.initializeGame(room);
         final newGameState = TurnBasedGameState(
           gameStatus: GameStatus.matching,
-          turnOrder: [],
           customState: initialCustomState,
         );
         _updateRoomWithState(newGameState);
@@ -114,14 +112,9 @@ class FirestoreTurnBasedGameController<T> {
     final room = roomStateController.roomStateStream.value?.room;
     if (room == null) return;
 
-    List<String> turnOrder = room.participants.map((p) => p.id).toList();
-    if (_shuffleTurnOrderFlag) {
-      turnOrder.shuffle();
-    }
     final initialCustomState = _delegate.initializeGame(room);
     final newGameState = TurnBasedGameState(
       gameStatus: GameStatus.playing,
-      turnOrder: turnOrder,
       currentPlayerId: _delegate.getCurrentPlayer(initialCustomState),
       winner: null,
       customState: initialCustomState,
@@ -178,16 +171,16 @@ class FirestoreTurnBasedGameController<T> {
 
   Future<String> matchAndJoinRoom({
     required int maxPlayers,
-    bool shuffleTurnOrder = true
+    bool randomizeSeats = true
   }) async {
     _maxPlayers = maxPlayers;
-    _shuffleTurnOrderFlag = shuffleTurnOrder;
     try {
       return await roomStateController.matchRoom(
         title: 'Turn Based Game',
         maxPlayers: maxPlayers,
         matchMode: 'turn_based',
         visibility: 'public',
+        randomizeSeats: randomizeSeats,
       );
     } catch (e) {
       errorMessageService.showError("Failed to match room: $e");
@@ -240,31 +233,6 @@ class FirestoreTurnBasedGameController<T> {
       );
     } catch (e) {
       errorMessageService.showError("Failed to send game action: $e");
-    }
-  }
-
-  Future<void> setTurnOrder(List<String> turnOrder) async {
-    if (!isCurrentUserManager()) {
-      errorMessageService.showError("Only the manager can set the turn order.");
-      return;
-    }
-    final currentState = _gameStateController.value;
-    if (currentState != null) {
-      final newGameState = currentState.copyWith(turnOrder: turnOrder);
-      _updateRoomWithState(newGameState);
-    }
-  }
-
-  Future<void> shuffleTurnOrder() async {
-    if (!isCurrentUserManager()) {
-      errorMessageService.showError("Only the manager can shuffle the turn order.");
-      return;
-    }
-    final currentState = _gameStateController.value;
-    final room = _currentRoom;
-    if (currentState != null && room != null) {
-      final shuffledList = room.participants.map((p) => p.id).toList()..shuffle();
-      await setTurnOrder(shuffledList);
     }
   }
 
