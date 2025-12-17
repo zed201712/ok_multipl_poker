@@ -13,6 +13,7 @@ class BigTwoState {
   final String lastPlayedById;
   final String? winner;
   final int passCount;
+  final List<String> restartRequesters;
 
   BigTwoState({
     required this.participants,
@@ -22,6 +23,7 @@ class BigTwoState {
     this.lastPlayedById = '',
     this.winner,
     this.passCount = 0,
+    this.restartRequesters = const [],
   });
 
   factory BigTwoState.fromJson(Map<String, dynamic> json) =>

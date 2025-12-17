@@ -20,6 +20,11 @@ BigTwoState _$BigTwoStateFromJson(Map<String, dynamic> json) => BigTwoState(
   lastPlayedById: json['lastPlayedById'] as String? ?? '',
   winner: json['winner'] as String?,
   passCount: (json['passCount'] as num?)?.toInt() ?? 0,
+  restartRequesters:
+      (json['restartRequesters'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$BigTwoStateToJson(BigTwoState instance) =>
@@ -31,4 +36,5 @@ Map<String, dynamic> _$BigTwoStateToJson(BigTwoState instance) =>
       'lastPlayedById': instance.lastPlayedById,
       'winner': instance.winner,
       'passCount': instance.passCount,
+      'restartRequesters': instance.restartRequesters,
     };
