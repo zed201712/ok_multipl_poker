@@ -53,6 +53,9 @@ class BigTwoAI {
   
   bool _isDisposed = false;
   bool _isRoomJoined = false;
+  
+  // 新增狀態變數
+  bool _isProcessingTurn = false;
 
   BigTwoAI({
     required FirebaseFirestore firestore,
@@ -117,6 +120,10 @@ class BigTwoAI {
     // 1. 處理出牌
     if (gameState.gameStatus == GameStatus.playing &&
         gameState.currentPlayerId == _aiUserId) {
+      
+      // 如果正在處理回合，則跳過，避免重複發送
+      if (_isProcessingTurn) return;
+
       _performTurnAction(gameState.customState);
     }
 
@@ -134,19 +141,32 @@ class BigTwoAI {
   }
 
   Future<void> _performTurnAction(BigTwoState state) async {
-    await Future.delayed(const Duration(milliseconds: 1000));
-    if (_isDisposed) return;
+    if (_isProcessingTurn) return;
+    _isProcessingTurn = true;
 
     try {
-      final isMyTurn = state.lastPlayedById == _aiUserId;
+      // 模擬思考時間
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (_isDisposed) return;
       
-      if (isMyTurn) {
+      // 再次檢查是否仍輪到自己 (防止在 delay 期間狀態改變，例如被踢出或遊戲強制結束)
+      final currentGameState = _gameController.gameStateStream.valueOrNull;
+      if (currentGameState?.currentPlayerId != _aiUserId) {
+         _log.info('AI $_aiUserId turn cancelled (state changed during think time)');
+         return;
+      }
+      
+      // 使用最新的 state 進行判斷
+      final currentState = currentGameState!.customState;
+      final isFreeTurn = currentState.lastPlayedById == _aiUserId;
+
+      if (isFreeTurn) {
          // 必須出牌
-         final myPlayer = state.participants.firstWhere((p) => p.uid == _aiUserId, orElse: () => BigTwoPlayer(uid: _aiUserId, name: '', cards: []));
+         final myPlayer = currentState.participants.firstWhere((p) => p.uid == _aiUserId, orElse: () => BigTwoPlayer(uid: _aiUserId, name: '', cards: []));
          if (myPlayer.cards.isNotEmpty) {
            String cardToPlayStr = myPlayer.cards.first;
            
-           final isGameStart = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
+           final isGameStart = currentState.lastPlayedHand.isEmpty && currentState.lastPlayedById.isEmpty;
            if (isGameStart) {
              final c3 = myPlayer.cards.firstWhere((c) => c == 'C3', orElse: () => '');
              if (c3.isNotEmpty) cardToPlayStr = c3;
@@ -165,6 +185,9 @@ class BigTwoAI {
       }
     } catch (e) {
       _log.warning('AI failed to perform action', e);
+    } finally {
+      // 無論成功與否，都要釋放鎖
+      _isProcessingTurn = false;
     }
   }
 
