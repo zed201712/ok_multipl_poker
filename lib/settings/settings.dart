@@ -24,6 +24,8 @@ class SettingsController {
   /// [musicOn] 偏好設定。
   ValueNotifier<bool> audioOn = ValueNotifier(true);
 
+  ValueNotifier<bool> testModeOn = ValueNotifier(false);
+
   /// 玩家的名稱。用於最高分列表等地方。
   ValueNotifier<String> playerName = ValueNotifier('Player');
 

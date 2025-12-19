@@ -255,7 +255,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   late FirestoreTurnBasedGameController<TicTacToeState> _gameController;
   TicTacToeGameAI? _aiPlayer;
   FakeFirebaseFirestore? _fakeFirestore;
-  bool _isAiMode = false;
+  bool _isTestMode = false;
   bool _isGameMatching = false;
   String _currentRoomId = "";
 
@@ -268,7 +268,8 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
   void _setupControllers() {
     final ticTacToeDelegate = TicTacToeDelegate();
     final settingsController = context.read<SettingsController>();
-    if (_isAiMode) {
+    _isTestMode = settingsController.testModeOn.value;
+    if (_isTestMode) {
       _fakeFirestore = FakeFirebaseFirestore();
       _gameController = FirestoreTurnBasedGameController(
         store: _fakeFirestore!,
@@ -298,7 +299,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       _aiPlayer?.dispose();
       _aiPlayer = null;
 
-      _isAiMode = value;
+      _isTestMode = value;
       _setupControllers();
 
       _isGameMatching = false;
@@ -412,7 +413,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       children: [
         const Text("與 AI 對戰"),
         Switch(
-          value: _isAiMode,
+          value: _isTestMode,
           onChanged: _isGameMatching ? null : _onAiModeChanged,
         ),
       ],
@@ -474,7 +475,7 @@ class _TicTacToeGamePageState extends State<TicTacToeGamePage> {
       setState(() {
         _currentRoomId = "";
         _isGameMatching = false;
-        if (_isAiMode) {
+        if (_isTestMode) {
           _onAiModeChanged(true);
         }
       });

@@ -11,6 +11,9 @@ class FakeSettingsController implements SettingsController {
   ValueNotifier<bool> audioOn = ValueNotifier(true);
 
   @override
+  ValueNotifier<bool> testModeOn = ValueNotifier(false);
+
+  @override
   ValueNotifier<bool> musicOn = ValueNotifier(true);
 
   @override
