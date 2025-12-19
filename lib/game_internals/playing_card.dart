@@ -97,10 +97,10 @@ class PlayingCard {
   @override
   String toString() {
     // A simple string representation, e.g., '♠10' for the 10 of spades.
-    return '$suit${valueToString()}';
+    return '$suit${_valueToString()}';
   }
 
-  String valueToString() {
+  String _valueToString() {
     switch (value) {
       case 1:
         return 'A';
