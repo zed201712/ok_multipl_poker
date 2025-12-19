@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:ok_multipl_poker/entities/big_two_player.dart';
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
+import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_ai.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
@@ -19,6 +21,9 @@ class FirestoreBigTwoController {
 
   /// 底層的回合制遊戲控制器。
   late final FirestoreTurnBasedGameController<BigTwoState> _gameController;
+  
+  /// 測試模式下的 AI 玩家列表
+  final List<BigTwoAI> _testModeAIs = [];
 
   /// 建構子，要求傳入 Firestore 和 Auth 實例。
   FirestoreBigTwoController({
@@ -34,6 +39,30 @@ class FirestoreBigTwoController {
       settingsController: settingsController,
     );
     gameStateStream = _gameController.gameStateStream;
+
+    // 檢查測試模式並初始化 AI
+    if (settingsController.testModeOn.value) {
+      _initTestModeAIs(firestore, settingsController);
+    }
+  }
+
+  void _initTestModeAIs(FirebaseFirestore firestore, SettingsController settingsController) {
+    for (int i = 1; i <= 3; i++) {
+      final mockAuth = MockFirebaseAuth(
+        signedIn: true, 
+        mockUser: MockUser(
+          uid: 'ai_bot_$i', 
+          displayName: 'Bot $i',
+          //email: 'bot$i@example.com',
+        ),
+      );
+      
+      _testModeAIs.add(BigTwoAI(
+        firestore: firestore,
+        auth: mockAuth, // 每個 AI 使用獨立的 Mock Auth
+        settingsController: settingsController,
+      ));
+    }
   }
 
   /// 匹配並加入一個最多4人的遊戲房間。
@@ -74,6 +103,11 @@ class FirestoreBigTwoController {
   /// 釋放資源，關閉數據流。
   void dispose() {
     _gameController.dispose();
+    // 釋放 AI 資源
+    for (final ai in _testModeAIs) {
+      ai.dispose();
+    }
+    _testModeAIs.clear();
   }
 }
 
