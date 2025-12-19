@@ -7,7 +7,7 @@ import 'package:ok_multipl_poker/entities/big_two_state.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/card_player.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
-import 'package:ok_multipl_poker/multiplayer/firestore_big_two_controller.dart' hide BigTwoDelegate;
+import 'package:ok_multipl_poker/multiplayer/firestore_big_two_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';

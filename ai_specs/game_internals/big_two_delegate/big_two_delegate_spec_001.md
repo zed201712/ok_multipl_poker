@@ -1,5 +1,5 @@
 | **任務 ID (Task ID)** | `FEAT-BIG-TWO-DELEGATE-001` |
-| **創建日期 (Date)** | `2025/12/19` |
+| **創建日期 (Date)** | `2025/12/20` |
 
 遵循 `effective_dart` 程式碼風格
 
