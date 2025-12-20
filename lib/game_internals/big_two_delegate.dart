@@ -4,8 +4,9 @@ import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/card_suit.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
+import 'big_two_deck_utils_mixin.dart';
 
-class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> {
+class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckUtilsMixin {
   @override
   BigTwoState initializeGame(Room room) {
     final deck = PlayingCard.createDeck();
@@ -297,7 +298,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> {
        final p1 = PlayingCard.fromString(previous[0]);
        // p2 checking is assumed valid from previous state
        
-       return _compareRank(c1.value, p1.value) > 0;
+       return getBigTwoValue(c1.value).compareTo(getBigTwoValue(p1.value)) > 0;
     }
     
     // For 5 cards, simple comparison for now (rank of first card?)
@@ -313,25 +314,8 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> {
   }
   
   int _compareCards(PlayingCard a, PlayingCard b) {
-    final rankComp = _compareRank(a.value, b.value);
+    final rankComp = getBigTwoValue(a.value).compareTo(getBigTwoValue(b.value));
     if (rankComp != 0) return rankComp;
-    return _suitValue(a.suit).compareTo(_suitValue(b.suit));
-  }
-  
-  int _compareRank(int a, int b) {
-    // Map 1(A) -> 14, 2 -> 15 for easier comparison, keeping 3-13 as is.
-    int valA = (a == 1) ? 14 : (a == 2 ? 15 : a);
-    int valB = (b == 1) ? 14 : (b == 2 ? 15 : b);
-    return valA.compareTo(valB);
-  }
-  
-  int _suitValue(CardSuit suit) {
-    // Taiwan rule: Club < Diamond < Heart < Spade. 
-    switch (suit) {
-      case CardSuit.clubs: return 1;
-      case CardSuit.diamonds: return 2;
-      case CardSuit.hearts: return 3;
-      case CardSuit.spades: return 4;
-    }
+    return getSuitValue(a.suit).compareTo(getSuitValue(b.suit));
   }
 }

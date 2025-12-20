@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 import 'card_suit.dart';
@@ -8,7 +9,7 @@ import 'card_suit.dart';
 ///
 /// 一旦建立，撲克牌就是不可變的。
 @immutable
-class PlayingCard {
+class PlayingCard extends Equatable {
   static final _random = Random();
 
   /// 這張牌的花色。
@@ -21,6 +22,9 @@ class PlayingCard {
 
   /// 建立一張給定花色和數字的撲克牌。
   const PlayingCard(this.suit, this.value);
+
+  @override
+  List<Object?> get props => [suit, value];
 
   /// 從 JSON 格式的資料建立一張撲克牌。
   factory PlayingCard.fromJson(Map<String, dynamic> json) {

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,6 +31,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   // 保留本地 Delegate 用於 UI 解析 (myPlayer, otherPlayers)
   final _bigTwoManager = BigTwoDelegate(); 
   late final String _userId;
+
+  List<List<PlayingCard>> _quickSelectList = [];
 
   bool _isMatching = false;
 
@@ -123,6 +126,26 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
               onPressed: () {
                 /* TODO: Implement filters or hints */
                 print(type);
+                if (type == 'Pair') {
+                  final pairs = _bigTwoManager.findPairs(_player.hand);
+                  if (pairs.isEmpty) return;
+
+                  final eq = DeepCollectionEquality();
+                  if (!eq.equals(_quickSelectList, pairs)) {
+                    _quickSelectList = pairs;
+                    _player.setCardSelection(pairs[0]);
+                    return;
+                  }
+
+                  int? selectIndex = Iterable.generate(_quickSelectList.length, (i) => i)
+                      .firstWhereOrNull((i)=>eq.equals(_quickSelectList[i], _player.selectedCards));
+                  if (selectIndex == null) {
+                    _player.setCardSelection(pairs[0]);
+                    return;
+                  }
+                  selectIndex = (selectIndex + 1) % _quickSelectList.length;
+                  _player.setCardSelection(pairs[selectIndex]);
+                }
                 },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

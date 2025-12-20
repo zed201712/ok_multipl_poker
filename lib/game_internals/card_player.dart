@@ -57,4 +57,10 @@ class CardPlayer with ChangeNotifier implements Player {
     }
     notifyListeners();
   }
+
+  void setCardSelection(List<PlayingCard> cards) {
+    selectedCards.clear();
+    selectedCards.addAll(cards);
+    notifyListeners();
+  }
 }
