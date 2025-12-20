@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'big_two_player.dart';
 import 'participant_info.dart';
@@ -30,4 +31,50 @@ class BigTwoState {
       _$BigTwoStateFromJson(json);
 
   Map<String, dynamic> toJson() => _$BigTwoStateToJson(this);
+
+  List<BigTwoPlayer> seatsParticipantList() {
+    return seats
+        .map((e) => participants.firstWhere((p) => p.uid == e))
+        .toList();
+  }
+
+  String? nextPlayerId() {
+    final currentSeats = seatsParticipantList();
+    if (currentSeats.isEmpty) return null;
+    final total = currentSeats.length;
+
+    final currentIndex = Iterable.generate(total, (i) => i)
+        .firstWhere((i) => currentSeats[i].uid == currentPlayerId);
+
+    final next1Index = currentIndex + 1;
+    final range = Iterable.generate(total - 1, (i) => (i + next1Index) % total);
+    final nextPlayerIndex = range.firstWhereOrNull((
+        offset) => (currentSeats[offset].hasPassed == false));
+
+    if (nextPlayerIndex == null) return null;
+    return currentSeats[nextPlayerIndex].uid;
+  }
+
+  BigTwoState copyWith({
+    List<BigTwoPlayer>? participants,
+    List<String>? seats,
+    String? currentPlayerId,
+    List<String>? lastPlayedHand,
+    String? lastPlayedById,
+    String? winner,
+    int? passCount,
+    List<String>? restartRequesters,
+  }) {
+    return BigTwoState(
+      participants: participants ?? this.participants,
+      seats: seats ?? this.seats,
+      currentPlayerId: currentPlayerId ?? this.currentPlayerId,
+      lastPlayedHand: lastPlayedHand ?? this.lastPlayedHand,
+      lastPlayedById: lastPlayedById ?? this.lastPlayedById,
+      winner: winner ?? this.winner,
+      passCount: passCount ?? this.passCount,
+      restartRequesters: restartRequesters ?? this.restartRequesters,
+    );
+  }
+
 }

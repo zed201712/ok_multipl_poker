@@ -20,4 +20,18 @@ class BigTwoPlayer {
       _$BigTwoPlayerFromJson(json);
 
   Map<String, dynamic> toJson() => _$BigTwoPlayerToJson(this);
+
+  BigTwoPlayer copyWith({
+    String? uid,
+    String? name,
+    List<String>? cards,
+    bool? hasPassed,
+  }) {
+    return BigTwoPlayer(
+        uid: uid ?? this.uid,
+        cards: cards ?? this.cards,
+        name: name ?? this.name,
+        hasPassed: hasPassed ?? this.hasPassed,
+    );
+  }
 }
