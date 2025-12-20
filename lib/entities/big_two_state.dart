@@ -15,6 +15,8 @@ class BigTwoState {
   final String? winner;
   final int passCount;
   final List<String> restartRequesters;
+  final List<String> deckCards;
+  final String lockedHandType;
 
   BigTwoState({
     required this.participants,
@@ -25,6 +27,8 @@ class BigTwoState {
     this.winner,
     this.passCount = 0,
     this.restartRequesters = const [],
+    this.deckCards = const [],
+    this.lockedHandType = '',
   });
 
   factory BigTwoState.fromJson(Map<String, dynamic> json) =>
@@ -64,6 +68,8 @@ class BigTwoState {
     String? winner,
     int? passCount,
     List<String>? restartRequesters,
+    List<String>? deckCards,
+    String? lockedHandType,
   }) {
     return BigTwoState(
       participants: participants ?? this.participants,
@@ -74,6 +80,8 @@ class BigTwoState {
       winner: winner ?? this.winner,
       passCount: passCount ?? this.passCount,
       restartRequesters: restartRequesters ?? this.restartRequesters,
+      deckCards: deckCards ?? this.deckCards,
+      lockedHandType: lockedHandType ?? this.lockedHandType,
     );
   }
 
