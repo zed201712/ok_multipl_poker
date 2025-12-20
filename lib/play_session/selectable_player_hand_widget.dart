@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:ok_multipl_poker/game_internals/card_player.dart';
 import 'package:provider/provider.dart';
 
 import '../game_internals/big_two_board_state.dart';
@@ -18,8 +19,7 @@ class SelectablePlayerHandWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final boardState = context.watch<BigTwoBoardState>();
-    final player = boardState.player;
+    final player = context.watch<CardPlayer>();
 
     return Column(
       mainAxisSize: MainAxisSize.min,

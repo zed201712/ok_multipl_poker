@@ -42,6 +42,10 @@ class BigTwoState {
         .toList();
   }
 
+  BigTwoPlayer? getParticipantByID(String playerID) {
+    return participants.firstWhereOrNull((p) => p.uid == playerID);
+  }
+
   String? nextPlayerId() {
     final currentSeats = seatsParticipantList();
     if (currentSeats.isEmpty) return null;
