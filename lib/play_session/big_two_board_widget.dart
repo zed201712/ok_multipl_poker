@@ -8,6 +8,7 @@ import 'package:ok_multipl_poker/entities/big_two_state.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/card_player.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
+import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_big_two_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
@@ -117,16 +118,14 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           // 將 String 轉回 PlayingCard 供 CardPlayer 使用
           _player.replaceWith(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());
 
-          // ... (HandType Buttons 邏輯保持不變) ...
-          const handTypes = ['Single', 'Pair', 'Full House', 'Straight', 'Straight Flush'];
-          final handTypeButtons = handTypes
-              .map((type) => Padding(
+          final handTypeButtons = BigTwoCardPattern.values
+              .map((pattern) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: OutlinedButton(
               onPressed: () {
                 /* TODO: Implement filters or hints */
-                print(type);
-                if (type == 'Pair') {
+                print(pattern.displayName);
+                if (pattern == BigTwoCardPattern.pair) {
                   final pairs = _bigTwoManager.findPairs(_player.hand);
                   if (pairs.isEmpty) return;
 
@@ -151,7 +150,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(type),
+              child: Text(pattern.displayName),
             ),
           ))
               .toList();
