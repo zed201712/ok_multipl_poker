@@ -6,6 +6,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_ai.dart';
+import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_play_cards_ai.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
@@ -54,7 +55,7 @@ class FirestoreBigTwoController {
         ),
       );
       
-      _testModeAIs.add(BigTwoAI(
+      _testModeAIs.add(BigTwoPlayCardsAI(
         firestore: firestore,
         auth: mockAuth, // 每個 AI 使用獨立的 Mock Auth
         settingsController: settingsController,
