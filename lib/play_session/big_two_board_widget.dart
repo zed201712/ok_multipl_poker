@@ -171,30 +171,68 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           return Scaffold(
             body: Stack(
               children: [
-                // --- 桌面區域 (Last Played Hand) ---
+                // --- 桌面區域 (Last Played Hand & Deck) ---
                 Positioned.fromRelativeRect(
                   rect: RelativeRect.fromLTRB(edgeSize, edgeSize, edgeSize, edgeSize),
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: ShowOnlyCardAreaWidget(
-                      cards: bigTwoState.deckCards.map((c) => PlayingCard.fromString(c)).toList(),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 上一次出的牌 (Last Played Hand) - 顯示在上方或顯眼處
+                        if (bigTwoState.lastPlayedHand.isNotEmpty) ...[
+                          const Text('Last Played:'),
+                          ShowOnlyCardAreaWidget(
+                            cards: bigTwoState.lastPlayedHand
+                                .map((c) => PlayingCard.fromString(c))
+                                .toList(),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        
+                        // 桌面牌堆 (Deck Cards) - 依照需求顯示
+                         const Text('Table/Deck:'),
+                         ShowOnlyCardAreaWidget(
+                           cards: bigTwoState.deckCards
+                               .map((c) => PlayingCard.fromString(c))
+                               .toList(),
+                         ),
+                      ],
                     ),
                   ),
                 ),
 
                 // --- 對手區域 ---
-                ..._otherPlayerWidgets(otherPlayers),
+                ..._otherPlayerWidgets(otherPlayers, bigTwoState.currentPlayerId),
 
                 // --- 玩家手牌區域 ---
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 20.0),
-                    child: ChangeNotifierProvider.value(
-                      value: _player,
-                      child: SelectablePlayerHandWidget(
-                        buttonWidgets: handTypeButtons,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 標示自己是否為 Current Player
+                        if (isMyTurn)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.amber,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              "YOUR TURN",
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                            ),
+                          ),
+                        ChangeNotifierProvider.value(
+                          value: _player,
+                          child: SelectablePlayerHandWidget(
+                            buttonWidgets: handTypeButtons,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -277,7 +315,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   }
 
   // --- 對手區域 ---
-  List<Widget> _otherPlayerWidgets(List<BigTwoPlayer> otherPlayers) {
+  List<Widget> _otherPlayerWidgets(List<BigTwoPlayer> otherPlayers, String currentPlayerId) {
     return [
       if (otherPlayers.isNotEmpty)
         Align(
@@ -287,6 +325,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             child: _OpponentHand(
               cardCount: otherPlayers[0].cards.length,
               playerName: otherPlayers[0].name,
+              isCurrentTurn: otherPlayers[0].uid == currentPlayerId,
             ),
           ),
         ),
@@ -300,6 +339,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
               child: _OpponentHand(
                 cardCount: otherPlayers[1].cards.length,
                 playerName: otherPlayers[1].name,
+                isCurrentTurn: otherPlayers[1].uid == currentPlayerId,
               ),
             ),
           ),
@@ -314,6 +354,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
               child: _OpponentHand(
                 cardCount: otherPlayers[2].cards.length,
                 playerName: otherPlayers[2].name,
+                isCurrentTurn: otherPlayers[2].uid == currentPlayerId,
               ),
             ),
           ),
@@ -325,10 +366,12 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 class _OpponentHand extends StatelessWidget {
   final int cardCount;
   final String playerName;
+  final bool isCurrentTurn;
 
   const _OpponentHand({
     required this.cardCount,
     required this.playerName,
+    this.isCurrentTurn = false,
   });
 
   @override
@@ -337,7 +380,13 @@ class _OpponentHand extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(playerName, style: theme.textTheme.titleMedium),
+        Text(
+            playerName, 
+            style: theme.textTheme.titleMedium?.copyWith(
+                color: isCurrentTurn ? Colors.amber : null,
+                fontWeight: isCurrentTurn ? FontWeight.bold : null,
+            )
+        ),
         const SizedBox(height: 8),
         Row(
           mainAxisSize: MainAxisSize.min,
