@@ -3,7 +3,6 @@ import 'package:ok_multipl_poker/entities/big_two_player.dart';
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
-import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 
 void main() {
   group('BigTwoDelegate', () {
@@ -28,6 +27,81 @@ void main() {
       );
     });
 
+    // --- Unit Tests for Public Methods ---
+
+    group('getCardPattern', () {
+      test('identifies Single', () {
+        expect(delegate.getCardPattern(['C3']), BigTwoCardPattern.single);
+      });
+      test('identifies Pair', () {
+        expect(delegate.getCardPattern(['C3', 'D3']), BigTwoCardPattern.pair);
+      });
+      test('identifies Straight', () {
+        expect(delegate.getCardPattern(['C3', 'D4', 'H5', 'S6', 'C7']), BigTwoCardPattern.straight);
+      });
+      test('identifies FullHouse', () {
+        expect(delegate.getCardPattern(['C3', 'D3', 'H3', 'S4', 'C4']), BigTwoCardPattern.fullHouse);
+      });
+      test('identifies FourOfAKind', () {
+        expect(delegate.getCardPattern(['C3', 'D3', 'H3', 'S3', 'C4']), BigTwoCardPattern.fourOfAKind);
+      });
+      test('identifies StraightFlush', () {
+        expect(delegate.getCardPattern(['C3', 'C4', 'C5', 'C6', 'C7']), BigTwoCardPattern.straightFlush);
+      });
+      test('returns null for invalid pattern', () {
+        expect(delegate.getCardPattern(['C3', 'D4']), null); // Random 2 cards
+        expect(delegate.getCardPattern(['C3', 'D3', 'H3']), null); // Triplet not valid in Big Two usually
+      });
+    });
+
+    group('isBeating', () {
+      test('Single comparison', () {
+        expect(delegate.isBeating(['D3'], ['C3'], BigTwoCardPattern.single), true); // Diamond > Club
+        expect(delegate.isBeating(['C3'], ['D3'], BigTwoCardPattern.single), false);
+        expect(delegate.isBeating(['C4'], ['D3'], BigTwoCardPattern.single), true);
+      });
+      test('Pair comparison', () {
+        expect(delegate.isBeating(['S3', 'H3'], ['C3', 'D3'], BigTwoCardPattern.pair), true); // Spades/Hearts > Clubs/Diamonds
+        expect(delegate.isBeating(['C4', 'D4'], ['S3', 'H3'], BigTwoCardPattern.pair), true);
+      });
+      test('FullHouse comparison (compare triplet)', () {
+        // 44433 vs 33344
+        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S3', 'C3'], ['C3', 'D3', 'H3', 'S4', 'C4'], BigTwoCardPattern.fullHouse), true);
+      });
+      test('FourOfAKind comparison (compare quad)', () {
+        // 44443 vs 33334
+        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S4', 'C3'], ['C3', 'D3', 'H3', 'S3', 'C4'], BigTwoCardPattern.fourOfAKind), true);
+      });
+    });
+
+    group('checkPlayValidity', () {
+      test('allows any valid pattern on free turn', () {
+        final state = initialState.copyWith(lockedHandType: '');
+        expect(delegate.checkPlayValidity(state, ['C3'], BigTwoCardPattern.single), true);
+        expect(delegate.checkPlayValidity(state, ['C3', 'D3'], BigTwoCardPattern.pair), true);
+      });
+
+      test('requires matching pattern on normal turn', () {
+        final state = initialState.copyWith(
+          lockedHandType: BigTwoCardPattern.single.toJson(),
+          lastPlayedHand: ['C3']
+        );
+        expect(delegate.checkPlayValidity(state, ['C3', 'D3'], BigTwoCardPattern.pair), false);
+        expect(delegate.checkPlayValidity(state, ['D3'], BigTwoCardPattern.single), true);
+      });
+
+      test('requires beating previous hand', () {
+        final state = initialState.copyWith(
+            lockedHandType: BigTwoCardPattern.single.toJson(),
+            lastPlayedHand: ['D3']
+        );
+        expect(delegate.checkPlayValidity(state, ['C3'], BigTwoCardPattern.single), false); // C3 < D3
+        expect(delegate.checkPlayValidity(state, ['H3'], BigTwoCardPattern.single), true); // H3 > D3
+      });
+    });
+
+    // --- Integration Tests (processAction) ---
+
     test('should allow playing a valid single card', () {
       final state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3']});
       
@@ -44,9 +118,6 @@ void main() {
     });
 
     test('should allow playing a valid pair', () {
-      // Must start with C3 or be free turn. Let's assume free turn after C3 played.
-      // But C3 is in hand, so first turn must include C3.
-      // To test pair, we play Pair of 3s (C3, D3)
       final state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3', 'D3']});
       
       expect(state.lastPlayedHand, unorderedEquals(['C3', 'D3']));
@@ -55,90 +126,104 @@ void main() {
     });
 
     test('should validate turn logic: must beat last played hand', () {
-      // P1 plays C3
       var state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3']});
       
-      // P2 tries to play C2 (beats C3) -> OK (Wait, C2 > C3? Yes in Big Two)
-      // P2 has C5. Let's play C5 (beats C3)
       state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5']});
       expect(state.lastPlayedById, p2);
       expect(state.lastPlayedHand, ['C5']);
 
-      // P3 plays C2 (beats C5)
       state = delegate.processAction(state, 'play_cards', p3, {'cards': ['C2']});
       expect(state.lastPlayedById, p3);
 
-      // P4 tries to play C10 (smaller than C2) -> Fail, state unchanged
       final oldState = state;
       state = delegate.processAction(state, 'play_cards', p4, {'cards': ['C10']});
       expect(state, oldState);
     });
 
     test('should validate turn logic: must match pattern', () {
-      // P1 plays pair 3s
       var state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3', 'D3']});
       
-      // P2 tries to play single C5 -> Fail
       final oldState = state;
       state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5']});
       expect(state, oldState);
       
-      // P2 plays pair 5s -> Success
       state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5', 'D5']});
       expect(state.lastPlayedById, p2);
       expect(state.lastPlayedHand, unorderedEquals(['C5', 'D5']));
     });
 
     test('bomb logic: Four of a Kind beats Straight', () {
-      // Setup: P1 plays Straight 3-4-5-6-7
+      // Create a full copy of participants to avoid index out of bounds ifseats mismatch
+      final newParticipants = List<BigTwoPlayer>.from(initialState.participants);
+      // Give P1 a straight
+      newParticipants[0] = newParticipants[0].copyWith(cards: ['C2', 'C3', 'D4', 'H5', 'S6', 'C7']);
+      // Give P2 a Quad
+      newParticipants[1] = newParticipants[1].copyWith(cards: ['C8', 'D8', 'H8', 'S8', 'C9', 'C10']);
+
       final s0 = initialState.copyWith(
-        participants: [
-           initialState.participants[0].copyWith(cards: ['C3', 'D4', 'H5', 'S6', 'C7']),
-           initialState.participants[1].copyWith(cards: ['C8', 'D8', 'H8', 'S8', 'C9']), // P2 has Quads
-        ]
+        participants: newParticipants
       );
       
       var state = delegate.processAction(s0, 'play_cards', p1, {'cards': ['C3', 'D4', 'H5', 'S6', 'C7']});
       expect(state.lockedHandType, BigTwoCardPattern.straight.toJson());
+      print("p1[$p1], p2[$p2], lastPlayedById: ${state.lastPlayedById}, lockedHandType: ${state.lockedHandType}");
+      expect(state.lastPlayedById, p1);
       
-      // P2 bombs with Quads 8s
+      // P2 bombs with Quads 8s.
       state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C8', 'D8', 'H8', 'S8', 'C9']});
-      
+
+      print("p1[$p1], p2[$p2], lastPlayedById: ${state.lastPlayedById}, lockedHandType: ${state.lockedHandType}");
       expect(state.lastPlayedById, p2);
       expect(state.lockedHandType, BigTwoCardPattern.fourOfAKind.toJson());
     });
 
     test('bomb logic: Straight Flush beats Four of a Kind', () {
-      // Setup: P1 plays Quads
+      final newParticipants = List<BigTwoPlayer>.from(initialState.participants);
+      // Give P1 a Quad
+      newParticipants[0] = newParticipants[0].copyWith(cards: ['C2', 'C3', 'D3', 'H3', 'S3', 'C4']);
+      // Give P2 a SF
+      newParticipants[1] = newParticipants[1].copyWith(cards: ['C5', 'C6', 'C7', 'C8', 'C9', 'C10']);
+
       final s0 = initialState.copyWith(
-        participants: [
-           initialState.participants[0].copyWith(cards: ['C3', 'D3', 'H3', 'S3', 'C4']), // Quads 3
-           initialState.participants[1].copyWith(cards: ['C5', 'C6', 'C7', 'C8', 'C9']), // SF
-        ]
+        participants: newParticipants
       );
 
       var state = delegate.processAction(s0, 'play_cards', p1, {'cards': ['C3', 'D3', 'H3', 'S3', 'C4']});
       expect(state.lockedHandType, BigTwoCardPattern.fourOfAKind.toJson());
+      expect(state.lastPlayedById, p1);
 
       // P2 bombs with SF
       state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5', 'C6', 'C7', 'C8', 'C9']});
       expect(state.lastPlayedById, p2);
       expect(state.lockedHandType, BigTwoCardPattern.straightFlush.toJson());
     });
+    
+    test('bomb logic: Four of a Kind beats smaller Four of a Kind', () {
+       final newParticipants = List<BigTwoPlayer>.from(initialState.participants);
+       // Give P1 a Quad
+       newParticipants[0] = newParticipants[0].copyWith(cards: ['C2', 'C3', 'D3', 'H3', 'S3', 'C4']);
+       // Give P2 a Quad
+       newParticipants[1] = newParticipants[1].copyWith(cards: ['C5', 'D5', 'H5', 'S5', 'C6', 'C10']);
+
+       final s0 = initialState.copyWith(
+        participants: newParticipants
+       );
+      var state = delegate.processAction(s0, 'play_cards', p1, {'cards': ['C3', 'D3', 'H3', 'S3', 'C4']});
+      
+      state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5', 'D5', 'H5', 'S5', 'C6']});
+      expect(state.lastPlayedById, p2);
+    });
 
     test('round reset: lastPlayedHand should be empty after round over', () {
-      // P1 plays C3
       var state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3']});
       
-      // P2 pass, P3 pass, P4 pass
       state = delegate.processAction(state, 'pass_turn', p2, {});
       state = delegate.processAction(state, 'pass_turn', p3, {});
       state = delegate.processAction(state, 'pass_turn', p4, {});
       
-      // Now it should be P1's turn again (Round Over)
       expect(state.currentPlayerId, p1);
       expect(state.lockedHandType, '');
-      expect(state.lastPlayedHand, isEmpty); // Check reset
+      expect(state.lastPlayedHand, isEmpty); 
       expect(state.passCount, 0);
     });
 

@@ -144,11 +144,11 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     }
 
     // Determine hand type and check validity
-    final BigTwoCardPattern? playedPattern = _getCardPattern(cardsPlayed);
+    final BigTwoCardPattern? playedPattern = getCardPattern(cardsPlayed);
     if (playedPattern == null) return state; // Invalid pattern
 
     // Check validity against locked state
-    if (!_checkPlayValidity(state, cardsPlayed, playedPattern)) {
+    if (!checkPlayValidity(state, cardsPlayed, playedPattern)) {
       return state;
     }
 
@@ -262,7 +262,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   // --- Helper Methods for Card Logic ---
   
   /// Identifies the pattern of the played cards.
-  BigTwoCardPattern? _getCardPattern(List<String> cardsStr) {
+  BigTwoCardPattern? getCardPattern(List<String> cardsStr) {
     final cards = cardsStr.map(PlayingCard.fromString).toList();
 
     if (isSingle(cards)) return BigTwoCardPattern.single;
@@ -279,7 +279,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   }
 
   /// Checks if the played cards are valid against the current state logic.
-  bool _checkPlayValidity(BigTwoState state, List<String> cardsPlayed, BigTwoCardPattern playedPattern) {
+  bool checkPlayValidity(BigTwoState state, List<String> cardsPlayed, BigTwoCardPattern playedPattern) {
     if (state.lockedHandType.isEmpty) {
       // Free turn: Any valid pattern is allowed
       return true;
@@ -294,7 +294,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         return true; // Bomb!
       }
       // Compare two Straight Flushes
-      return _isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+      return isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
     }
 
     // 2. Four of a Kind beats anything except Straight Flush and higher Four of a Kind
@@ -306,7 +306,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         return true; // Bomb! (Beats Straight, FullHouse, etc.)
       }
       // Compare two Four of a Kinds
-      return _isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+      return isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
     }
 
     // Standard Rule: Must match pattern
@@ -315,11 +315,11 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     }
 
     // Compare same pattern
-    return _isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+    return isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
   }
 
   /// Compares if [current] beats [previous]. Assumes both are of [pattern] or logic handled before.
-  bool _isBeating(List<String> currentStr, List<String> previousStr, BigTwoCardPattern pattern) {
+  bool isBeating(List<String> currentStr, List<String> previousStr, BigTwoCardPattern pattern) {
     if (currentStr.length != previousStr.length) return false;
     
     final current = currentStr.map(PlayingCard.fromString).toList();
