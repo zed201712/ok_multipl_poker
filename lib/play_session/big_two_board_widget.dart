@@ -33,8 +33,6 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   final _bigTwoManager = BigTwoDelegate(); 
   late final String _userId;
 
-  List<List<PlayingCard>> _quickSelectList = [];
-
   bool _isMatching = false;
 
   @override
@@ -118,34 +116,42 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           // 將 String 轉回 PlayingCard 供 CardPlayer 使用
           _player.replaceWith(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());
 
+          // 使用 BigTwoCardPattern Enum 替代硬編碼
           final handTypeButtons = BigTwoCardPattern.values
               .map((pattern) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: OutlinedButton(
               onPressed: () {
-                /* TODO: Implement filters or hints */
-                print(pattern.displayName);
-                if (pattern == BigTwoCardPattern.pair) {
-                  final pairs = _bigTwoManager.findPairs(_player.hand);
-                  if (pairs.isEmpty) return;
-
-                  final eq = DeepCollectionEquality();
-                  if (!eq.equals(_quickSelectList, pairs)) {
-                    _quickSelectList = pairs;
-                    _player.setCardSelection(pairs[0]);
-                    return;
-                  }
-
-                  int? selectIndex = Iterable.generate(_quickSelectList.length, (i) => i)
-                      .firstWhereOrNull((i)=>eq.equals(_quickSelectList[i], _player.selectedCards));
-                  if (selectIndex == null) {
-                    _player.setCardSelection(pairs[0]);
-                    return;
-                  }
-                  selectIndex = (selectIndex + 1) % _quickSelectList.length;
-                  _player.setCardSelection(pairs[selectIndex]);
+                List<List<PlayingCard>> Function(List<PlayingCard>)? finder;
+                switch (pattern) {
+                  case BigTwoCardPattern.single:
+                    finder = _bigTwoManager.findSingles;
+                    break;
+                  case BigTwoCardPattern.pair:
+                    finder = _bigTwoManager.findPairs;
+                    break;
+                  case BigTwoCardPattern.straight:
+                    finder = _bigTwoManager.findStraights;
+                    break;
+                  case BigTwoCardPattern.fullHouse:
+                    finder = _bigTwoManager.findFullHouses;
+                    break;
+                  case BigTwoCardPattern.straightFlush:
+                    finder = _bigTwoManager.findStraightFlushes;
+                    break;
                 }
-                },
+                
+                if (finder != null) {
+                   final nextSelection = _bigTwoManager.getNextPatternSelection(
+                     hand: _player.hand, 
+                     currentSelection: _player.selectedCards, 
+                     finder: finder
+                   );
+                   if (nextSelection.isNotEmpty) {
+                     _player.setCardSelection(nextSelection);
+                   }
+                }
+              },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
