@@ -114,7 +114,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           final myPlayerState = _bigTwoManager.myPlayer(_userId, bigTwoState);
           _player.name = myPlayerState.name;
           // 將 String 轉回 PlayingCard 供 CardPlayer 使用
-          _player.replaceWith(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());
+          final sortedCards = _bigTwoManager.sortCardsByRank(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());;
+          _player.replaceWith(sortedCards);
 
           // 使用 BigTwoCardPattern Enum 替代硬編碼
           final handTypeButtons = BigTwoCardPattern.values
@@ -143,8 +144,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 
                 if (finder != null) {
                    final nextSelection = _bigTwoManager.getNextPatternSelection(
-                     hand: _player.hand, 
-                     currentSelection: _player.selectedCards, 
+                     hand: _player.hand,
+                     currentSelection: _player.selectedCards,
                      finder: finder
                    );
                    if (nextSelection.isNotEmpty) {
