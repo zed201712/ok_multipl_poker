@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 
+import 'playing_card_image_widget.dart';
 import 'playing_card_widget.dart';
 
 class ShowOnlyCardAreaWidget extends StatelessWidget {
@@ -21,9 +22,13 @@ class ShowOnlyCardAreaWidget extends StatelessWidget {
           alignment: WrapAlignment.center,
           spacing: 10,
           runSpacing: 10,
-          children: cards.map((card) => PlayingCardWidget(card)).toList(),
+          children: cards.map((card) => PlayingCardImageWidget(
+              card,
+              AssetImage('assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png')),
+          ).toList(),
         ),
       ),
     );
   }
 }
+

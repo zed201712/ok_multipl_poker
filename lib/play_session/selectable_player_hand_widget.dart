@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/game_internals/card_player.dart';
+import 'package:ok_multipl_poker/play_session/playing_card_image_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../game_internals/big_two_board_state.dart';
@@ -50,7 +51,13 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                       },
                       child: Transform.translate(
                         offset: Offset(0, isSelected ? -10.0 : 0),
-                        child: PlayingCardWidget(card),
+                        child: PlayingCardImageWidget(
+                            card,
+                          AssetImage(
+                          // 'assets/images/goblin_cards/goblin_1_001.png',
+                          'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
+                        ),
+                        ),
                       ),
                     );
                   }).toList(),
