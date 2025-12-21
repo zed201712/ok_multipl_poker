@@ -14,6 +14,9 @@ enum BigTwoCardPattern {
   /// 葫蘆 (Full House)
   fullHouse('Full House'),
 
+  /// 鐵支 (Four of a Kind)
+  fourOfAKind('Four of a Kind'),
+
   /// 同花順 (Straight Flush)
   straightFlush('Straight Flush');
 

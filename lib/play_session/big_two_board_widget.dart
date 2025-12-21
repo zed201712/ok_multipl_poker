@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
@@ -137,6 +138,9 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                   case BigTwoCardPattern.fullHouse:
                     finder = _bigTwoManager.findFullHouses;
                     break;
+                  case BigTwoCardPattern.fourOfAKind:
+                    finder = _bigTwoManager.findFourOfAKinds;
+                    break;
                   case BigTwoCardPattern.straightFlush:
                     finder = _bigTwoManager.findStraightFlushes;
                     break;
@@ -262,6 +266,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                           TextButton(
                             onPressed: () {
                               _gameController.leaveRoom();
+                              GoRouter.of(context).go('/');
                             },
                             child: const Text('Leave', style: TextStyle(color: Colors.white)),
                           )
@@ -350,7 +355,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           child: Padding(
             padding: const EdgeInsets.only(right: 20.0),
             child: RotatedBox(
-              quarterTurns: -1,
+              quarterTurns: 3,
               child: _OpponentHand(
                 cardCount: otherPlayers[2].cards.length,
                 playerName: otherPlayers[2].name,
@@ -371,7 +376,7 @@ class _OpponentHand extends StatelessWidget {
   const _OpponentHand({
     required this.cardCount,
     required this.playerName,
-    this.isCurrentTurn = false,
+    required this.isCurrentTurn,
   });
 
   @override

@@ -143,7 +143,28 @@ void main() {
       final fhs = utils.findFullHouses([s3, h3, d3, s4, h4]);
       expect(fhs.length, 1);
     });
-    
+
+    test('isFourOfAKind detects four of a kind', () {
+      final s3 = PlayingCard(CardSuit.spades, 3);
+      final h3 = PlayingCard(CardSuit.hearts, 3);
+      final d3 = PlayingCard(CardSuit.diamonds, 3);
+      final c3 = PlayingCard(CardSuit.clubs, 3);
+      final h4 = PlayingCard(CardSuit.hearts, 4);
+      
+      expect(utils.isFourOfAKind([s3, h3, d3, c3, h4]), isTrue);
+    });
+
+    test('findFourOfAKinds finds four of a kind', () {
+      final s3 = PlayingCard(CardSuit.spades, 3);
+      final h3 = PlayingCard(CardSuit.hearts, 3);
+      final d3 = PlayingCard(CardSuit.diamonds, 3);
+      final c3 = PlayingCard(CardSuit.clubs, 3);
+      final h4 = PlayingCard(CardSuit.hearts, 4);
+      
+      final foaks = utils.findFourOfAKinds([s3, h3, d3, c3, h4]);
+      expect(foaks.length, 1);
+    });
+
     test('isStraightFlush detects straight flush', () {
       final s3 = PlayingCard(CardSuit.spades, 3);
       final s4 = PlayingCard(CardSuit.spades, 4);

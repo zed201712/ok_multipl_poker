@@ -178,6 +178,29 @@ mixin BigTwoDeckUtilsMixin {
     return fullHouses;
   }
 
+  /// Four of a Kind (鐵支)
+  bool isFourOfAKind(List<PlayingCard> cards) {
+    if (cards.length != 5) return false;
+    final valueCounts = <int, int>{};
+    for (final c in cards) {
+      valueCounts[c.value] = (valueCounts[c.value] ?? 0) + 1;
+    }
+    // Must be 4 of one kind (the 5th card can be anything)
+    return valueCounts.containsValue(4);
+  }
+
+  List<List<PlayingCard>> findFourOfAKinds(List<PlayingCard> cards) {
+    if (cards.length < 5) return [];
+    final List<List<PlayingCard>> result = [];
+    final combinations = _combinations(cards, 5);
+    for (final combo in combinations) {
+      if (isFourOfAKind(combo)) {
+        result.add(sortCardsByRank(combo));
+      }
+    }
+    return result;
+  }
+
   /// Straight Flush
   bool isStraightFlush(List<PlayingCard> cards) {
     if (!isStraight(cards)) return false;
