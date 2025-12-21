@@ -13,6 +13,8 @@ _____
 製作一個demo_room_state_widget
 
 檢查有無邏輯錯誤, 並提供改善建議
+
+然後給這個spec 1個用來作commit的commit message
 _____
 我review了, @firestore_turn_based_game_controller_spec_003.md的修改
 並對下列檔案進行了修改

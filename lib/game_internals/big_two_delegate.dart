@@ -3,6 +3,7 @@ import 'package:ok_multipl_poker/entities/big_two_state.dart';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/card_suit.dart';
+import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'big_two_deck_utils_mixin.dart';
 
@@ -124,9 +125,10 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     if (playerIndex == -1) return state;
     final player = state.participants[playerIndex];
     
-    // Verify cards are in hand
+    // Verify cards are in hand and remove them (handling duplicates strictly)
+    final tempHand = List<String>.from(player.cards);
     for (final card in cardsPlayed) {
-      if (!player.cards.contains(card)) {
+      if (!tempHand.remove(card)) {
         return state; 
       }
     }
@@ -141,24 +143,17 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       }
     }
 
-    // Determine hand type
-    String currentHandType = _getHandType(cardsPlayed);
-    if (currentHandType.isEmpty) return state; // Invalid combo
+    // Determine hand type and check validity
+    final BigTwoCardPattern? playedPattern = _getCardPattern(cardsPlayed);
+    if (playedPattern == null) return state; // Invalid pattern
 
-    // Checking if this play is valid against last play
-    bool isFreeTurn = isFirstTurn || (state.lastPlayedById == playerId);
-
-    if (!isFreeTurn) {
-       // Must match locked type
-       if (state.lockedHandType.isNotEmpty && state.lockedHandType != currentHandType) {
-         return state;
-       }
-       // Must beat the previous hand
-       if (!_isBeating(cardsPlayed, state.lastPlayedHand)) return state;
+    // Check validity against locked state
+    if (!_checkPlayValidity(state, cardsPlayed, playedPattern)) {
+      return state;
     }
 
     // 3. Execute Play
-    final newCards = List<String>.from(player.cards)..removeWhere((c) => cardsPlayed.contains(c));
+    final newCards = tempHand;
 
     final newPlayer = player.copyWith(
       cards: newCards,
@@ -177,11 +172,8 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     // Update Deck
     final newDeckCards = List<String>.from(state.deckCards)..addAll(cardsPlayed);
 
-    // Determine new lockedHandType
-    String newLockedHandType = state.lockedHandType;
-    if (isFreeTurn || state.lockedHandType.isEmpty) {
-        newLockedHandType = currentHandType;
-    }
+    // Update lockedHandType
+    String newLockedHandType = playedPattern.toJson();
 
     final tempState = state.copyWith(
       participants: newParticipants,
@@ -227,6 +219,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     List<BigTwoPlayer> participants = state.participants;
     String lockedHandType = state.lockedHandType;
     int passCount = state.passCount;
+    List<String> lastPlayedHand = state.lastPlayedHand;
 
     // Check if everyone else passed (Round Over / Free Turn for next player)
     if (passCount >= state.seats.length - 1) {
@@ -234,6 +227,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
         lockedHandType = "";
         passCount = 0; 
+        lastPlayedHand = []; // Reset last played hand on new round
     }
 
     return state.copyWith(
@@ -241,6 +235,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         participants: participants,
         lockedHandType: lockedHandType,
         passCount: passCount,
+        lastPlayedHand: lastPlayedHand,
     );
   }
 
@@ -266,56 +261,123 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   
   // --- Helper Methods for Card Logic ---
   
-  String _getHandType(List<String> cards) {
-    if (cards.length == 1) return "Single";
+  /// Identifies the pattern of the played cards.
+  BigTwoCardPattern? _getCardPattern(List<String> cardsStr) {
+    final cards = cardsStr.map(PlayingCard.fromString).toList();
+
+    if (isSingle(cards)) return BigTwoCardPattern.single;
+    if (isPair(cards)) return BigTwoCardPattern.pair;
     
-    if (cards.length == 2) {
-       final c1 = PlayingCard.fromString(cards[0]);
-       final c2 = PlayingCard.fromString(cards[1]);
-       if (c1.value == c2.value) return "Pair";
+    if (cards.length == 5) {
+      if (isStraightFlush(cards)) return BigTwoCardPattern.straightFlush;
+      if (isFourOfAKind(cards)) return BigTwoCardPattern.fourOfAKind;
+      if (isFullHouse(cards)) return BigTwoCardPattern.fullHouse;
+      if (isStraight(cards)) return BigTwoCardPattern.straight;
     }
     
-    // Placeholder for 5-card hands 
-    if (cards.length == 5) return "FiveCard"; 
-    
-    return "";
+    return null;
   }
 
-  bool _isBeating(List<String> current, List<String> previous) {
-    if (current.length != previous.length) return false;
-    
-    // Simplified comparison logic (only checking singles and pairs by rank)
-    // Big Two Rank order: 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A, 2
-    
-    if (current.length == 1) {
-      return _compareCards(PlayingCard.fromString(current[0]), PlayingCard.fromString(previous[0])) > 0;
-    }
-    
-    if (current.length == 2) {
-       final c1 = PlayingCard.fromString(current[0]);
-       // c2 checking is already done in _getHandType for current
-       
-       final p1 = PlayingCard.fromString(previous[0]);
-       // p2 checking is assumed valid from previous state
-       
-       return getBigTwoValue(c1.value).compareTo(getBigTwoValue(p1.value)) > 0;
-    }
-    
-    // For 5 cards, simple comparison for now (rank of first card?)
-    // This is incomplete but satisfies the spec's structural requirements.
-    if (current.length == 5) {
-       // Just compare the 'value' of the hand? 
-       // We'll compare the highest card for now as a placeholder.
-       // Real Big Two logic is complex (Straight < Flush < FullHouse < Quads < StraightFlush)
-       return false; 
+  /// Checks if the played cards are valid against the current state logic.
+  bool _checkPlayValidity(BigTwoState state, List<String> cardsPlayed, BigTwoCardPattern playedPattern) {
+    if (state.lockedHandType.isEmpty) {
+      // Free turn: Any valid pattern is allowed
+      return true;
     }
 
-    return false;
+    final lockedPattern = BigTwoCardPattern.fromJson(state.lockedHandType);
+
+    // Special Bomb/Beat Rules
+    // 1. Straight Flush beats anything except higher Straight Flush
+    if (playedPattern == BigTwoCardPattern.straightFlush) {
+      if (lockedPattern != BigTwoCardPattern.straightFlush) {
+        return true; // Bomb!
+      }
+      // Compare two Straight Flushes
+      return _isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+    }
+
+    // 2. Four of a Kind beats anything except Straight Flush and higher Four of a Kind
+    if (playedPattern == BigTwoCardPattern.fourOfAKind) {
+      if (lockedPattern == BigTwoCardPattern.straightFlush) {
+        return false; // Can't beat SF
+      }
+      if (lockedPattern != BigTwoCardPattern.fourOfAKind) {
+        return true; // Bomb! (Beats Straight, FullHouse, etc.)
+      }
+      // Compare two Four of a Kinds
+      return _isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+    }
+
+    // Standard Rule: Must match pattern
+    if (playedPattern != lockedPattern) {
+      return false;
+    }
+
+    // Compare same pattern
+    return _isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+  }
+
+  /// Compares if [current] beats [previous]. Assumes both are of [pattern] or logic handled before.
+  bool _isBeating(List<String> currentStr, List<String> previousStr, BigTwoCardPattern pattern) {
+    if (currentStr.length != previousStr.length) return false;
+    
+    final current = currentStr.map(PlayingCard.fromString).toList();
+    final previous = previousStr.map(PlayingCard.fromString).toList();
+
+    switch (pattern) {
+      case BigTwoCardPattern.single:
+        return _compareCards(current[0], previous[0]) > 0;
+      case BigTwoCardPattern.pair:
+         final cMax = sortCardsByRank(current).last;
+         final pMax = sortCardsByRank(previous).last;
+         return _compareCards(cMax, pMax) > 0;
+      
+      case BigTwoCardPattern.straight:
+      case BigTwoCardPattern.straightFlush:
+        final cRank = _getStraightRankCard(current);
+        final pRank = _getStraightRankCard(previous);
+        return _compareCards(cRank, pRank) > 0;
+
+      case BigTwoCardPattern.fullHouse:
+        final cTrip = _getTripletRank(current);
+        final pTrip = _getTripletRank(previous);
+        return getBigTwoValue(cTrip) > getBigTwoValue(pTrip);
+
+      case BigTwoCardPattern.fourOfAKind:
+        final cQuad = _getQuadRank(current);
+        final pQuad = _getQuadRank(previous);
+        return getBigTwoValue(cQuad) > getBigTwoValue(pQuad);
+    }
   }
   
   int _compareCards(PlayingCard a, PlayingCard b) {
     final rankComp = getBigTwoValue(a.value).compareTo(getBigTwoValue(b.value));
     if (rankComp != 0) return rankComp;
     return getSuitValue(a.suit).compareTo(getSuitValue(b.suit));
+  }
+
+  /// Returns the card that determines the value of the straight.
+  PlayingCard _getStraightRankCard(List<PlayingCard> cards) {
+    final sorted = sortCardsByRank(cards);
+    return sorted.last;
+  }
+
+  /// Returns the rank value of the triplet in a Full House.
+  int _getTripletRank(List<PlayingCard> cards) {
+     final valueCounts = <int, int>{};
+    for (final c in cards) {
+      valueCounts[c.value] = (valueCounts[c.value] ?? 0) + 1;
+    }
+    return valueCounts.entries.firstWhere((e) => e.value == 3).key;
+  }
+
+  /// Returns the rank value of the four in Four of a Kind.
+  int _getQuadRank(List<PlayingCard> cards) {
+    final valueCounts = <int, int>{};
+    for (final c in cards) {
+      valueCounts[c.value] = (valueCounts[c.value] ?? 0) + 1;
+    }
+    return valueCounts.entries.firstWhere((e) => e.value == 4).key;
   }
 }
