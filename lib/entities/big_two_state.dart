@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'big_two_player.dart';
@@ -34,7 +35,15 @@ class BigTwoState {
   factory BigTwoState.fromJson(Map<String, dynamic> json) =>
       _$BigTwoStateFromJson(json);
 
+  factory BigTwoState.fromJsonString(String jsonString) {
+    return BigTwoState.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
+  }
+
   Map<String, dynamic> toJson() => _$BigTwoStateToJson(this);
+
+  String toJsonString() {
+    return jsonEncode(toJson());
+  }
 
   List<BigTwoPlayer> seatsParticipantList() {
     return seats

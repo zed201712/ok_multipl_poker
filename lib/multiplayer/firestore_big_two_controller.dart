@@ -10,6 +10,7 @@ import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_play_cards_ai.da
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
+import 'package:flutter/foundation.dart';
 
 import '../game_internals/big_two_delegate.dart';
 
@@ -96,6 +97,14 @@ class FirestoreBigTwoController {
   /// 玩家選擇 pass。
   Future<void> passTurn() async {
     _gameController.sendGameAction('pass_turn');
+  }
+
+  BigTwoState? getCustomGameState() {
+    return _gameController.getCustomGameState();
+  }
+
+  Future<void> debugSetState(BigTwoState newState) async {
+    await _gameController.updateCustomGameState(newState);
   }
 
   /// 釋放資源，關閉數據流。

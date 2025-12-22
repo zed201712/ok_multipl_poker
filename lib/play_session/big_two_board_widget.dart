@@ -16,6 +16,7 @@ import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
 import 'package:ok_multipl_poker/style/my_button.dart';
 import 'package:ok_multipl_poker/play_session/selectable_player_hand_widget.dart';
+import 'package:ok_multipl_poker/play_session/debug_text_widget.dart';
 import '../entities/big_two_player.dart';
 import '../settings/settings.dart';
 
@@ -33,6 +34,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   // 保留本地 Delegate 用於 UI 解析 (myPlayer, otherPlayers)
   final _bigTwoManager = BigTwoDelegate(); 
   late final String _userId;
+
+  final _debugTextController = TextEditingController();
 
   bool _isMatching = false;
 
@@ -57,6 +60,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
   @override
   void dispose() {
+    _debugTextController.dispose();
     _gameController.dispose();
     _player.dispose();
     super.dispose();
@@ -77,6 +81,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsController>(); // watch for changes
+
     return Provider<CardPlayer>(
       create: (_) => _player,
       child: StreamBuilder<TurnBasedGameState<BigTwoState>?>(
@@ -190,7 +196,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                                 .map((c) => PlayingCard.fromString(c))
                                 .toList(),
                           ),
-                          const SizedBox(height: 20),
+                          //const SizedBox(height: 20),
                         ],
                         
                         // 桌面牌堆 (Deck Cards) - 依照需求顯示
@@ -271,6 +277,41 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                             child: const Text('Leave', style: TextStyle(color: Colors.white)),
                           )
                         ],
+                      ),
+                    ),
+                  ),
+
+                // --- 除錯工具 ---
+                if (settings.testModeOn.value)
+                  Positioned(
+                    top: 40,
+                    left: 20,
+                    right: 20,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: DebugTextWidget(
+                        controller: _debugTextController,
+                        onGet: () {
+                          _debugTextController.text = bigTwoState.toJsonString();
+                        },
+                        onSet: (jsonString) {
+                          try {
+                            BigTwoState? currentState = _gameController.getCustomGameState();
+                            if (currentState == null) return;
+                            final inputState = BigTwoState.fromJsonString(jsonString);
+                            final newState = currentState.copyWith(
+                              lastPlayedHand: inputState.lastPlayedHand,
+                              deckCards: inputState.deckCards,
+                              lockedHandType: inputState.lockedHandType,
+                            );
+                            _gameController.debugSetState(newState);
+                          } catch (e) {
+                            // 顯示錯誤提示
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error parsing state: $e')),
+                            );
+                          }
+                        },
                       ),
                     ),
                   ),

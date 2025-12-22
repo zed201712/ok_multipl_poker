@@ -50,6 +50,22 @@ class FirestoreTurnBasedGameController<T> {
     return roomStateController.currentUserId == room.managerUid;
   }
 
+  T? getCustomGameState() {
+    return _gameStateController.value?.customState;
+  }
+
+  Future<bool> updateCustomGameState(T customGameState) async {
+    final room = roomStateController.roomStateStream.value?.room;
+    if (room == null) return false;
+
+    final gameState = _gameStateController.value;
+    if (gameState == null) return false;
+    final updatedGameState = gameState.copyWith(customState: customGameState);
+    final serializedState = jsonEncode(updatedGameState.toJson(_delegate));
+    await roomStateController.updateRoom(roomId: room.roomId, data: {'body': serializedState});
+    return true;
+  }
+
   void _onRoomStateChanged(RoomState? roomState) {
     _currentRoom = roomState?.room;
     if (roomState == null || roomState.room == null) {
