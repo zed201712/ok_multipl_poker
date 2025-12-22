@@ -45,7 +45,7 @@ class BigTwoState {
     return jsonEncode(toJson());
   }
 
-  List<BigTwoPlayer> seatsParticipantList() {
+  List<BigTwoPlayer> seatedPlayersList() {
     return seats
         .map((e) => participants.firstWhere((p) => p.uid == e))
         .toList();
@@ -55,8 +55,23 @@ class BigTwoState {
     return participants.firstWhereOrNull((p) => p.uid == playerID);
   }
 
+  int? indexOfPlayerInSeats(String playerID, {List<BigTwoPlayer>? seatedPlayers}) {
+    final participants = seatedPlayers ?? seatedPlayersList();
+
+    final total = participants.length;
+    try {
+      final currentIndex = Iterable.generate(total, (i) => i)
+          .firstWhere((i) => participants[i].uid == playerID);
+      return currentIndex;
+    }
+    catch (e) {
+      print('Error indexOfPlayerInSeats: $e');
+    }
+    return null;
+  }
+
   String? nextPlayerId() {
-    final currentSeats = seatsParticipantList();
+    final currentSeats = seatedPlayersList();
     if (currentSeats.isEmpty) return null;
     final total = currentSeats.length;
 

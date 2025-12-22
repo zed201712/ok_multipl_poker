@@ -18,6 +18,7 @@ import 'package:ok_multipl_poker/style/my_button.dart';
 import 'package:ok_multipl_poker/play_session/selectable_player_hand_widget.dart';
 import 'package:ok_multipl_poker/play_session/debug_text_widget.dart';
 import '../entities/big_two_player.dart';
+import '../services/error_message_service.dart';
 import '../settings/settings.dart';
 
 class BigTwoBoardWidget extends StatefulWidget {
@@ -36,6 +37,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   late final String _userId;
 
   final _debugTextController = TextEditingController();
+  final _errorMessageServices = ErrorMessageService();
 
   bool _isMatching = false;
 
@@ -47,6 +49,12 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     final store = context.read<FirebaseFirestore>();
     final settings = context.read<SettingsController>();
 
+    if (settings.testModeOn.value) {
+      _bigTwoManager.setErrorMessageService(_errorMessageServices);
+      _errorMessageServices.errorStream.listen((errorMessage) {
+        _debugTextController.text = errorMessage;
+      });
+    }
     
     _userId = auth.currentUser!.uid;
     
@@ -55,6 +63,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
       firestore: store,
       auth: auth,
       settingsController: settings,
+      delegate: _bigTwoManager
     );
   }
 
@@ -173,7 +182,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
               .toList();
 
           final otherPlayers = _bigTwoManager.otherPlayers(_userId, bigTwoState);
-          final edgeSize = 50.0;
+          final edgeSize = 30.0;
 
           // 判斷是否輪到我
           final isMyTurn = gameState.currentPlayerId == _userId;
@@ -282,45 +291,52 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                   ),
 
                 // --- 除錯工具 ---
-                if (settings.testModeOn.value)
-                  Positioned(
-                    top: 40,
-                    left: 20,
-                    right: 20,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: DebugTextWidget(
-                        controller: _debugTextController,
-                        onGet: () {
-                          _debugTextController.text = bigTwoState.toJsonString();
-                        },
-                        onSet: (jsonString) {
-                          try {
-                            BigTwoState? currentState = _gameController.getCustomGameState();
-                            if (currentState == null) return;
-                            final inputState = BigTwoState.fromJsonString(jsonString);
-                            final newState = currentState.copyWith(
-                              lastPlayedHand: inputState.lastPlayedHand,
-                              deckCards: inputState.deckCards,
-                              lockedHandType: inputState.lockedHandType,
-                            );
-                            _gameController.debugSetState(newState);
-                          } catch (e) {
-                            // 顯示錯誤提示
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error parsing state: $e')),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ),
+                ..._debugWidgets(bigTwoState),
               ],
             ),
           );
         },
       ),
     );
+  }
+
+  List<Widget> _debugWidgets(BigTwoState bigTwoState) {
+    final settings = context.watch<SettingsController>(); // watch for changes
+    return [
+    if (settings.testModeOn.value)
+      Positioned(
+        top: 40,
+        left: 20,
+        right: 20,
+        child: Material(
+          type: MaterialType.transparency,
+          child: DebugTextWidget(
+            controller: _debugTextController,
+            onGet: () {
+              _debugTextController.text = bigTwoState.toJsonString();
+            },
+            onSet: (jsonString) {
+              try {
+                BigTwoState? currentState = _gameController.getCustomGameState();
+                if (currentState == null) return;
+                final inputState = BigTwoState.fromJsonString(jsonString);
+                final newState = currentState.copyWith(
+                  lastPlayedHand: inputState.lastPlayedHand,
+                  deckCards: inputState.deckCards,
+                  lockedHandType: inputState.lockedHandType,
+                );
+                _gameController.debugSetState(newState);
+              } catch (e) {
+                // 顯示錯誤提示
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error parsing state: $e')),
+                );
+              }
+            },
+          ),
+        ),
+      ),
+    ];
   }
 
   Widget _functionButtons(bool isMyTurn) {
@@ -362,6 +378,14 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
   // --- 對手區域 ---
   List<Widget> _otherPlayerWidgets(List<BigTwoPlayer> otherPlayers, String currentPlayerId) {
+    List<int> fourPlayerSeatOrder = [
+      1, //topCenter
+      2, //centerLeft
+      0, //centerRight
+    ];
+    final playersBySeatOrder = (otherPlayers.length == 3) ?
+      fourPlayerSeatOrder.map((i)=>otherPlayers[i]).toList() :
+      otherPlayers;
     return [
       if (otherPlayers.isNotEmpty)
         Align(
@@ -369,9 +393,9 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           child: Padding(
             padding: const EdgeInsets.only(top: 40.0),
             child: _OpponentHand(
-              cardCount: otherPlayers[0].cards.length,
-              playerName: otherPlayers[0].name,
-              isCurrentTurn: otherPlayers[0].uid == currentPlayerId,
+              cardCount: playersBySeatOrder[0].cards.length,
+              playerName: playersBySeatOrder[0].name,
+              isCurrentTurn: playersBySeatOrder[0].uid == currentPlayerId,
             ),
           ),
         ),
@@ -383,9 +407,9 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             child: RotatedBox(
               quarterTurns: 1,
               child: _OpponentHand(
-                cardCount: otherPlayers[1].cards.length,
-                playerName: otherPlayers[1].name,
-                isCurrentTurn: otherPlayers[1].uid == currentPlayerId,
+                cardCount: playersBySeatOrder[1].cards.length,
+                playerName: playersBySeatOrder[1].name,
+                isCurrentTurn: playersBySeatOrder[1].uid == currentPlayerId,
               ),
             ),
           ),
@@ -398,9 +422,9 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             child: RotatedBox(
               quarterTurns: 3,
               child: _OpponentHand(
-                cardCount: otherPlayers[2].cards.length,
-                playerName: otherPlayers[2].name,
-                isCurrentTurn: otherPlayers[2].uid == currentPlayerId,
+                cardCount: playersBySeatOrder[2].cards.length,
+                playerName: playersBySeatOrder[2].name,
+                isCurrentTurn: playersBySeatOrder[2].uid == currentPlayerId,
               ),
             ),
           ),

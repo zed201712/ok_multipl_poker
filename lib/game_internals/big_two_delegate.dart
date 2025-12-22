@@ -5,9 +5,12 @@ import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/card_suit.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
+import 'package:ok_multipl_poker/services/error_message_service.dart';
 import 'big_two_deck_utils_mixin.dart';
 
 class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckUtilsMixin {
+  ErrorMessageService? _errorMessageService;
+
   @override
   BigTwoState initializeGame(Room room) {
     final deck = PlayingCard.createDeck();
@@ -43,11 +46,31 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
   BigTwoPlayer myPlayer(String myUserId, BigTwoState bigTwoState) => bigTwoState.participants.firstWhere((p) => p.uid == myUserId);
 
-  List<BigTwoPlayer> otherPlayers(String myUserId, BigTwoState bigTwoState) => bigTwoState.participants.where((p) => p.uid != myUserId).toList();
+  List<BigTwoPlayer> otherPlayers(String myUserId, BigTwoState bigTwoState) {
+    final seatedPlayers = bigTwoState.seatedPlayersList();
+    final currentIndex = bigTwoState.indexOfPlayerInSeats(myUserId, seatedPlayers: seatedPlayers)!;
+
+    final total = seatedPlayers.length;
+    final next1Index = currentIndex + 1;
+    final seatOrder = Iterable.generate(total - 1, (i) => (i + next1Index) % total);
+    return seatOrder.map((offset) => bigTwoState.participants[offset]).toList();
+  }
+
+  void setErrorMessageService(ErrorMessageService? service) {
+    _errorMessageService = service;
+  }
 
   @override
   BigTwoState processAction(
       BigTwoState currentState, String actionName, String participantId, Map<String, dynamic> payload) {
+    final seatedPlayers = currentState.seatedPlayersList();
+    final currentIndex = currentState.indexOfPlayerInSeats(participantId, seatedPlayers: seatedPlayers)!;
+    String debugMessage = "seats[$currentIndex]";
+    debugMessage = "$debugMessage\nlockedHandType: ${currentState.lockedHandType}";
+    debugMessage = "$debugMessage\nlastPlayedHand: ${currentState.lastPlayedHand}";
+    debugMessage = "$debugMessage\npassCount: ${currentState.passCount}, passed: [${seatedPlayers.map((p) => p.hasPassed)}]";
+    print("_____\n$debugMessage");
+    _errorMessageService?.showError(debugMessage);
 
     print("BigTwoDelegate: processAction called with actionName: $actionName");
     // 0. 基礎檢查
@@ -205,6 +228,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
     BigTwoState tempState = state.copyWith(
       participants: newParticipants,
+      lastPlayedById: playerId,
       passCount: newPassCount,
     );
 

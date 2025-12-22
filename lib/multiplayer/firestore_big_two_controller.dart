@@ -23,17 +23,19 @@ class FirestoreBigTwoController {
   
   /// 測試模式下的 AI 玩家列表
   final List<BigTwoAI> _testModeAIs = [];
+  final BigTwoDelegate _delegate;
 
   /// 建構子，要求傳入 Firestore 和 Auth 實例。
   FirestoreBigTwoController({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     required SettingsController settingsController,
-  }) {
+    required BigTwoDelegate delegate,
+  }) : _delegate = delegate {
     _gameController = FirestoreTurnBasedGameController<BigTwoState>(
       store: firestore,
       auth: auth,
-      delegate: BigTwoDelegate(),
+      delegate: _delegate,
       collectionName: 'big_two_rooms',
       settingsController: settingsController,
     );
@@ -60,6 +62,7 @@ class FirestoreBigTwoController {
         firestore: firestore,
         auth: mockAuth, // 每個 AI 使用獨立的 Mock Auth
         settingsController: settingsController,
+        delegate: _delegate,
       ));
     }
   }

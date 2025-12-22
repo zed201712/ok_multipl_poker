@@ -23,7 +23,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
   late final StreamSubscription _roomsSubscription;
   final String _aiUserId;
   final FirebaseFirestore _firestore;
-  final BigTwoDelegate _delegate = BigTwoDelegate();
+  final BigTwoDelegate _delegate;
   
   bool _isDisposed = false;
   bool _isRoomJoined = false;
@@ -33,8 +33,10 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     required SettingsController settingsController,
+    required BigTwoDelegate delegate,
   }) : _aiUserId = auth.currentUser?.uid ?? '',
-       _firestore = firestore {
+       _firestore = firestore,
+       _delegate = delegate {
        
     _gameController = FirestoreTurnBasedGameController<BigTwoState>(
       auth: auth,
