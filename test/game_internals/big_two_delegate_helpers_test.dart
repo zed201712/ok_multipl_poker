@@ -29,7 +29,8 @@ void main() {
         lockedHandType: '', // Free turn
       );
 
-      final patterns = delegate.getPlayablePatterns(state, player);
+      final handCards = player.cards.map(PlayingCard.fromString).toList();
+      final patterns = delegate.getPlayablePatterns(state, handCards);
       
       expect(patterns, containsAll(BigTwoCardPattern.values));
     });
@@ -42,7 +43,8 @@ void main() {
         lockedHandType: 'Single',
       );
 
-      final patterns = delegate.getPlayablePatterns(state, player);
+      final handCards = player.cards.map(PlayingCard.fromString).toList();
+      final patterns = delegate.getPlayablePatterns(state, handCards);
       
       expect(patterns, contains(BigTwoCardPattern.single));
       expect(patterns, contains(BigTwoCardPattern.fourOfAKind)); // Bomb
@@ -60,7 +62,8 @@ void main() {
         lastPlayedHand: ['D3'],
       );
 
-      final combos = delegate.getPlayableCombinations(state, player, BigTwoCardPattern.single);
+      final handCards = player.cards.map(PlayingCard.fromString).toList();
+      final combos = delegate.getPlayableCombinations(state, handCards, BigTwoCardPattern.single);
       
       // Should beat D3 (Value: 3, Suit: Diamonds=2)
       // C3 (3, Clubs=1) -> No
@@ -90,7 +93,8 @@ void main() {
       // (C3,H3) -> High H3 > D3 -> Yes
       // (H3,S3) -> High S3 > D3 -> Yes
       
-      final combos = delegate.getPlayableCombinations(state, player, BigTwoCardPattern.pair);
+      final handCards = player.cards.map(PlayingCard.fromString).toList();
+      final combos = delegate.getPlayableCombinations(state, handCards, BigTwoCardPattern.pair);
 
       // Verify
       // C3,D3 pair is the one played.
@@ -110,7 +114,8 @@ void main() {
         lastPlayedHand: ['D3'],
       );
 
-      final allCombos = delegate.getAllPlayableCombinations(state, player);
+      final handCards = player.cards.map(PlayingCard.fromString).toList();
+      final allCombos = delegate.getAllPlayableCombinations(state, handCards);
       
       // Should contain singles > D3
       expect(allCombos.any((c) => c.length == 1 && c.contains('H3')), isTrue);

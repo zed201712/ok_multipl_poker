@@ -688,7 +688,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   // --- AI Helpers ---
 
   /// 功能 3: 回傳該玩家現在可以出的牌型種類 (考慮了 lockedHandType)
-  List<BigTwoCardPattern> getPlayablePatterns(BigTwoState state, BigTwoPlayer player) {
+  List<BigTwoCardPattern> getPlayablePatterns(BigTwoState state, List<PlayingCard> handCards) {
     if (state.lockedHandType.isEmpty) {
         return BigTwoCardPattern.values;
     }
@@ -711,10 +711,9 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   /// 功能 4: 針對特定牌型，回傳所有可打出的牌組 (必須 beat lastPlayedHand)
   List<List<String>> getPlayableCombinations(
       BigTwoState state, 
-      BigTwoPlayer player, 
+      List<PlayingCard> handCards, 
       BigTwoCardPattern pattern
   ) {
-    final handCards = player.cards.map(PlayingCard.fromString).toList();
     List<List<PlayingCard>> candidates = [];
 
     switch (pattern) {
@@ -779,12 +778,12 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   }
 
   /// 功能 5: 回傳當前所有可打出的牌組
-  List<List<String>> getAllPlayableCombinations(BigTwoState state, BigTwoPlayer player) {
-      final patterns = getPlayablePatterns(state, player);
+  List<List<String>> getAllPlayableCombinations(BigTwoState state, List<PlayingCard> handCards) {
+      final patterns = getPlayablePatterns(state, handCards);
       final allCombos = <List<String>>[];
       
       for (final p in patterns) {
-          allCombos.addAll(getPlayableCombinations(state, player, p));
+          allCombos.addAll(getPlayableCombinations(state, handCards, p));
       }
       
       return allCombos;

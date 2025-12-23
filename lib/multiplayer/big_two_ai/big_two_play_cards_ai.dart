@@ -14,7 +14,6 @@ import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
-import 'package:ok_multipl_poker/game_internals/card_suit.dart';
 import 'dart:math';
 
 class BigTwoPlayCardsAI implements BigTwoAI {
@@ -163,18 +162,16 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     final lowestCard = sortedHand.first;
     final lowestCardStr = PlayingCard.cardToString(lowestCard);
 
-    // AI logic needs to wrap PlayingCard list in a Player object context for delegate helpers,
-    // or we can just pass the player object if we have it?
-    // Delegate helpers: getPlayablePatterns(state, player) -> uses player.cards
-    // We need to create a temporary player object representing this AI with current hand.
-    final tempPlayer = BigTwoPlayer(uid: _aiUserId, name: 'AI', cards: sortedHand.map(PlayingCard.cardToString).toList());
+    // AI logic wrapped PlayingCard list in a Player object context for delegate helpers,
+    // but now delegate helpers accept List<PlayingCard> directly.
+    // Use sortedHand directly.
 
     // 2. Check First Turn
     // Condition: lastPlayedHand empty && lastPlayedById empty
     final isFirstTurnOfGame = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
     
     if (isFirstTurnOfGame) {
-        final allCombos = _delegate.getAllPlayableCombinations(state, tempPlayer);
+        final allCombos = _delegate.getAllPlayableCombinations(state, sortedHand);
         
         // Filter: Must contain lowest card
         final validCombos = allCombos.where((combo) => combo.contains(lowestCardStr)).toList();
@@ -192,7 +189,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     // 3. Normal Turn Logic (Priority Loop)
     
     // Step 1: Get Playable Patterns
-    final playablePatterns = _delegate.getPlayablePatterns(state, tempPlayer);
+    final playablePatterns = _delegate.getPlayablePatterns(state, sortedHand);
     
     // Step 2: Priority List
     const priorityList = [
@@ -208,7 +205,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
         if (!playablePatterns.contains(pattern)) continue;
         
         // Step 3: Get and Verify Combinations
-        final candidates = _delegate.getPlayableCombinations(state, tempPlayer, pattern);
+        final candidates = _delegate.getPlayableCombinations(state, sortedHand, pattern);
         
         if (candidates.isEmpty) continue;
         
@@ -245,6 +242,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     return null; 
   }
 
+  @override
   void dispose() {
     _isDisposed = true;
     _gameStateSubscription.cancel();
