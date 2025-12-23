@@ -109,14 +109,20 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   @override
   BigTwoState processAction(
       BigTwoState currentState, String actionName, String participantId, Map<String, dynamic> payload) {
-    final seatedPlayers = currentState.seatedPlayersList();
-    final currentIndex = currentState.indexOfPlayerInSeats(participantId, seatedPlayers: seatedPlayers)!;
-    String debugMessage = "seats[$currentIndex]";
-    debugMessage = "$debugMessage\nlockedHandType: ${currentState.lockedHandType}";
-    debugMessage = "$debugMessage\nlastPlayedHand: ${currentState.lastPlayedHand}";
-    debugMessage = "$debugMessage\npassCount: ${currentState.passCount}, passed: [${seatedPlayers.map((p) => p.hasPassed)}]";
-    print("_____\n$debugMessage");
-    _errorMessageService?.showError(debugMessage);
+    if (_errorMessageService != null) {
+      final seatedPlayers = currentState.seatedPlayersList();
+      final currentIndex = currentState.indexOfPlayerInSeats(
+          participantId, seatedPlayers: seatedPlayers)!;
+      String debugMessage = "seats[$currentIndex]";
+      debugMessage =
+      "$debugMessage\nlockedHandType: ${currentState.lockedHandType}";
+      debugMessage =
+      "$debugMessage\nlastPlayedHand: ${currentState.lastPlayedHand}";
+      debugMessage = "$debugMessage\npassCount: ${currentState
+          .passCount}, passed: [${seatedPlayers.map((p) => p.hasPassed)}]";
+      print("_____\n$debugMessage");
+      _errorMessageService?.showError(debugMessage);
+    }
 
     print("BigTwoDelegate: processAction called with actionName: $actionName");
     // 0. 基礎檢查
@@ -290,6 +296,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     newParticipants[playerIndex] = newPlayer;
 
     int newPassCount = state.passCount + 1;
+    print("pass_turn state.passCount + 1");//TODO
 
     BigTwoState tempState = state.copyWith(
       participants: newParticipants,
@@ -302,10 +309,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
   BigTwoState _nextTurn(BigTwoState state) {
     String? nextPid = state.nextPlayerId();
-    // Safety break
-    if (nextPid == null) return state; 
 
-    String nextPlayerId = nextPid;
     List<BigTwoPlayer> participants = state.participants;
     String lockedHandType = state.lockedHandType;
     int passCount = state.passCount;
@@ -313,23 +317,33 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     String lastPlayedById = state.lastPlayedById;
 
     // Check if everyone else passed (Round Over / Free Turn for next player)
-    // passCount counts how many CONSECUTIVE passes. 
+    // passCount counts how many CONSECUTIVE passes.
     // In 3 player game, if 2 people pass, the 3rd gets free turn.
     // seats.length - 1 is the threshold.
-    
-    if (passCount >= state.seats.length - 1) {
-        // Reset hasPassed for all
-        participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
-        lockedHandType = "";
-        passCount = 0; 
-        lastPlayedHand = []; // Reset last played hand on new round
-        // lastPlayedById stays, but it doesn't matter as lockedHandType is empty
+
+    if (passCount >= state.seats.length - 1 || nextPid == null) {
+      // Reset hasPassed for all
+      participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
+      lockedHandType = "";
+      passCount = 0;
+      lastPlayedHand = []; // Reset last played hand on new round
+      // lastPlayedById stays, but it doesn't matter as lockedHandType is empty
     }
+
+    if (nextPid == null) {
+      return state.copyWith(
+        participants: participants,
+        passCount: passCount,
+        lockedHandType: lockedHandType,
+        lastPlayedHand: lastPlayedHand,
+      );
+    }
+    String nextPlayerId = nextPid;
 
     // Check if the next player is Virtual.
     // If Virtual, they automatically pass.
     final nextPlayer = participants.firstWhere((p) => p.uid == nextPlayerId);
-    
+
     if (nextPlayer.isVirtualPlayer) {
         // Virtual player passes
         // But if Virtual player HAS control (free turn), they must play?
@@ -338,34 +352,35 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         // But if everyone passed, the round is over, and the person who last played (Virtual?) starts.
         // Wait, Virtual player never plays, so they never become lastPlayedById.
         // So Virtual player only passes when it's their turn to FOLLOW.
-        
+
         // Logic: Virtual player sets hasPassed = true, passCount++, then we recurse _nextTurn logic or loop.
-        
+
         final updatedVirtualPlayer = nextPlayer.copyWith(hasPassed: true);
         final vIndex = participants.indexWhere((p) => p.uid == nextPlayerId);
         participants = List<BigTwoPlayer>.from(participants);
         participants[vIndex] = updatedVirtualPlayer;
-        
+
         // If virtual player passes, check if round is over immediately?
         // If 3 players (A, B, V). A plays. B passes. V passes. Round over, A wins.
         passCount++;
-        
+        print("nextTurn passCount++");//TODO
+
         // Re-check round over condition
         if (passCount >= state.seats.length - 1) {
              participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
              lockedHandType = "";
-             passCount = 0; 
+             passCount = 0;
              lastPlayedHand = [];
              // Who starts? The person who played last.
              // If A played, B passed, V passed. nextPlayerId was V. V passed.
              // Now nextPlayerId should be A.
-             
+
              // We need to calculate next player again from current state
              // But we are inside _nextTurn which returns a State.
              // Let's return the state with updated passCount and recurse _nextTurn?
              // But we need to update currentPlayerId to the one AFTER virtual player first?
         }
-        
+
         // Update state with virtual player's pass
         final tempState = state.copyWith(
             participants: participants,
@@ -374,15 +389,15 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
             lockedHandType: lockedHandType,
             lastPlayedHand: lastPlayedHand,
         );
-        
+
         // Find who is after V
         String? afterVirtualPid = tempState.nextPlayerId();
-        
+
         // If round ended due to V passing, the `lastPlayedById` should start.
         // `nextPlayerId()` in BigTwoState should handle "round over" logic?
         // Actually `nextPlayerId` just finds the next seated player who hasn't passed.
         // If everyone passed except one, `nextPlayerId` returns that one.
-        
+
         return _nextTurn(tempState.copyWith(currentPlayerId: afterVirtualPid ?? nextPlayerId));
     }
 

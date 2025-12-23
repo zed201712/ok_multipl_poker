@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart'; // For @visibleForTesting
 import 'package:logging/logging.dart';
 import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_ai.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
@@ -14,6 +15,7 @@ import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/game_internals/card_suit.dart';
+import 'dart:math';
 
 class BigTwoPlayCardsAI implements BigTwoAI {
   static final _log = Logger('BigTwoPlayCardsAI');
@@ -131,7 +133,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
       if (myPlayer.cards.isEmpty) return;
 
       final hand = myPlayer.cards.map(PlayingCard.fromString).toList();
-      final bestMove = _findBestMove(currentState, hand);
+      final bestMove = findBestMove(currentState, hand);
 
       if (bestMove != null) {
          _log.info('AI $_aiUserId playing: $bestMove');
@@ -148,73 +150,98 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     }
   }
 
-  List<String>? _findBestMove(BigTwoState state, List<PlayingCard> hand) {
-    final isFreeTurn = state.lastPlayedById == _aiUserId || (state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty);
-    final isFirstTurnOfGame = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
-    final mustContainC3 = isFirstTurnOfGame;
-
-    if (isFreeTurn) {
-      final finders = [
-        _delegate.findStraightFlushes,
-        _delegate.findFourOfAKinds,
-        _delegate.findFullHouses,
-        _delegate.findStraights,
-        _delegate.findPairs,
-        _delegate.findSingles,
-      ];
-
-      for (final finder in finders) {
-        var candidates = finder(hand);
-        
-        if (mustContainC3) {
-          candidates = candidates.where((c) => c.any((card) => card.suit == CardSuit.clubs && card.value == 3)).toList();
-        }
-
-        if (candidates.isNotEmpty) {
-          // Choose smallest valid candidate (assume sorted)
-          return candidates.first.map(PlayingCard.cardToString).toList();
-        }
-      }
-    } else {
-      if (state.lockedHandType.isEmpty) return null;
-
-      final lockedType = BigTwoCardPattern.fromJson(state.lockedHandType);
-      List<List<PlayingCard>> candidates = [];
-
-      switch (lockedType) {
-        case BigTwoCardPattern.single:
-          candidates = _delegate.findSingles(hand);
-          break;
-        case BigTwoCardPattern.pair:
-          candidates = _delegate.findPairs(hand);
-          break;
-        case BigTwoCardPattern.straight:
-          candidates = _delegate.findStraights(hand);
-          break;
-        case BigTwoCardPattern.fullHouse:
-          candidates = _delegate.findFullHouses(hand);
-          break;
-        case BigTwoCardPattern.fourOfAKind:
-          candidates = _delegate.findFourOfAKinds(hand);
-          break;
-        case BigTwoCardPattern.straightFlush:
-          candidates = _delegate.findStraightFlushes(hand);
-          break;
-      }
-      
-      final validMoves = candidates.where((cards) {
-         return _delegate.isBeating(
-           cards.map(PlayingCard.cardToString).toList(), 
-           state.lastPlayedHand, 
-           lockedType
-         );
-      }).toList();
-
-      if (validMoves.isNotEmpty) {
-        return validMoves.first.map(PlayingCard.cardToString).toList();
-      }
-    }
+  @visibleForTesting
+  List<String>? findBestMove(BigTwoState state, List<PlayingCard> hand) {
+    // 1. Sort Hand & Find Lowest Card
+    // Use the delegate's sorting to respect Big Two order (Rank 3..2, Suit C..S)
+    final sortedHand = _delegate.sortCardsByRank(hand);
     
+    // Safety check
+    if (sortedHand.isEmpty) return null;
+    
+    // The first card in sortedHand is the lowest value card according to Big Two rules.
+    final lowestCard = sortedHand.first;
+    final lowestCardStr = PlayingCard.cardToString(lowestCard);
+
+    // AI logic needs to wrap PlayingCard list in a Player object context for delegate helpers,
+    // or we can just pass the player object if we have it?
+    // Delegate helpers: getPlayablePatterns(state, player) -> uses player.cards
+    // We need to create a temporary player object representing this AI with current hand.
+    final tempPlayer = BigTwoPlayer(uid: _aiUserId, name: 'AI', cards: sortedHand.map(PlayingCard.cardToString).toList());
+
+    // 2. Check First Turn
+    // Condition: lastPlayedHand empty && lastPlayedById empty
+    final isFirstTurnOfGame = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
+    
+    if (isFirstTurnOfGame) {
+        final allCombos = _delegate.getAllPlayableCombinations(state, tempPlayer);
+        
+        // Filter: Must contain lowest card
+        final validCombos = allCombos.where((combo) => combo.contains(lowestCardStr)).toList();
+        
+        if (validCombos.isEmpty) {
+            // Should not happen if logic is correct, but return lowest single as fallback or null
+            return null;
+        }
+        
+        // Randomly pick one
+        final random = Random();
+        return validCombos[random.nextInt(validCombos.length)];
+    }
+
+    // 3. Normal Turn Logic (Priority Loop)
+    
+    // Step 1: Get Playable Patterns
+    final playablePatterns = _delegate.getPlayablePatterns(state, tempPlayer);
+    
+    // Step 2: Priority List
+    const priorityList = [
+        BigTwoCardPattern.straightFlush,
+        BigTwoCardPattern.fourOfAKind,
+        BigTwoCardPattern.fullHouse,
+        BigTwoCardPattern.straight,
+        BigTwoCardPattern.pair,
+        BigTwoCardPattern.single,
+    ];
+    
+    for (final pattern in priorityList) {
+        if (!playablePatterns.contains(pattern)) continue;
+        
+        // Step 3: Get and Verify Combinations
+        final candidates = _delegate.getPlayableCombinations(state, tempPlayer, pattern);
+        
+        if (candidates.isEmpty) continue;
+        
+        // Safety Check for same pattern beating (Delegate should handle, but spec requires explicit check)
+        List<List<String>> verifiedCandidates = candidates;
+        
+        // Check if locked pattern matches current pattern (Normal beating logic)
+        // Or if it's a bomb situation
+        if (state.lockedHandType.isNotEmpty) {
+             final lockedPattern = BigTwoCardPattern.fromJson(state.lockedHandType);
+             if (lockedPattern == pattern) {
+                 verifiedCandidates = candidates.where((c) => _delegate.isBeating(c, state.lastPlayedHand, pattern)).toList();
+             }
+             // If bomb (SF or 4K), getPlayableCombinations usually handles isBeating internally for bombs too?
+             // Spec says "Delegate should have filtered", but "safety check: if pattern == lockedHandType, confirm isBeating".
+             // We do that above.
+        }
+        
+        if (verifiedCandidates.isEmpty) continue;
+        
+        // Step 4: Choose Strategy (Smallest Rank)
+        // Candidates are List<String>. We need to sort them by "value".
+        // For Single: Value of card.
+        // For Pair/Straight/etc: Value of the "rank" card (largest card usually or specific logic).
+        // Since `getPlayableCombinations` usually returns sorted list from small to large? 
+        // Delegate's `findPairs` etc. iterates from small to large.
+        // So the first one in `verifiedCandidates` should be the smallest.
+        
+        // Just to be sure, we pick the first one.
+        return verifiedCandidates.first;
+    }
+
+    // 4. Return null (Pass)
     return null; 
   }
 
