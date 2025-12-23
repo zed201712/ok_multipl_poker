@@ -52,6 +52,31 @@ void main() {
         expect(delegate.getCardPattern(['C3', 'D4']), null); // Random 2 cards
         expect(delegate.getCardPattern(['C3', 'D3', 'H3']), null); // Triplet not valid in Big Two usually
       });
+
+      test('returns null for invalid Straight pattern', () {
+        expect(delegate.getCardPattern(['D10', 'D11', 'D12', 'D13', 'C1', 'C2']), null);
+        expect(delegate.getCardPattern(['D11', 'D12', 'D13', 'C1', 'C2']), null);
+        expect(delegate.getCardPattern(['D12', 'D13', 'C1', 'C2', 'C3']), null);
+      });
+
+      // Spec 011: Strict Straight Validation
+      test('identifies 10-J-Q-K-A as Straight', () {
+          // 10, 11, 12, 13, 1
+          expect(delegate.getCardPattern(['D10', 'D11', 'D12', 'D13', 'H1']), BigTwoCardPattern.straight);
+      });
+      test('identifies A-2-3-4-5 as Straight', () {
+          // 1, 2, 3, 4, 5
+          expect(delegate.getCardPattern(['D1', 'D2', 'D3', 'D4', 'H5']), BigTwoCardPattern.straight);
+      });
+      test('rejects J-Q-K-A-2 (11,12,13,1,2)', () {
+          expect(delegate.getCardPattern(['D11', 'D12', 'D13', 'H1', 'H2']), null);
+      });
+      test('rejects Q-K-A-2-3 (12,13,1,2,3)', () {
+          expect(delegate.getCardPattern(['D12', 'D13', 'H1', 'H2', 'H3']), null);
+      });
+      test('rejects K-A-2-3-4 (13,1,2,3,4)', () {
+          expect(delegate.getCardPattern(['D13', 'H1', 'H2', 'H3', 'H4']), null);
+      });
     });
 
     group('isBeating', () {
@@ -101,14 +126,39 @@ void main() {
         expect(delegate.isBeating(maxStraight, minStraight), true);
       });
 
-      test('Straight comparison: Max (2-3-4-5-6) vs Normal (J-Q-K-A-2)', () {
-         // 2-3-4-5-6 is Level 2 (Max). J-Q-K-A-2 is Level 1 (Normal 2-high).
-         // Max > Normal.
+      // Spec 011: Verify 10-J-Q-K-A is Normal (Level 1)
+      test('Straight comparison: Max (2-3-4-5-6) vs 10-J-Q-K-A (Normal)', () {
+         // Max > Normal
          final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
-         final normalStraight = ['D11', 'D12', 'D13', 'D1', 'H2']; // J, Q, K, A, 2
+         final normalStraightA = ['D10', 'D11', 'D12', 'D13', 'H1']; // 10, J, Q, K, A
 
-         expect(delegate.isBeating(maxStraight, normalStraight), true);
-         expect(delegate.isBeating(normalStraight, maxStraight), false);
+         expect(delegate.isBeating(maxStraight, normalStraightA), true);
+         expect(delegate.isBeating(normalStraightA, maxStraight), false);
+      });
+
+      test('returns false for invalid Straight pattern C2', () {
+        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
+        final invalidStraight = ['D11', 'D12', 'D13', 'C1', 'C2'];
+
+        expect(delegate.isBeating(maxStraight, invalidStraight), false);
+        expect(delegate.isBeating(invalidStraight, maxStraight), false);
+      });
+
+      test('returns false for invalid Straight pattern C3', () {
+        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
+        final invalidStraight = ['D12', 'D13', 'C1', 'C2', 'C3'];
+
+        expect(delegate.isBeating(maxStraight, invalidStraight), false);
+        expect(delegate.isBeating(invalidStraight, maxStraight), false);
+      });
+      
+      test('Straight comparison: 10-J-Q-K-A (Normal A-high) vs 3-4-5-6-7 (Normal 7-high)', () {
+         // Both Normal, compare Rank. A > 7.
+         final normalStraightA = ['D10', 'D11', 'D12', 'D13', 'H1'];
+         final normalStraight7 = ['C3', 'C4', 'C5', 'C6', 'D7'];
+
+         expect(delegate.isBeating(normalStraightA, normalStraight7), true);
+         expect(delegate.isBeating(normalStraight7, normalStraightA), false);
       });
 
       test('Straight comparison: Max (D2-3-4-5-6) vs Max (C2-3-4-5-6)', () {
@@ -119,15 +169,6 @@ void main() {
 
         expect(delegate.isBeating(maxD2Straight, maxC2Straight), true);
         expect(delegate.isBeating(maxC2Straight, maxD2Straight), false);
-      });
-
-      test('Straight comparison: Max (2-3-4-5-6) vs Min (A-2-3-4-5)', () {
-         // Max > Min
-         final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
-         final minStraight = ['C1', 'C2', 'C3', 'C4', 'C5'];
-
-         expect(delegate.isBeating(maxStraight, minStraight), true);
-         expect(delegate.isBeating(minStraight, maxStraight), false);
       });
 
       test('Straight comparison: Same Type (Min vs Min) compare suit of 2', () {
