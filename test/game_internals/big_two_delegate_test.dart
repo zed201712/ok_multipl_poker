@@ -56,21 +56,21 @@ void main() {
 
     group('isBeating', () {
       test('Single comparison', () {
-        expect(delegate.isBeating(['D3'], ['C3'], BigTwoCardPattern.single), true); // Diamond > Club
-        expect(delegate.isBeating(['C3'], ['D3'], BigTwoCardPattern.single), false);
-        expect(delegate.isBeating(['C4'], ['D3'], BigTwoCardPattern.single), true);
+        expect(delegate.isBeating(['D3'], ['C3']), true); // Diamond > Club
+        expect(delegate.isBeating(['C3'], ['D3']), false);
+        expect(delegate.isBeating(['C4'], ['D3']), true);
       });
       test('Pair comparison', () {
-        expect(delegate.isBeating(['S3', 'H3'], ['C3', 'D3'], BigTwoCardPattern.pair), true); // Spades/Hearts > Clubs/Diamonds
-        expect(delegate.isBeating(['C4', 'D4'], ['S3', 'H3'], BigTwoCardPattern.pair), true);
+        expect(delegate.isBeating(['S3', 'H3'], ['C3', 'D3']), true); // Spades/Hearts > Clubs/Diamonds
+        expect(delegate.isBeating(['C4', 'D4'], ['S3', 'H3']), true);
       });
       test('FullHouse comparison (compare triplet)', () {
         // 44433 vs 33344
-        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S3', 'C3'], ['C3', 'D3', 'H3', 'S4', 'C4'], BigTwoCardPattern.fullHouse), true);
+        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S3', 'C3'], ['C3', 'D3', 'H3', 'S4', 'C4']), true);
       });
       test('FourOfAKind comparison (compare quad)', () {
         // 44443 vs 33334
-        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S4', 'C3'], ['C3', 'D3', 'H3', 'S3', 'C4'], BigTwoCardPattern.fourOfAKind), true);
+        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S4', 'C3'], ['C3', 'D3', 'H3', 'S3', 'C4']), true);
       });
     });
 

@@ -505,7 +505,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         return true; // Bomb!
       }
       // Compare two Straight Flushes
-      return isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+      return isBeating(cardsPlayed, state.lastPlayedHand);
     }
 
     // 2. Four of a Kind beats anything except Straight Flush and higher Four of a Kind
@@ -517,7 +517,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         return true; // Bomb! (Beats Straight, FullHouse, etc.)
       }
       // Compare two Four of a Kinds
-      return isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+      return isBeating(cardsPlayed, state.lastPlayedHand);
     }
 
     // Standard Rule: Must match pattern
@@ -526,13 +526,39 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     }
 
     // Compare same pattern
-    return isBeating(cardsPlayed, state.lastPlayedHand, playedPattern);
+    return isBeating(cardsPlayed, state.lastPlayedHand);
   }
 
   /// Compares if [current] beats [previous]. Assumes both are of [pattern] or logic handled before.
-  bool isBeating(List<String> currentStr, List<String> previousStr, BigTwoCardPattern pattern) {
+  bool isBeating(List<String> currentStr, List<String> previousStr) {
     if (currentStr.length != previousStr.length) return false;
+    final currentPattern = getCardPattern(currentStr);
+    final previousPattern = getCardPattern(previousStr);
+
+    if (currentPattern == null || previousPattern == null) return false;
+
+    if (currentPattern == previousPattern) {
+      return _beatsSamePattern(currentStr, previousStr, currentPattern);
+    }
+    else if (currentPattern == BigTwoCardPattern.straightFlush &&
+        previousPattern != BigTwoCardPattern.straightFlush
+    ) {
+      return true;
+    }
+    else if (currentPattern == BigTwoCardPattern.fourOfAKind &&
+        previousPattern != BigTwoCardPattern.straightFlush &&
+        previousPattern != BigTwoCardPattern.fourOfAKind
+    ) {
+      return true;
+    }
     
+    return false;
+  }
+
+  /// Compares if [current] beats [previous]. Assumes both are of [pattern] or logic handled before.
+  bool _beatsSamePattern(List<String> currentStr, List<String> previousStr, BigTwoCardPattern pattern) {
+    if (currentStr.length != previousStr.length) return false;
+
     final current = currentStr.map(PlayingCard.fromString).toList();
     final previous = previousStr.map(PlayingCard.fromString).toList();
 
@@ -543,7 +569,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
          final cMax = sortCardsByRank(current).last;
          final pMax = sortCardsByRank(previous).last;
          return _compareCards(cMax, pMax) > 0;
-      
+
       case BigTwoCardPattern.straight:
       case BigTwoCardPattern.straightFlush:
         final cRank = _getStraightRankCard(current);
@@ -679,7 +705,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
              if (isBomb) {
                validCombinations.add(comboStr);
              }
-             else if (pattern == lockedPattern && isBeating(comboStr, state.lastPlayedHand, pattern)) {
+             else if (pattern == lockedPattern && isBeating(comboStr, state.lastPlayedHand)) {
                validCombinations.add(comboStr);
              }
         }

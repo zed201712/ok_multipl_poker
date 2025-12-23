@@ -220,7 +220,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
         if (state.lockedHandType.isNotEmpty) {
              final lockedPattern = BigTwoCardPattern.fromJson(state.lockedHandType);
              if (lockedPattern == pattern) {
-                 verifiedCandidates = candidates.where((c) => _delegate.isBeating(c, state.lastPlayedHand, pattern)).toList();
+                 verifiedCandidates = candidates.where((c) => _delegate.isBeating(c, state.lastPlayedHand)).toList();
              }
              // If bomb (SF or 4K), getPlayableCombinations usually handles isBeating internally for bombs too?
              // Spec says "Delegate should have filtered", but "safety check: if pattern == lockedHandType, confirm isBeating".
