@@ -159,12 +159,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     // 2. Validate move logic (Big Two Rules)
     
     // Special rule: First hand of game must contain 3 of Clubs if it's the very first turn.
-    bool isFirstTurn = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty; 
-    if (isFirstTurn) {
-      if (!cardsPlayed.contains('C3')) {
-         return state; // First play must contain 3 of Clubs
-      }
-    }
+    if (!validateFirstPlay(state, cardsPlayed)) return state;
 
     // Determine hand type and check validity
     final BigTwoCardPattern? playedPattern = getCardPattern(cardsPlayed);
@@ -300,6 +295,15 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     }
     
     return null;
+  }
+
+  bool validateFirstPlay(BigTwoState state, List<String> cardsPlayed) {
+    bool isFirstTurn = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
+    if (!isFirstTurn) return true;
+    if (!cardsPlayed.contains('C3')) {
+      return false; // First play must contain 3 of Clubs
+    }
+    return true;
   }
 
   /// Checks if the played cards are valid against the current state logic.
