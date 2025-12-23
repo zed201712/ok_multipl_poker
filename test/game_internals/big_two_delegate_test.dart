@@ -19,8 +19,8 @@ void main() {
         participants: [
           BigTwoPlayer(uid: p1, name: 'P1', cards: ['C3', 'D3', 'H3', 'S3', 'H4', 'H5', 'H6', 'H7', 'C4', 'D4']),
           BigTwoPlayer(uid: p2, name: 'P2', cards: ['C5', 'D5', 'S5', 'C6', 'D6', 'S6', 'C7', 'D7', 'S7', 'C8']),
-          BigTwoPlayer(uid: p3, name: 'P3', cards: ['C9', 'D9', 'H9', 'S9', 'CA', 'DA', 'HA', 'SA', 'C2', 'D2']),
-          BigTwoPlayer(uid: p4, name: 'P4', cards: ['C10', 'D10', 'H10', 'S10', 'CJ', 'DJ', 'HJ', 'SJ', 'CQ', 'DQ']),
+          BigTwoPlayer(uid: p3, name: 'P3', cards: ['C9', 'D9', 'H9', 'S9', 'C10', 'D10', 'H10', 'S10', 'C2', 'D2']),
+          BigTwoPlayer(uid: p4, name: 'P4', cards: ['C10', 'D10', 'H10', 'S10', 'C11', 'D11', 'H11', 'S11', 'C12', 'D12']),
         ],
         seats: [p1, p2, p3, p4],
         currentPlayerId: p1,

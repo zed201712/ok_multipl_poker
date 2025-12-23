@@ -11,6 +11,7 @@ BigTwoPlayer _$BigTwoPlayerFromJson(Map<String, dynamic> json) => BigTwoPlayer(
   cards: (json['cards'] as List<dynamic>).map((e) => e as String).toList(),
   name: json['name'] as String,
   hasPassed: json['hasPassed'] as bool? ?? false,
+  isVirtualPlayer: json['isVirtualPlayer'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$BigTwoPlayerToJson(BigTwoPlayer instance) =>
@@ -19,4 +20,5 @@ Map<String, dynamic> _$BigTwoPlayerToJson(BigTwoPlayer instance) =>
       'name': instance.name,
       'cards': instance.cards,
       'hasPassed': instance.hasPassed,
+      'isVirtualPlayer': instance.isVirtualPlayer,
     };

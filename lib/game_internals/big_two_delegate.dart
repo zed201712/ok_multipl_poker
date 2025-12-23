@@ -15,32 +15,78 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   BigTwoState initializeGame(Room room) {
     final deck = PlayingCard.createDeck();
     final players = <BigTwoPlayer>[];
-    final seats = room.seats;
+    var seats = List<String>.from(room.seats);
+    
+    // 2-Player Mode: Add Virtual Player
+    if (seats.length == 2) {
+      seats.add('virtual_player');
+    }
 
-    // Distribute cards to players
+    // Distribute cards: 3 seats, usually 17 cards each, 1 remainder
+    // Total 52 cards. 52 ~/ 3 = 17. 52 % 3 = 1.
     final cardsPerPlayer = (deck.length / seats.length).floor();
+    
+    // Create initial players with cards
     for (int i = 0; i < seats.length; i++) {
+      final uid = seats[i];
+      final isVirtual = uid == 'virtual_player';
       final hand = deck.sublist(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
+      
+      String name;
+      if (isVirtual) {
+        name = 'Virtual Player';
+      } else {
+        name = room.participants.firstWhere((p) => p.id == seats[i]).name;
+      }
+
       players.add(BigTwoPlayer(
-        uid: seats[i],
-        name: room.participants.firstWhere((p) => p.id == seats[i]).name,
+        uid: uid,
+        name: name,
         cards: hand.map(PlayingCard.cardToString).toList(),
+        isVirtualPlayer: isVirtual,
       ));
     }
 
-    // Find who has the 3 of clubs to start
-    String? startingPlayerId;
-    for (var player in players) {
-      if (player.cards.contains('C3')) {
-        startingPlayerId = player.uid;
+    // Identify the starting player (lowest human card)
+    final lowestCardStr = _findLowestHumanCard(players);
+    
+    // Find who holds this lowest card
+    String startingPlayerId = '';
+    for (int i = 0; i < players.length; i++) {
+      if (players[i].cards.contains(lowestCardStr)) {
+        startingPlayerId = players[i].uid;
         break;
       }
     }
 
+    // Distribute the remainder card (1 card) to the starting player (who holds the lowest card)
+    // The remainder is at index: seats.length * cardsPerPlayer
+    final remainderIndex = seats.length * cardsPerPlayer;
+    if (remainderIndex < deck.length) {
+       final extraCard = deck[remainderIndex];
+       final extraCardStr = PlayingCard.cardToString(extraCard);
+       
+       // Add to starting player
+       final playerIndex = players.indexWhere((p) => p.uid == startingPlayerId);
+       if (playerIndex != -1) {
+         final updatedCards = List<String>.from(players[playerIndex].cards)..add(extraCardStr);
+         // Sort hand for tidiness (optional but good)
+         final sortedHand = sortCardsByRank(updatedCards.map(PlayingCard.fromString).toList())
+             .map(PlayingCard.cardToString).toList();
+         
+         players[playerIndex] = players[playerIndex].copyWith(cards: sortedHand);
+       }
+    }
+    
+    // Re-verify starting player just in case the extra card was even lower? 
+    // Wait, the logic says "Distribute extra card to holder of CURRENT lowest card".
+    // So the starting player is already determined.
+    // Spec: "將該張餘牌分配給「持有目前最小牌」的真人玩家。" -> Done.
+
     return BigTwoState(
       participants: players,
       seats: seats,
-      currentPlayerId: startingPlayerId ?? seats.first,
+      currentPlayerId: startingPlayerId.isNotEmpty ? startingPlayerId : seats.first,
     );
   }
 
@@ -101,39 +147,63 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         newRequesters.add(participantId);
       }
 
-      // Check if all players requested restart
-      if (currentState.seats.isNotEmpty && newRequesters.length >= currentState.seats.length) {
-        // Simulating re-initialization logic similar to initializeGame but reusing seats
+      // Check if all REAL players requested restart (virtual players don't request)
+      final realPlayersCount = currentState.participants.where((p) => !p.isVirtualPlayer).length;
+      
+      if (currentState.seats.isNotEmpty && newRequesters.length >= realPlayersCount) {
+        // Re-initialization
         final deck = PlayingCard.createDeck();
-        final Map<String, List<String>> hands = {};
-        final seats = currentState.seats;
+        final seats = currentState.seats; // Includes virtual player if exists
         final cardsPerPlayer = (deck.length / seats.length).floor();
+        
+        final players = <BigTwoPlayer>[];
 
         for (int i = 0; i < seats.length; i++) {
+            final uid = seats[i];
             final hand = deck.sublist(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
-            hands[seats[i]] = hand.map(PlayingCard.cardToString).toList();
+            
+            // Find existing player info to preserve name/virtual status
+            final existingPlayer = currentState.participants.firstWhere(
+                (p) => p.uid == uid, 
+                orElse: () => BigTwoPlayer(uid: uid, name: uid == 'virtual_player' ? 'Virtual Player' : 'Player', cards: [], isVirtualPlayer: uid == 'virtual_player')
+            );
+            
+            players.add(existingPlayer.copyWith(
+                cards: hand.map(PlayingCard.cardToString).toList(),
+                hasPassed: false
+            ));
         }
 
-        String startingPlayerId = seats.isNotEmpty ? seats[0] : '';
-        for (final entry in hands.entries) {
-           if (entry.value.contains('C3')) {
-             startingPlayerId = entry.key;
-             break;
-           }
+        // Logic for lowest card and extra card
+        final lowestCardStr = _findLowestHumanCard(players);
+        String startingPlayerId = '';
+        for (final p in players) {
+            if (p.cards.contains(lowestCardStr)) {
+                startingPlayerId = p.uid;
+                break;
+            }
         }
-
-        final participants = seats.map((uid) {
-          // Try to keep existing name if possible, though State doesn't easily link back to Room participants here without extra logic.
-          // We just reuse the name from previous state if available.
-          final oldName = currentState.participants.firstWhere((p) => p.uid == uid, orElse: () => BigTwoPlayer(uid: uid, name: 'Player', cards: [])).name;
-          return BigTwoPlayer(uid: uid, name: oldName, cards: hands[uid] ?? []);
-        }).toList();
+        
+        // Extra card
+        final remainderIndex = seats.length * cardsPerPlayer;
+        if (remainderIndex < deck.length) {
+            final extraCard = deck[remainderIndex];
+            final extraCardStr = PlayingCard.cardToString(extraCard);
+            
+            final pIndex = players.indexWhere((p) => p.uid == startingPlayerId);
+            if (pIndex != -1) {
+                final updatedCards = List<String>.from(players[pIndex].cards)..add(extraCardStr);
+                 final sortedHand = sortCardsByRank(updatedCards.map(PlayingCard.fromString).toList())
+                     .map(PlayingCard.cardToString).toList();
+                players[pIndex] = players[pIndex].copyWith(cards: sortedHand);
+            }
+        }
 
         return BigTwoState(
-          participants: participants,
+          participants: players,
           seats: seats,
-          currentPlayerId: startingPlayerId,
-          // Defaults for other fields (deckCards=[], lockedHandType='') are correct for new game
+          currentPlayerId: startingPlayerId.isNotEmpty ? startingPlayerId : seats.first,
+          // Defaults
         );
       }
 
@@ -158,7 +228,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
     // 2. Validate move logic (Big Two Rules)
     
-    // Special rule: First hand of game must contain 3 of Clubs if it's the very first turn.
+    // Special rule: First hand of game must contain lowest card
     if (!validateFirstPlay(state, cardsPlayed)) return state;
 
     // Determine hand type and check validity
@@ -232,6 +302,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
   BigTwoState _nextTurn(BigTwoState state) {
     String? nextPid = state.nextPlayerId();
+    // Safety break
     if (nextPid == null) return state; 
 
     String nextPlayerId = nextPid;
@@ -239,14 +310,80 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     String lockedHandType = state.lockedHandType;
     int passCount = state.passCount;
     List<String> lastPlayedHand = state.lastPlayedHand;
+    String lastPlayedById = state.lastPlayedById;
 
     // Check if everyone else passed (Round Over / Free Turn for next player)
+    // passCount counts how many CONSECUTIVE passes. 
+    // In 3 player game, if 2 people pass, the 3rd gets free turn.
+    // seats.length - 1 is the threshold.
+    
     if (passCount >= state.seats.length - 1) {
         // Reset hasPassed for all
         participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
         lockedHandType = "";
         passCount = 0; 
         lastPlayedHand = []; // Reset last played hand on new round
+        // lastPlayedById stays, but it doesn't matter as lockedHandType is empty
+    }
+
+    // Check if the next player is Virtual.
+    // If Virtual, they automatically pass.
+    final nextPlayer = participants.firstWhere((p) => p.uid == nextPlayerId);
+    
+    if (nextPlayer.isVirtualPlayer) {
+        // Virtual player passes
+        // But if Virtual player HAS control (free turn), they must play?
+        // Spec says: "Virtual player holds cards but does not participate (skips/passes automatically)".
+        // If Virtual player somehow got control (e.g. everyone else passed), they should pass control to next human?
+        // But if everyone passed, the round is over, and the person who last played (Virtual?) starts.
+        // Wait, Virtual player never plays, so they never become lastPlayedById.
+        // So Virtual player only passes when it's their turn to FOLLOW.
+        
+        // Logic: Virtual player sets hasPassed = true, passCount++, then we recurse _nextTurn logic or loop.
+        
+        final updatedVirtualPlayer = nextPlayer.copyWith(hasPassed: true);
+        final vIndex = participants.indexWhere((p) => p.uid == nextPlayerId);
+        participants = List<BigTwoPlayer>.from(participants);
+        participants[vIndex] = updatedVirtualPlayer;
+        
+        // If virtual player passes, check if round is over immediately?
+        // If 3 players (A, B, V). A plays. B passes. V passes. Round over, A wins.
+        passCount++;
+        
+        // Re-check round over condition
+        if (passCount >= state.seats.length - 1) {
+             participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
+             lockedHandType = "";
+             passCount = 0; 
+             lastPlayedHand = [];
+             // Who starts? The person who played last.
+             // If A played, B passed, V passed. nextPlayerId was V. V passed.
+             // Now nextPlayerId should be A.
+             
+             // We need to calculate next player again from current state
+             // But we are inside _nextTurn which returns a State.
+             // Let's return the state with updated passCount and recurse _nextTurn?
+             // But we need to update currentPlayerId to the one AFTER virtual player first?
+        }
+        
+        // Update state with virtual player's pass
+        final tempState = state.copyWith(
+            participants: participants,
+            passCount: passCount,
+            currentPlayerId: nextPlayerId, // Temporarily set to V so nextPlayerId() can calculate from V
+            lockedHandType: lockedHandType,
+            lastPlayedHand: lastPlayedHand,
+        );
+        
+        // Find who is after V
+        String? afterVirtualPid = tempState.nextPlayerId();
+        
+        // If round ended due to V passing, the `lastPlayedById` should start.
+        // `nextPlayerId()` in BigTwoState should handle "round over" logic?
+        // Actually `nextPlayerId` just finds the next seated player who hasn't passed.
+        // If everyone passed except one, `nextPlayerId` returns that one.
+        
+        return _nextTurn(tempState.copyWith(currentPlayerId: afterVirtualPid ?? nextPlayerId));
     }
 
     return state.copyWith(
@@ -255,6 +392,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         lockedHandType: lockedHandType,
         passCount: passCount,
         lastPlayedHand: lastPlayedHand,
+        lastPlayedById: lastPlayedById,
     );
   }
 
@@ -300,10 +438,40 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   bool validateFirstPlay(BigTwoState state, List<String> cardsPlayed) {
     bool isFirstTurn = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
     if (!isFirstTurn) return true;
-    if (!cardsPlayed.contains('C3')) {
-      return false; // First play must contain 3 of Clubs
+    
+    // Find the required lowest card
+    final lowestCardStr = _findLowestHumanCard(state.participants);
+    
+    if (!cardsPlayed.contains(lowestCardStr)) {
+      return false; // First play must contain the lowest human card
     }
     return true;
+  }
+  
+  /// Finds non-virtual player's lowest card
+  String _findLowestHumanCard(List<BigTwoPlayer> players) {
+    PlayingCard? lowestCard;
+    
+    for (final player in players) {
+      if (player.isVirtualPlayer) continue;
+
+      final hand = player.cards.map(PlayingCard.fromString).toList();
+      if (hand.isEmpty) continue;
+      
+      final sortedHand = sortCardsByRank(hand);
+      final playerLowest = sortedHand.first;
+      
+      if (lowestCard == null) {
+        lowestCard = playerLowest;
+        if (PlayingCard.cardToString(lowestCard) == 'C3') return 'C3';
+      } else {
+        if (_compareCards(playerLowest, lowestCard) < 0) {
+          lowestCard = playerLowest;
+          if (PlayingCard.cardToString(lowestCard) == 'C3') return 'C3';
+        }
+      }
+    }
+    return lowestCard != null ? PlayingCard.cardToString(lowestCard) : 'C3';
   }
 
   /// Checks if the played cards are valid against the current state logic.
@@ -397,7 +565,9 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     for (final c in cards) {
       valueCounts[c.value] = (valueCounts[c.value] ?? 0) + 1;
     }
-    return valueCounts.entries.firstWhere((e) => e.value == 3).key;
+    // Safety check, though should be validated by isFullHouse
+    if (valueCounts.isEmpty) return 0;
+    return valueCounts.entries.firstWhere((e) => e.value == 3, orElse: () => valueCounts.entries.first).key;
   }
 
   /// Returns the rank value of the four in Four of a Kind.
@@ -406,6 +576,112 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     for (final c in cards) {
       valueCounts[c.value] = (valueCounts[c.value] ?? 0) + 1;
     }
-    return valueCounts.entries.firstWhere((e) => e.value == 4).key;
+    if (valueCounts.isEmpty) return 0;
+    return valueCounts.entries.firstWhere((e) => e.value == 4, orElse: () => valueCounts.entries.first).key;
+  }
+  
+  // --- AI Helpers ---
+
+  /// 功能 3: 回傳該玩家現在可以出的牌型種類 (考慮了 lockedHandType)
+  List<BigTwoCardPattern> getPlayablePatterns(BigTwoState state, BigTwoPlayer player) {
+    if (state.lockedHandType.isEmpty) {
+        return BigTwoCardPattern.values;
+    }
+    
+    final locked = BigTwoCardPattern.fromJson(state.lockedHandType);
+    final patterns = <BigTwoCardPattern>[locked];
+    
+    // Bombs can be played over anything (almost)
+    if (locked != BigTwoCardPattern.straightFlush) {
+        if (!patterns.contains(BigTwoCardPattern.straightFlush)) patterns.add(BigTwoCardPattern.straightFlush);
+        if (!patterns.contains(BigTwoCardPattern.fourOfAKind)) patterns.add(BigTwoCardPattern.fourOfAKind);
+    } else {
+        // Only higher Straight Flush beats Straight Flush
+        // already added locked (SF)
+    }
+    
+    return patterns;
+  }
+
+  /// 功能 4: 針對特定牌型，回傳所有可打出的牌組 (必須 beat lastPlayedHand)
+  List<List<String>> getPlayableCombinations(
+      BigTwoState state, 
+      BigTwoPlayer player, 
+      BigTwoCardPattern pattern
+  ) {
+    final handCards = player.cards.map(PlayingCard.fromString).toList();
+    List<List<PlayingCard>> candidates = [];
+
+    switch (pattern) {
+        case BigTwoCardPattern.single:
+            candidates = findSingles(handCards);
+            break;
+        case BigTwoCardPattern.pair:
+            candidates = findPairs(handCards);
+            break;
+        case BigTwoCardPattern.straight:
+            candidates = findStraights(handCards);
+            break;
+        case BigTwoCardPattern.fullHouse:
+            candidates = findFullHouses(handCards);
+            break;
+        case BigTwoCardPattern.fourOfAKind:
+            candidates = findFourOfAKinds(handCards);
+            break;
+        case BigTwoCardPattern.straightFlush:
+            candidates = findStraightFlushes(handCards);
+            break;
+    }
+    
+    // Filter by "isBeating"
+    final validCombinations = <List<String>>[];
+    for (final combo in candidates) {
+        final comboStr = combo.map(PlayingCard.cardToString).toList();
+        
+        // If lockedHandType is empty, any combination of valid pattern is valid
+        // But need to respect First Turn rule?
+        // The helper "getPlayableCombinations" usually implies valid moves for current turn.
+        // We should check `validateFirstPlay` as well if it's the first turn.
+        
+        // However, isBeating requires a previous hand.
+        if (state.lockedHandType.isEmpty) {
+             if (validateFirstPlay(state, comboStr)) {
+                 validCombinations.add(comboStr);
+             }
+        } else {
+             // Check if pattern matches locked pattern or is a bomb
+             final lockedPattern = BigTwoCardPattern.fromJson(state.lockedHandType);
+             
+             // Bomb logic check
+             bool isBomb = false;
+             if (pattern == BigTwoCardPattern.straightFlush && lockedPattern != BigTwoCardPattern.straightFlush) isBomb = true;
+             if (pattern == BigTwoCardPattern.fourOfAKind && 
+                 lockedPattern != BigTwoCardPattern.fourOfAKind && 
+                 lockedPattern != BigTwoCardPattern.straightFlush) {
+               isBomb = true;
+             }
+
+             if (isBomb) {
+               validCombinations.add(comboStr);
+             }
+             else if (pattern == lockedPattern && isBeating(comboStr, state.lastPlayedHand, pattern)) {
+               validCombinations.add(comboStr);
+             }
+        }
+    }
+    
+    return validCombinations;
+  }
+
+  /// 功能 5: 回傳當前所有可打出的牌組
+  List<List<String>> getAllPlayableCombinations(BigTwoState state, BigTwoPlayer player) {
+      final patterns = getPlayablePatterns(state, player);
+      final allCombos = <List<String>>[];
+      
+      for (final p in patterns) {
+          allCombos.addAll(getPlayableCombinations(state, player, p));
+      }
+      
+      return allCombos;
   }
 }
