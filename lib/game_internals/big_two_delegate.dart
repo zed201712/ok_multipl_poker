@@ -572,6 +572,13 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
       case BigTwoCardPattern.straight:
       case BigTwoCardPattern.straightFlush:
+        final cLevel = _getStraightLevel(current);
+        final pLevel = _getStraightLevel(previous);
+
+        if (cLevel != pLevel) {
+          return cLevel > pLevel;
+        }
+
         final cRank = _getStraightRankCard(current);
         final pRank = _getStraightRankCard(previous);
         return _compareCards(cRank, pRank) > 0;
@@ -586,6 +593,22 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         final pQuad = _getQuadRank(previous);
         return getBigTwoValue(cQuad) > getBigTwoValue(pQuad);
     }
+  }
+
+  int _getStraightLevel(List<PlayingCard> cards) {
+    if (_is23456(cards)) return 2; // Max
+    if (_isA2345(cards)) return 0; // Min
+    return 1; // Normal
+  }
+
+  bool _isA2345(List<PlayingCard> cards) {
+    final values = cards.map((c) => c.value).toSet();
+    return values.containsAll([1, 2, 3, 4, 5]);
+  }
+
+  bool _is23456(List<PlayingCard> cards) {
+    final values = cards.map((c) => c.value).toSet();
+    return values.containsAll([2, 3, 4, 5, 6]);
   }
   
   int _compareCards(PlayingCard a, PlayingCard b) {

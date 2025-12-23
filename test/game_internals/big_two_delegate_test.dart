@@ -72,6 +72,83 @@ void main() {
         // 44443 vs 33334
         expect(delegate.isBeating(['C4', 'D4', 'H4', 'S4', 'C3'], ['C3', 'D3', 'H3', 'S3', 'C4']), true);
       });
+      
+      // Spec 010: Custom Straight Comparison
+      test('Straight comparison: Normal vs Normal', () {
+          // 3-4-5-6-7 (7-high) vs 8-9-10-J-Q (Q-high)
+          expect(delegate.isBeating(['C8', 'C9', 'C10', 'C11', 'C12'], ['C3', 'C4', 'C5', 'C6', 'C7']), true);
+          // Q-high vs 7-high
+          expect(delegate.isBeating(['C3', 'C4', 'C5', 'C6', 'C7'], ['C8', 'C9', 'C10', 'C11', 'C12']), false);
+      });
+
+      test('Straight comparison: Min (A-2-3-4-5) vs Normal (3-4-5-6-7)', () {
+         // A-2-3-4-5 is Level 0 (Min), 3-4-5-6-7 is Level 1 (Normal)
+         // So Min should LOSE to Normal, even though 2 > 7 in rank.
+         final minStraight = ['D1', 'D2', 'D3', 'D4', 'D5']; // A, 2, 3, 4, 5
+         final normalStraight = ['C3', 'C4', 'C5', 'C6', 'C7']; // 7-high
+
+         expect(delegate.isBeating(minStraight, normalStraight), false);
+         expect(delegate.isBeating(normalStraight, minStraight), true);
+      });
+
+      test('Straight comparison: Min (A-2-3-4-5) vs Max (2-3-4-5-6)', () {
+        // A-2-3-4-5 is Level 0 (Min), 3-4-5-6-7 is Level 1 (Normal)
+        // So Min should LOSE to Normal, even though 2 > 7 in rank.
+        final minStraight = ['D1', 'D2', 'D3', 'D4', 'D5']; // A, 2, 3, 4, 5
+        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
+
+        expect(delegate.isBeating(minStraight, maxStraight), false);
+        expect(delegate.isBeating(maxStraight, minStraight), true);
+      });
+
+      test('Straight comparison: Max (2-3-4-5-6) vs Normal (J-Q-K-A-2)', () {
+         // 2-3-4-5-6 is Level 2 (Max). J-Q-K-A-2 is Level 1 (Normal 2-high).
+         // Max > Normal.
+         final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
+         final normalStraight = ['D11', 'D12', 'D13', 'D1', 'H2']; // J, Q, K, A, 2
+
+         expect(delegate.isBeating(maxStraight, normalStraight), true);
+         expect(delegate.isBeating(normalStraight, maxStraight), false);
+      });
+
+      test('Straight comparison: Max (D2-3-4-5-6) vs Max (C2-3-4-5-6)', () {
+        // 2-3-4-5-6 is Level 2 (Max). J-Q-K-A-2 is Level 1 (Normal 2-high).
+        // Max > Normal.
+        final maxD2Straight = ['D2', 'D3', 'D4', 'D5', 'D6'];
+        final maxC2Straight = ['C2', 'C3', 'C4', 'C5', 'C6'];
+
+        expect(delegate.isBeating(maxD2Straight, maxC2Straight), true);
+        expect(delegate.isBeating(maxC2Straight, maxD2Straight), false);
+      });
+
+      test('Straight comparison: Max (2-3-4-5-6) vs Min (A-2-3-4-5)', () {
+         // Max > Min
+         final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
+         final minStraight = ['C1', 'C2', 'C3', 'C4', 'C5'];
+
+         expect(delegate.isBeating(maxStraight, minStraight), true);
+         expect(delegate.isBeating(minStraight, maxStraight), false);
+      });
+
+      test('Straight comparison: Same Type (Min vs Min) compare suit of 2', () {
+          // A-2-3-4-5 (Diamond 2) vs A-2-3-4-5 (Club 2)
+          // Diamond > Club
+          final minD = ['C1', 'S2', 'C3', 'C4', 'C5']; // Contains S2
+          final minC = ['D1', 'C2', 'D3', 'D4', 'D5']; // Contains C2
+          
+          // Wait, 'S2' (Spade) > 'C2' (Club).
+          // My setup above: minD has S2. minC has C2.
+          expect(delegate.isBeating(minD, minC), true);
+      });
+
+      test('StraightFlush comparison: Min (A-2-3-4-5) vs Normal (3-4-5-6-7)', () {
+          // Same logic applies to Straight Flush
+          final minSF = ['D1', 'D2', 'D3', 'D4', 'D5'];
+          final normalSF = ['C3', 'C4', 'C5', 'C6', 'C7'];
+          
+          expect(delegate.isBeating(minSF, normalSF), false); // Min < Normal
+          expect(delegate.isBeating(normalSF, minSF), true);
+      });
     });
 
     group('checkPlayValidity', () {
