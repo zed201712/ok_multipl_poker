@@ -89,6 +89,10 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     }
   }
 
+  Future<void> _onStartGame() async {
+    await _gameController.startGame();
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsController>(); // watch for changes
@@ -107,9 +111,14 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
-                    const Text('配對中 / 等待玩家...')
+                    Text('配對中 / 目前玩家(${_gameController.participantCount()})')
                   else
                     const Text('準備開始大老二'),
+                  if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
+                    ElevatedButton(
+                      onPressed: _onStartGame,
+                      child: const Text('開始遊戲'),
+                    ),
                   const SizedBox(height: 20),
                   if (!_isMatching && gameState == null)
                     ElevatedButton(

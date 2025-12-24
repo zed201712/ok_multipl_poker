@@ -152,7 +152,7 @@ class TicTacToeDelegate extends TurnBasedGameDelegate<TicTacToeState> {
 
   // 處理玩家的動作（例如，下棋）
   @override
-  TicTacToeState processAction(TicTacToeState currentState, String actionName,
+  TicTacToeState processAction(Room room, TicTacToeState currentState, String actionName,
       String participantId, Map<String, dynamic> payload) {
     if (actionName == 'request_restart') {
       final newRequesters = List<String>.from(currentState.restartRequesters);

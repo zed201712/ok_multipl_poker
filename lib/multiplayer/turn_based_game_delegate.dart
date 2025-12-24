@@ -14,7 +14,7 @@ abstract class TurnBasedGameDelegate<T> {
   /// This is where you implement the core rules of your game,
   /// such as validating moves, updating scores, and determining the next player.
   T processAction(
-      T currentState, String action, String playerId, Map<String, dynamic> payload);
+      Room room, T currentState, String action, String playerId, Map<String, dynamic> payload);
 
   // --- State Querying Methods ---
   // These methods allow the generic controller to query the specific state.

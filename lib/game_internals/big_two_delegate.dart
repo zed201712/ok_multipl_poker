@@ -17,10 +17,14 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     final deck = PlayingCard.createDeck();
     final players = <BigTwoPlayer>[];
     var seats = List<String>.from(room.seats);
+    //seats = room.randomizeSeats ? (seats..shuffle()) : seats;
     
-    // 2-Player Mode: Add Virtual Player
-    if (seats.length == 2) {
-      seats.add('virtual_player');
+    // Add Virtual Player
+    if (seats.length <= 2) {
+      final virtualPlayerCount = 3 - seats.length;
+      final virtualPlayers = Iterable.generate(virtualPlayerCount, (i) => i + 1)
+          .map((i) => "virtual_player$i");
+      seats.addAll(virtualPlayers);
     }
 
     // Distribute cards: 3 seats, usually 17 cards each, 1 remainder
@@ -30,12 +34,12 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     // Create initial players with cards
     for (int i = 0; i < seats.length; i++) {
       final uid = seats[i];
-      final isVirtual = uid == 'virtual_player';
+      final isVirtual = uid.startsWith('virtual_player');
       final hand = deck.sublist(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
       
       String name;
       if (isVirtual) {
-        name = 'Virtual Player';
+        name = uid;
       } else {
         name = room.participants.firstWhere((p) => p.id == seats[i]).name;
       }
@@ -44,6 +48,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         uid: uid,
         name: name,
         cards: hand.map(PlayingCard.cardToString).toList(),
+        hasPassed: isVirtual,
         isVirtualPlayer: isVirtual,
       ));
     }
@@ -109,7 +114,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
   @override
   BigTwoState processAction(
-      BigTwoState currentState, String actionName, String participantId, Map<String, dynamic> payload) {
+      Room room, BigTwoState currentState, String actionName, String participantId, Map<String, dynamic> payload) {
     if (_errorMessageService != null) {
       final seatedPlayers = currentState.seatedPlayersList();
       final currentIndex = currentState.indexOfPlayerInSeats(
@@ -131,7 +136,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
     // 1. 處理重開局
     if (actionName == 'request_restart') {
-      return _processRestartRequest(currentState, participantId);
+      return _processRestartRequest(room, currentState, participantId);
     }
 
     // 2. 輪次檢查
@@ -148,7 +153,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     return currentState;
   }
 
-  BigTwoState _processRestartRequest(BigTwoState currentState, String participantId) {
+  BigTwoState _processRestartRequest(Room room, BigTwoState currentState, String participantId) {
      final newRequesters = List<String>.from(currentState.restartRequesters);
       if (!newRequesters.contains(participantId)) {
         newRequesters.add(participantId);
@@ -159,59 +164,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       
       if (currentState.seats.isNotEmpty && newRequesters.length >= realPlayersCount) {
         // Re-initialization
-        final deck = PlayingCard.createDeck();
-        final seats = currentState.seats; // Includes virtual player if exists
-        final cardsPerPlayer = (deck.length / seats.length).floor();
-        
-        final players = <BigTwoPlayer>[];
-
-        for (int i = 0; i < seats.length; i++) {
-            final uid = seats[i];
-            final hand = deck.sublist(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
-            
-            // Find existing player info to preserve name/virtual status
-            final existingPlayer = currentState.participants.firstWhere(
-                (p) => p.uid == uid, 
-                orElse: () => BigTwoPlayer(uid: uid, name: uid == 'virtual_player' ? 'Virtual Player' : 'Player', cards: [], isVirtualPlayer: uid == 'virtual_player')
-            );
-            
-            players.add(existingPlayer.copyWith(
-                cards: hand.map(PlayingCard.cardToString).toList(),
-                hasPassed: false
-            ));
-        }
-
-        // Logic for lowest card and extra card
-        final lowestCardStr = _findLowestHumanCard(players);
-        String startingPlayerId = '';
-        for (final p in players) {
-            if (p.cards.contains(lowestCardStr)) {
-                startingPlayerId = p.uid;
-                break;
-            }
-        }
-        
-        // Extra card
-        final remainderIndex = seats.length * cardsPerPlayer;
-        if (remainderIndex < deck.length) {
-            final extraCard = deck[remainderIndex];
-            final extraCardStr = PlayingCard.cardToString(extraCard);
-            
-            final pIndex = players.indexWhere((p) => p.uid == startingPlayerId);
-            if (pIndex != -1) {
-                final updatedCards = List<String>.from(players[pIndex].cards)..add(extraCardStr);
-                 final sortedHand = sortCardsByRank(updatedCards.map(PlayingCard.fromString).toList())
-                     .map(PlayingCard.cardToString).toList();
-                players[pIndex] = players[pIndex].copyWith(cards: sortedHand);
-            }
-        }
-
-        return BigTwoState(
-          participants: players,
-          seats: seats,
-          currentPlayerId: startingPlayerId.isNotEmpty ? startingPlayerId : seats.first,
-          // Defaults
-        );
+        return initializeGame(room);
       }
 
       return currentState.copyWith(
@@ -252,7 +205,6 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
     final newPlayer = player.copyWith(
       cards: newCards,
-      hasPassed: false
     );
     
     final newParticipants = List<BigTwoPlayer>.from(state.participants);
@@ -279,6 +231,12 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       lockedHandType: newLockedHandType,
       winner: newWinner,
     );
+
+    if (newWinner != null) {
+      return tempState.copyWith(
+        seats: tempState.seats.where((s) => !s.startsWith('virtual_player')).toList(),
+      );
+    }
 
     return _nextTurn(tempState);
   }
@@ -323,8 +281,8 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     // seats.length - 1 is the threshold.
 
     if (passCount >= state.seats.length - 1 || nextPid == null) {
-      // Reset hasPassed for all
-      participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
+      // Reset hasPassed for all if participant is not a VirtualPlayer
+      participants = participants.map((p) => p.copyWith(hasPassed: p.isVirtualPlayer)).toList();
       lockedHandType = "";
       passCount = 0;
       lastPlayedHand = []; // Reset last played hand on new round
@@ -344,63 +302,6 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     // Check if the next player is Virtual.
     // If Virtual, they automatically pass.
     final nextPlayer = participants.firstWhere((p) => p.uid == nextPlayerId);
-
-    if (nextPlayer.isVirtualPlayer) {
-        // Virtual player passes
-        // But if Virtual player HAS control (free turn), they must play?
-        // Spec says: "Virtual player holds cards but does not participate (skips/passes automatically)".
-        // If Virtual player somehow got control (e.g. everyone else passed), they should pass control to next human?
-        // But if everyone passed, the round is over, and the person who last played (Virtual?) starts.
-        // Wait, Virtual player never plays, so they never become lastPlayedById.
-        // So Virtual player only passes when it's their turn to FOLLOW.
-
-        // Logic: Virtual player sets hasPassed = true, passCount++, then we recurse _nextTurn logic or loop.
-
-        final updatedVirtualPlayer = nextPlayer.copyWith(hasPassed: true);
-        final vIndex = participants.indexWhere((p) => p.uid == nextPlayerId);
-        participants = List<BigTwoPlayer>.from(participants);
-        participants[vIndex] = updatedVirtualPlayer;
-
-        // If virtual player passes, check if round is over immediately?
-        // If 3 players (A, B, V). A plays. B passes. V passes. Round over, A wins.
-        passCount++;
-        print("nextTurn passCount++");//TODO
-
-        // Re-check round over condition
-        if (passCount >= state.seats.length - 1) {
-             participants = participants.map((p) => p.copyWith(hasPassed: false)).toList();
-             lockedHandType = "";
-             passCount = 0;
-             lastPlayedHand = [];
-             // Who starts? The person who played last.
-             // If A played, B passed, V passed. nextPlayerId was V. V passed.
-             // Now nextPlayerId should be A.
-
-             // We need to calculate next player again from current state
-             // But we are inside _nextTurn which returns a State.
-             // Let's return the state with updated passCount and recurse _nextTurn?
-             // But we need to update currentPlayerId to the one AFTER virtual player first?
-        }
-
-        // Update state with virtual player's pass
-        final tempState = state.copyWith(
-            participants: participants,
-            passCount: passCount,
-            currentPlayerId: nextPlayerId, // Temporarily set to V so nextPlayerId() can calculate from V
-            lockedHandType: lockedHandType,
-            lastPlayedHand: lastPlayedHand,
-        );
-
-        // Find who is after V
-        String? afterVirtualPid = tempState.nextPlayerId();
-
-        // If round ended due to V passing, the `lastPlayedById` should start.
-        // `nextPlayerId()` in BigTwoState should handle "round over" logic?
-        // Actually `nextPlayerId` just finds the next seated player who hasn't passed.
-        // If everyone passed except one, `nextPlayerId` returns that one.
-
-        return _nextTurn(tempState.copyWith(currentPlayerId: afterVirtualPid ?? nextPlayerId));
-    }
 
     return state.copyWith(
         currentPlayerId: nextPlayerId,

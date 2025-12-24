@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ok_multipl_poker/entities/big_two_player.dart';
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
+import 'package:ok_multipl_poker/entities/participant_info.dart';
+import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 
@@ -8,6 +10,24 @@ void main() {
   group('BigTwoDelegate', () {
     late BigTwoDelegate delegate;
     late BigTwoState initialState;
+    final room = Room(
+      roomId: 'room1',
+      creatorUid: 'p1',
+      managerUid: 'p1',
+      title: 'room1',
+      maxPlayers: 4,
+      state: 'open',
+      body: '',
+      matchMode: '',
+      visibility: 'public',
+      randomizeSeats: false,
+      participants: [
+        ParticipantInfo(id: 'p1', name: 'P1'),
+        ParticipantInfo(id: 'p2', name: 'P2'),
+        ParticipantInfo(id: 'p3', name: 'P3'),
+        ParticipantInfo(id: 'p4', name: 'P4'),
+      ],
+    );
     const p1 = 'p1';
     const p2 = 'p2';
     const p3 = 'p3';
@@ -221,7 +241,7 @@ void main() {
     // --- Integration Tests (processAction) ---
 
     test('should allow playing a valid single card', () {
-      final state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3']});
+      final state = delegate.processAction(room, initialState, 'play_cards', p1, {'cards': ['C3']});
       
       expect(state.lastPlayedHand, ['C3']);
       expect(state.lastPlayedById, p1);
@@ -231,12 +251,12 @@ void main() {
     });
 
     test('should update lockedHandType correctly', () {
-      final state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3']});
+      final state = delegate.processAction(room, initialState, 'play_cards', p1, {'cards': ['C3']});
       expect(state.lockedHandType, BigTwoCardPattern.single.toJson());
     });
 
     test('should allow playing a valid pair', () {
-      final state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3', 'D3']});
+      final state = delegate.processAction(room, initialState, 'play_cards', p1, {'cards': ['C3', 'D3']});
       
       expect(state.lastPlayedHand, unorderedEquals(['C3', 'D3']));
       expect(state.lockedHandType, BigTwoCardPattern.pair.toJson());
@@ -244,28 +264,28 @@ void main() {
     });
 
     test('should validate turn logic: must beat last played hand', () {
-      var state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3']});
+      var state = delegate.processAction(room, initialState, 'play_cards', p1, {'cards': ['C3']});
       
-      state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5']});
+      state = delegate.processAction(room, state, 'play_cards', p2, {'cards': ['C5']});
       expect(state.lastPlayedById, p2);
       expect(state.lastPlayedHand, ['C5']);
 
-      state = delegate.processAction(state, 'play_cards', p3, {'cards': ['C2']});
+      state = delegate.processAction(room, state, 'play_cards', p3, {'cards': ['C2']});
       expect(state.lastPlayedById, p3);
 
       final oldState = state;
-      state = delegate.processAction(state, 'play_cards', p4, {'cards': ['C10']});
+      state = delegate.processAction(room, state, 'play_cards', p4, {'cards': ['C10']});
       expect(state, oldState);
     });
 
     test('should validate turn logic: must match pattern', () {
-      var state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3', 'D3']});
+      var state = delegate.processAction(room, initialState, 'play_cards', p1, {'cards': ['C3', 'D3']});
       
       final oldState = state;
-      state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5']});
+      state = delegate.processAction(room, state, 'play_cards', p2, {'cards': ['C5']});
       expect(state, oldState);
       
-      state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5', 'D5']});
+      state = delegate.processAction(room, state, 'play_cards', p2, {'cards': ['C5', 'D5']});
       expect(state.lastPlayedById, p2);
       expect(state.lastPlayedHand, unorderedEquals(['C5', 'D5']));
     });
@@ -282,13 +302,13 @@ void main() {
         participants: newParticipants
       );
       
-      var state = delegate.processAction(s0, 'play_cards', p1, {'cards': ['C3', 'D4', 'H5', 'S6', 'C7']});
+      var state = delegate.processAction(room, s0, 'play_cards', p1, {'cards': ['C3', 'D4', 'H5', 'S6', 'C7']});
       expect(state.lockedHandType, BigTwoCardPattern.straight.toJson());
       print("p1[$p1], p2[$p2], lastPlayedById: ${state.lastPlayedById}, lockedHandType: ${state.lockedHandType}");
       expect(state.lastPlayedById, p1);
       
       // P2 bombs with Quads 8s.
-      state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C8', 'D8', 'H8', 'S8', 'C9']});
+      state = delegate.processAction(room, state, 'play_cards', p2, {'cards': ['C8', 'D8', 'H8', 'S8', 'C9']});
 
       print("p1[$p1], p2[$p2], lastPlayedById: ${state.lastPlayedById}, lockedHandType: ${state.lockedHandType}");
       expect(state.lastPlayedById, p2);
@@ -306,12 +326,12 @@ void main() {
         participants: newParticipants
       );
 
-      var state = delegate.processAction(s0, 'play_cards', p1, {'cards': ['C3', 'D3', 'H3', 'S3', 'C4']});
+      var state = delegate.processAction(room, s0, 'play_cards', p1, {'cards': ['C3', 'D3', 'H3', 'S3', 'C4']});
       expect(state.lockedHandType, BigTwoCardPattern.fourOfAKind.toJson());
       expect(state.lastPlayedById, p1);
 
       // P2 bombs with SF
-      state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5', 'C6', 'C7', 'C8', 'C9']});
+      state = delegate.processAction(room, state, 'play_cards', p2, {'cards': ['C5', 'C6', 'C7', 'C8', 'C9']});
       expect(state.lastPlayedById, p2);
       expect(state.lockedHandType, BigTwoCardPattern.straightFlush.toJson());
     });
@@ -326,18 +346,18 @@ void main() {
        final s0 = initialState.copyWith(
         participants: newParticipants
        );
-      var state = delegate.processAction(s0, 'play_cards', p1, {'cards': ['C3', 'D3', 'H3', 'S3', 'C4']});
+      var state = delegate.processAction(room, s0, 'play_cards', p1, {'cards': ['C3', 'D3', 'H3', 'S3', 'C4']});
       
-      state = delegate.processAction(state, 'play_cards', p2, {'cards': ['C5', 'D5', 'H5', 'S5', 'C6']});
+      state = delegate.processAction(room, state, 'play_cards', p2, {'cards': ['C5', 'D5', 'H5', 'S5', 'C6']});
       expect(state.lastPlayedById, p2);
     });
 
     test('round reset: lastPlayedHand should be empty after round over', () {
-      var state = delegate.processAction(initialState, 'play_cards', p1, {'cards': ['C3']});
+      var state = delegate.processAction(room, initialState, 'play_cards', p1, {'cards': ['C3']});
       
-      state = delegate.processAction(state, 'pass_turn', p2, {});
-      state = delegate.processAction(state, 'pass_turn', p3, {});
-      state = delegate.processAction(state, 'pass_turn', p4, {});
+      state = delegate.processAction(room, state, 'pass_turn', p2, {});
+      state = delegate.processAction(room, state, 'pass_turn', p3, {});
+      state = delegate.processAction(room, state, 'pass_turn', p4, {});
       
       expect(state.currentPlayerId, p1);
       expect(state.lockedHandType, '');

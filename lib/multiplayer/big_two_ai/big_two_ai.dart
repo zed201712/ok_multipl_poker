@@ -25,7 +25,7 @@ class BigTwoAIDelegate implements TurnBasedGameDelegate<BigTwoState> {
   }
 
   @override
-  BigTwoState processAction(BigTwoState currentState, String actionName, String participantId, Map<String, dynamic> payload) {
+  BigTwoState processAction(Room room, BigTwoState currentState, String actionName, String participantId, Map<String, dynamic> payload) {
     return currentState; 
   }
 

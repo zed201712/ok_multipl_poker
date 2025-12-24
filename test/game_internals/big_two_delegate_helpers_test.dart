@@ -149,7 +149,7 @@ void main() {
 
       expect(state.participants.length, 3);
       expect(state.participants.any((p) => p.isVirtualPlayer), isTrue);
-      expect(state.participants.firstWhere((p) => p.isVirtualPlayer).uid, 'virtual_player');
+      expect(state.participants.firstWhere((p) => p.isVirtualPlayer).uid, 'virtual_player1');
     });
 
     test('Distributes remainder card to lowest card holder (Human)', () {

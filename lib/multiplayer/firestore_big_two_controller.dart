@@ -90,6 +90,10 @@ class FirestoreBigTwoController {
     _gameController.sendGameAction('request_restart');
   }
 
+  Future<void> startGame() async {
+    _gameController.startGame();
+  }
+
   /// 玩家出牌。
   /// [cards] 是一個代表玩家要出的牌的列表。
   Future<void> playCards(List<PlayingCard> cards) async {
@@ -108,6 +112,11 @@ class FirestoreBigTwoController {
 
   Future<void> debugSetState(BigTwoState newState) async {
     await _gameController.updateCustomGameState(newState);
+  }
+
+  int participantCount() {
+    final room = _gameController.roomStateController.roomStateStream.value?.room;
+    return room?.participants.length ?? 0;
   }
 
   /// 釋放資源，關閉數據流。

@@ -117,7 +117,7 @@ class FirestoreTurnBasedGameController<T> {
         }
       } else if (action == 'game_action') {
         if (currentState != null) {
-          _handleGameAction(currentState, request);
+          _handleGameAction(room, currentState, request);
         }
       }
       roomStateController.deleteRequest(roomId: request.roomId, requestId: request.requestId);
@@ -149,11 +149,12 @@ class FirestoreTurnBasedGameController<T> {
     }
   }
 
-  void _handleGameAction(TurnBasedGameState<T> currentState, RoomRequest request) {
+  void _handleGameAction(Room room, TurnBasedGameState<T> currentState, RoomRequest request) {
     final actionName = request.body['name'] as String;
     final payload = request.body['payload'] as Map<String, dynamic>;
 
     final updatedCustomState = _delegate.processAction(
+      room,
       currentState.customState,
       actionName,
       request.participantId,
