@@ -803,4 +803,16 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
       return candidates;
   }
+
+  /// 根據手牌回傳所有「持有」的牌型 (用於 UI 高亮)
+  Set<BigTwoCardPattern> getHoldingPatterns(List<PlayingCard> hand) {
+    final holding = <BigTwoCardPattern>{};
+    if (findSingles(hand).isNotEmpty) holding.add(BigTwoCardPattern.single);
+    if (findPairs(hand).isNotEmpty) holding.add(BigTwoCardPattern.pair);
+    if (findStraights(hand).isNotEmpty) holding.add(BigTwoCardPattern.straight);
+    if (findFullHouses(hand).isNotEmpty) holding.add(BigTwoCardPattern.fullHouse);
+    if (findFourOfAKinds(hand).isNotEmpty) holding.add(BigTwoCardPattern.fourOfAKind);
+    if (findStraightFlushes(hand).isNotEmpty) holding.add(BigTwoCardPattern.straightFlush);
+    return holding;
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_deck_utils_mixin.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/card_suit.dart';
@@ -192,34 +193,34 @@ void main() {
        // Total 3 pairs.
        
        // 1. Initial selection (empty)
-       var selection = utils.getNextPatternSelection(
+       var selection = utils.selectNextPattern(
            hand: hand, 
            currentSelection: [], 
-           finder: utils.findPairs
+           pattern: BigTwoCardPattern.pair
        );
        expect(selection, [d3, h3]);
        
        // 2. Next selection
-       selection = utils.getNextPatternSelection(
+       selection = utils.selectNextPattern(
            hand: hand, 
-           currentSelection: [d3, h3], 
-           finder: utils.findPairs
+           currentSelection: [d3, h3],
+           pattern: BigTwoCardPattern.pair
        );
        expect(selection, [d3, s3]);
        
        // 3. Next selection
-       selection = utils.getNextPatternSelection(
+       selection = utils.selectNextPattern(
            hand: hand, 
-           currentSelection: [d3, s3], 
-           finder: utils.findPairs
+           currentSelection: [d3, s3],
+           pattern: BigTwoCardPattern.pair
        );
        expect(selection, [h3, s3]);
        
        // 4. Wrap around
-       selection = utils.getNextPatternSelection(
+       selection = utils.selectNextPattern(
            hand: hand, 
-           currentSelection: [h3, s3], 
-           finder: utils.findPairs
+           currentSelection: [h3, s3],
+           pattern: BigTwoCardPattern.pair
        );
        expect(selection, [d3, h3]);
     });

@@ -2,6 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/card_suit.dart';
 
+import 'big_two_card_pattern.dart';
+
 mixin BigTwoDeckUtilsMixin {
   /// 1 (Ace) -> 14, 2 -> 15, others keep value
   int getBigTwoValue(int value) {
@@ -236,7 +238,7 @@ mixin BigTwoDeckUtilsMixin {
   }
 
   /// 通用選牌邏輯
-  List<PlayingCard> getNextPatternSelection({
+  List<PlayingCard> _getNextPatternSelection({
       required List<PlayingCard> hand,
       required List<PlayingCard> currentSelection,
       required List<List<PlayingCard>> Function(List<PlayingCard>) finder,
@@ -257,5 +259,48 @@ mixin BigTwoDeckUtilsMixin {
       } else {
         return candidates[(currentIndex + 1) % candidates.length];
       }
+  }
+
+  /// 封裝後的選牌邏輯，接收 Enum
+  List<PlayingCard> selectNextPattern({
+    required List<PlayingCard> hand,
+    required List<PlayingCard> currentSelection,
+    required BigTwoCardPattern pattern,
+  }) {
+    List<List<PlayingCard>> Function(List<PlayingCard>)? finder;
+    switch (pattern) {
+      case BigTwoCardPattern.single:
+        finder = findSingles;
+        break;
+      case BigTwoCardPattern.pair:
+        finder = findPairs;
+        break;
+      case BigTwoCardPattern.straight:
+        finder = findStraights;
+        break;
+      case BigTwoCardPattern.fullHouse:
+        finder = findFullHouses;
+        break;
+      case BigTwoCardPattern.fourOfAKind:
+        finder = findFourOfAKinds;
+        break;
+      case BigTwoCardPattern.straightFlush:
+        finder = findStraightFlushes;
+        break;
+    }
+
+
+    // 呼叫 Mixin 的方法
+    // 注意：mixin 的 getNextPatternSelection 需要 finder 參數為 required，且不能為 null。
+    if (finder == null) return [];
+
+    final nextSelectionCards = _getNextPatternSelection(
+      hand: hand,
+      currentSelection: currentSelection,
+      finder: finder,
+    );
+
+    // 轉回 List<String>
+    return nextSelectionCards;
   }
 }

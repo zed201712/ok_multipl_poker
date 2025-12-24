@@ -133,53 +133,46 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           final sortedCards = _bigTwoManager.sortCardsByRank(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());;
           _player.replaceWith(sortedCards);
 
+          // 1. 取得所有持有的牌型
+          final holdingPatterns = _bigTwoManager.getHoldingPatterns(_player.hand);
+          
+          // 2. 解析 lockedHandType
+          String lockedTypeDisplay = "";
+          if (bigTwoState.lockedHandType.isNotEmpty) {
+              try {
+                  final pattern = BigTwoCardPattern.fromJson(bigTwoState.lockedHandType);
+                  lockedTypeDisplay = "(${pattern.displayName})";
+              } catch (_) {}
+          }
+
+          // 3. 按鈕生成
           // 使用 BigTwoCardPattern Enum 替代硬編碼
-          final handTypeButtons = BigTwoCardPattern.values
-              .map((pattern) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: OutlinedButton(
-              onPressed: () {
-                List<List<PlayingCard>> Function(List<PlayingCard>)? finder;
-                switch (pattern) {
-                  case BigTwoCardPattern.single:
-                    finder = _bigTwoManager.findSingles;
-                    break;
-                  case BigTwoCardPattern.pair:
-                    finder = _bigTwoManager.findPairs;
-                    break;
-                  case BigTwoCardPattern.straight:
-                    finder = _bigTwoManager.findStraights;
-                    break;
-                  case BigTwoCardPattern.fullHouse:
-                    finder = _bigTwoManager.findFullHouses;
-                    break;
-                  case BigTwoCardPattern.fourOfAKind:
-                    finder = _bigTwoManager.findFourOfAKinds;
-                    break;
-                  case BigTwoCardPattern.straightFlush:
-                    finder = _bigTwoManager.findStraightFlushes;
-                    break;
-                }
-                
-                if (finder != null) {
-                   final nextSelection = _bigTwoManager.getNextPatternSelection(
+          final handTypeButtons = BigTwoCardPattern.values.map((pattern) {
+            final isHolding = holdingPatterns.contains(pattern);
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: OutlinedButton(
+                // 若不持有該牌型，禁用按鈕
+                onPressed: isHolding ? () {
+                   final nextSelection = _bigTwoManager.selectNextPattern(
                      hand: _player.hand,
                      currentSelection: _player.selectedCards,
-                     finder: finder
+                     pattern: pattern, 
                    );
                    if (nextSelection.isNotEmpty) {
                      _player.setCardSelection(nextSelection);
                    }
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                } : null,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isHolding ? null : Colors.grey,
+                  side: isHolding ? null : const BorderSide(color: Colors.grey),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(pattern.displayName),
               ),
-              child: Text(pattern.displayName),
-            ),
-          ))
-              .toList();
+            );
+          }).toList();
 
           final otherPlayers = _bigTwoManager.otherPlayers(_userId, bigTwoState);
           final edgeSize = 30.0;
@@ -199,21 +192,35 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                       children: [
                         // 上一次出的牌 (Last Played Hand) - 顯示在上方或顯眼處
                         if (bigTwoState.lastPlayedHand.isNotEmpty) ...[
-                          const Text('Last Played:'),
-                          ShowOnlyCardAreaWidget(
-                            cards: bigTwoState.lastPlayedHand
-                                .map((c) => PlayingCard.fromString(c))
-                                .toList(),
+                          Text('Last Played: $lockedTypeDisplay'),
+                          Container(
+                            padding: const EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ShowOnlyCardAreaWidget(
+                              cards: bigTwoState.lastPlayedHand
+                                  .map((c) => PlayingCard.fromString(c))
+                                  .toList(),
+                            ),
                           ),
                           //const SizedBox(height: 20),
                         ],
                         
                         // 桌面牌堆 (Deck Cards) - 依照需求顯示
                          const Text('Table/Deck:'),
-                         ShowOnlyCardAreaWidget(
-                           cards: bigTwoState.deckCards
-                               .map((c) => PlayingCard.fromString(c))
-                               .toList(),
+                         Container(
+                            padding: const EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ShowOnlyCardAreaWidget(
+                               cards: bigTwoState.deckCards
+                                   .map((c) => PlayingCard.fromString(c))
+                                   .toList(),
+                             ),
                          ),
                       ],
                     ),
