@@ -105,37 +105,8 @@ mixin BigTwoDeckUtilsMixin {
       }
     }
     if (isStandard) return true;
-    
-    // Case 2: 10-J-Q-K-A (10,11,12,13,1)
-    // Sorted values would be 1,10,11,12,13
-    if (const ListEquality().equals(values, [1, 10, 11, 12, 13])) return true;
-    
-    // Case 3: J-Q-K-A-2 (11,12,13,1,2) ?? usually treated differently, 
-    // but in Big Two A and 2 are high.
-    // If we use Big Two Values (3..15):
-    final bigTwoValues = cards.map((c) => getBigTwoValue(c.value)).toList()..sort();
-    
-    // Check consecutive in Big Two values
-    bool isBigTwoConsecutive = true;
-    for (int i = 0; i < bigTwoValues.length - 1; i++) {
-      if (bigTwoValues[i + 1] != bigTwoValues[i] + 1) {
-        isBigTwoConsecutive = false;
-        break;
-      }
-    }
-    if (isBigTwoConsecutive) return true;
-    
-    // 3-4-5-A-2 is sometimes valid in Taiwan Big Two (3,4,5,14,15 sorted).
-    // Let's stick to basic ones for now as per spec "simple implementation".
-    // 3-4-5-6-7 to 10-J-Q-K-A and A-2-3-4-5, 2-3-4-5-6.
-    
-    // Case 4: A-2-3-4-5 (Big Two values: 3,4,5,14,15)
-    if (const ListEquality().equals(bigTwoValues, [3, 4, 5, 14, 15])) return true;
-    
-    // Case 5: 2-3-4-5-6 (Big Two values: 3,4,5,6,15)
-    if (const ListEquality().equals(bigTwoValues, [3, 4, 5, 6, 15])) return true;
 
-    return false;
+    return _validateStrictStraightRange(cards);
   }
 
   List<List<PlayingCard>> findStraights(List<PlayingCard> cards) {
@@ -259,6 +230,42 @@ mixin BigTwoDeckUtilsMixin {
       } else {
         return candidates[(currentIndex + 1) % candidates.length];
       }
+  }
+
+  /// Validates if the straight is strictly consecutive in the defined cycle:
+  /// A, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A.
+  /// Valid straights: A-2-3-4-5, 2-3-4-5-6, ... , 10-J-Q-K-A.
+  /// Invalid examples: J-Q-K-A-2, Q-K-A-2-3, K-A-2-3-4.
+  bool _validateStrictStraightRange(List<PlayingCard> cards) {
+    final values = cards.map((c) => c.value).toSet();
+    if (values.length != 5) return false;
+
+    // Check A-2-3-4-5
+    if (values.containsAll([1, 2, 3, 4, 5])) return true;
+
+    // Check 2-3-4-5-6
+    if (values.containsAll([2, 3, 4, 5, 6])) return true;
+
+    // Check normal straights (3-4-5-6-7 to 9-10-J-Q-K)
+    // And 10-J-Q-K-A
+
+    // We can just sort by standard value (1..13) and check consecutiveness
+    // BUT we need to handle 10-J-Q-K-A which wraps 13 -> 1.
+    // 10-J-Q-K-A sorted values: 1, 10, 11, 12, 13
+
+    final sortedVals = values.toList()..sort();
+
+    // Case: 10-J-Q-K-A
+    if (const ListEquality().equals(sortedVals, [1, 10, 11, 12, 13])) return true;
+
+    // For other cases, must be consecutive
+    for (int i = 0; i < sortedVals.length - 1; i++) {
+      if (sortedVals[i + 1] != sortedVals[i] + 1) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /// 封裝後的選牌邏輯，接收 Enum

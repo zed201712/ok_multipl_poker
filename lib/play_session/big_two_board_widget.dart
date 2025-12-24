@@ -219,36 +219,44 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                   alignment: Alignment.bottomCenter,
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 10,
                       children: [
-                        // 標示自己是否為 Current Player
-                        if (isMyTurn)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              borderRadius: BorderRadius.circular(20),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 標示自己是否為 Current Player
+                            if (isMyTurn)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  "YOUR TURN",
+                                  style: TextStyle(fontWeight: FontWeight.bold,
+                                      color: Colors.black),
+                                ),
+                              ),
+                            ChangeNotifierProvider.value(
+                              value: _player,
+                              child: SelectablePlayerHandWidget(
+                                buttonWidgets: handTypeButtons,
+                              ),
                             ),
-                            child: const Text(
-                              "YOUR TURN",
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-                            ),
-                          ),
-                        ChangeNotifierProvider.value(
-                          value: _player,
-                          child: SelectablePlayerHandWidget(
-                            buttonWidgets: handTypeButtons,
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                        // --- 操作按鈕區域 (Play / Pass) ---
+                        _functionButtons(isMyTurn),
+                      ]
+                    )
                   ),
                 ),
 
-                // --- 操作按鈕區域 (Play / Pass) ---
-                 _functionButtons(isMyTurn),
 
                 // --- 狀態提示 ---
                 if (gameState.gameStatus == GameStatus.finished)
@@ -334,21 +342,9 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     return Positioned(
       bottom: 40,
       right: 40,
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Pass 按鈕
-          if (isMyTurn)
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-                onPressed: () {
-                  _gameController.passTurn();
-                },
-                child: const Text('Pass'),
-              ),
-            ),
           // Play 按鈕
           MyButton(
             onPressed: isMyTurn ? () {
@@ -361,6 +357,16 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
               }
             } : null, // 非回合時禁用
             child: const Text('Play'),
+          ),
+
+          SizedBox(height: 20),
+
+          // Pass 按鈕
+          MyButton(
+              onPressed: isMyTurn ? () {
+                _gameController.passTurn();
+              } : null,
+              child: Text('Pass')
           ),
         ],
       ),

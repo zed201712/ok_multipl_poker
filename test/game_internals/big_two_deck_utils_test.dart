@@ -113,6 +113,18 @@ void main() {
       expect(utils.isStraight([a, two, three, four, five]), isTrue);
     });
 
+    test('Invalid straight: J-Q-K-1-2', () {
+      // Assuming spec wants A-2-3-4-5 support.
+      // Logic in mixin implemented: Case 4: A-2-3-4-5 (Big Two values: 3,4,5,14,15)
+      final s11 = PlayingCard(CardSuit.spades, 11);
+      final s12 = PlayingCard(CardSuit.spades, 12);
+      final s13 = PlayingCard(CardSuit.spades, 13);
+      final s1 = PlayingCard(CardSuit.spades, 1);
+      final s2 = PlayingCard(CardSuit.spades, 2);
+
+      expect(utils.isStraight([s11, s12, s13, s1, s2]), isFalse);
+    });
+
     test('findStraights finds valid straight', () {
       final s3 = PlayingCard(CardSuit.spades, 3);
       final s4 = PlayingCard(CardSuit.spades, 4);
