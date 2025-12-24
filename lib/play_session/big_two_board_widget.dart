@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ok_multipl_poker/play_session/table_card_wrap_widget.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
@@ -188,42 +189,15 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 Positioned.fromRelativeRect(
                   rect: RelativeRect.fromLTRB(edgeSize, edgeSize, edgeSize, edgeSize),
                   child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 上一次出的牌 (Last Played Hand) - 顯示在上方或顯眼處
-                        if (bigTwoState.lastPlayedHand.isNotEmpty) ...[
-                          Text('Last Played: $lockedTypeDisplay'),
-                          Container(
-                            padding: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ShowOnlyCardAreaWidget(
-                              cards: bigTwoState.lastPlayedHand
-                                  .map((c) => PlayingCard.fromString(c))
-                                  .toList(),
-                            ),
-                          ),
-                          //const SizedBox(height: 20),
-                        ],
-                        
-                        // 桌面牌堆 (Deck Cards) - 依照需求顯示
-                         const Text('Table/Deck:'),
-                         Container(
-                            padding: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ShowOnlyCardAreaWidget(
-                               cards: bigTwoState.deckCards
-                                   .map((c) => PlayingCard.fromString(c))
-                                   .toList(),
-                             ),
-                         ),
-                      ],
+                    child:
+                    TableCardWrapWidget(
+                      lastPlayedTitle: lockedTypeDisplay,
+                      lastPlayedCards: bigTwoState.lastPlayedHand
+                          .map((c) => PlayingCard.fromString(c))
+                          .toList(),
+                      deckCards: bigTwoState.deckCards
+                          .map((c) => PlayingCard.fromString(c))
+                          .toList(),
                     ),
                   ),
                 ),
