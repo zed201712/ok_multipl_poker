@@ -17,6 +17,7 @@ class BigTwoState {
   final int passCount;
   final List<String> restartRequesters;
   final List<String> deckCards;
+  final List<String> discardCards;
   final String lockedHandType;
 
   BigTwoState({
@@ -29,6 +30,7 @@ class BigTwoState {
     this.passCount = 0,
     this.restartRequesters = const [],
     this.deckCards = const [],
+    this.discardCards = const [],
     this.lockedHandType = '',
   });
 
@@ -97,6 +99,7 @@ class BigTwoState {
     int? passCount,
     List<String>? restartRequesters,
     List<String>? deckCards,
+    List<String>? discardCards,
     String? lockedHandType,
   }) {
     return BigTwoState(
@@ -109,6 +112,7 @@ class BigTwoState {
       passCount: passCount ?? this.passCount,
       restartRequesters: restartRequesters ?? this.restartRequesters,
       deckCards: deckCards ?? this.deckCards,
+      discardCards: discardCards ?? this.discardCards,
       lockedHandType: lockedHandType ?? this.lockedHandType,
     );
   }

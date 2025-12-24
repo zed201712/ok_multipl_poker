@@ -217,7 +217,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     }
 
     // Update Deck
-    final newDeckCards = List<String>.from(cardsPlayed)..addAll(state.deckCards);
+    final newDeckCards = List<String>.from(state.lastPlayedHand)..addAll(state.deckCards);
 
     // Update lockedHandType
     String newLockedHandType = playedPattern.toJson();
@@ -269,24 +269,19 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     String lockedHandType = state.lockedHandType;
     int passCount = state.passCount;
     List<String> lastPlayedHand = state.lastPlayedHand;
-    String lastPlayedById = state.lastPlayedById;
+    List<String> deckCards = state.deckCards;
+    List<String> discardCards = state.discardCards;
 
     if (passCount >= state.seats.length - 1 || nextPlayerId == null) {
       // Reset hasPassed for all if participant is not a VirtualPlayer
       participants = participants.map((p) => p.copyWith(hasPassed: p.isVirtualPlayer)).toList();
       lockedHandType = "";
       passCount = _currentPassCount(participants);
-      lastPlayedHand = []; // Reset last played hand on new round
-      // lastPlayedById stays, but it doesn't matter as lockedHandType is empty
-    }
 
-    if (nextPlayerId == null) {
-      return state.copyWith(
-        participants: participants,
-        passCount: passCount,
-        lockedHandType: lockedHandType,
-        lastPlayedHand: lastPlayedHand,
-      );
+      discardCards = List<String>.from(lastPlayedHand)..addAll(deckCards)..addAll(discardCards);
+
+      deckCards = [];
+      lastPlayedHand = []; // Reset last played hand on new round
     }
 
     return state.copyWith(
@@ -295,7 +290,8 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         lockedHandType: lockedHandType,
         passCount: passCount,
         lastPlayedHand: lastPlayedHand,
-        lastPlayedById: lastPlayedById,
+        deckCards: deckCards,
+        discardCards: discardCards,
     );
   }
   

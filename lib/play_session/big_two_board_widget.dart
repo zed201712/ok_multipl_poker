@@ -186,7 +186,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           }).toList();
 
           final otherPlayers = _bigTwoManager.otherPlayers(_userId, bigTwoState);
-          final edgeSize = 30.0;
+          final edgeSize = 100.0;
 
           // 判斷是否輪到我
           final isMyTurn = gameState.currentPlayerId == _userId;
@@ -212,7 +212,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 ),
 
                 // --- 對手區域 ---
-                ..._otherPlayerWidgets(otherPlayers, bigTwoState.currentPlayerId),
+                ..._otherPlayerWidgets(otherPlayers, bigTwoState),
 
                 // --- 玩家手牌區域 ---
                 Align(
@@ -368,7 +368,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   }
 
   // --- 對手區域 ---
-  List<Widget> _otherPlayerWidgets(List<BigTwoPlayer> otherPlayers, String currentPlayerId) {
+  List<Widget> _otherPlayerWidgets(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
     List<int> fourPlayerSeatOrder = [
       1, //topCenter
       2, //centerLeft
@@ -384,9 +384,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           child: Padding(
             padding: const EdgeInsets.only(top: 40.0),
             child: _OpponentHand(
-              cardCount: playersBySeatOrder[0].cards.length,
-              playerName: playersBySeatOrder[0].name,
-              isCurrentTurn: playersBySeatOrder[0].uid == currentPlayerId,
+              bigTwoState: bigTwoState,
+              player: playersBySeatOrder[0],
             ),
           ),
         ),
@@ -398,9 +397,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             child: RotatedBox(
               quarterTurns: 1,
               child: _OpponentHand(
-                cardCount: playersBySeatOrder[1].cards.length,
-                playerName: playersBySeatOrder[1].name,
-                isCurrentTurn: playersBySeatOrder[1].uid == currentPlayerId,
+                bigTwoState: bigTwoState,
+                player: playersBySeatOrder[1],
               ),
             ),
           ),
@@ -413,9 +411,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             child: RotatedBox(
               quarterTurns: 3,
               child: _OpponentHand(
-                cardCount: playersBySeatOrder[2].cards.length,
-                playerName: playersBySeatOrder[2].name,
-                isCurrentTurn: playersBySeatOrder[2].uid == currentPlayerId,
+                bigTwoState: bigTwoState,
+                player: playersBySeatOrder[2],
               ),
             ),
           ),
@@ -425,27 +422,30 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 }
 
 class _OpponentHand extends StatelessWidget {
-  final int cardCount;
-  final String playerName;
-  final bool isCurrentTurn;
+  final BigTwoState bigTwoState;
+  final BigTwoPlayer player;
 
   const _OpponentHand({
-    required this.cardCount,
-    required this.playerName,
-    required this.isCurrentTurn,
+    required this.bigTwoState,
+    required this.player,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cardCount = player.cards.length;
+    final playerName = player.name;
+    final isCurrentTurn = player.uid == bigTwoState.currentPlayerId;
+
+    final playerNameColor = player.hasPassed ? Colors.grey : (isCurrentTurn ? Colors.amber : null);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
             playerName, 
             style: theme.textTheme.titleMedium?.copyWith(
-                color: isCurrentTurn ? Colors.amber : null,
-                fontWeight: isCurrentTurn ? FontWeight.bold : null,
+                color: playerNameColor,
+                fontWeight: player.hasPassed ? FontWeight.bold : null,
             )
         ),
         const SizedBox(height: 8),

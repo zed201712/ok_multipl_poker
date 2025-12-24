@@ -28,6 +28,11 @@ BigTwoState _$BigTwoStateFromJson(Map<String, dynamic> json) => BigTwoState(
   deckCards:
       (json['deckCards'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
+  discardCards:
+      (json['discardCards'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
   lockedHandType: json['lockedHandType'] as String? ?? '',
 );
 
@@ -42,5 +47,6 @@ Map<String, dynamic> _$BigTwoStateToJson(BigTwoState instance) =>
       'passCount': instance.passCount,
       'restartRequesters': instance.restartRequesters,
       'deckCards': instance.deckCards,
+      'discardCards': instance.discardCards,
       'lockedHandType': instance.lockedHandType,
     };
