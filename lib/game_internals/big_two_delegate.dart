@@ -217,7 +217,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     }
 
     // Update Deck
-    final newDeckCards = List<String>.from(state.deckCards)..addAll(cardsPlayed);
+    final newDeckCards = List<String>.from(cardsPlayed)..addAll(state.deckCards);
 
     // Update lockedHandType
     String newLockedHandType = playedPattern.toJson();
@@ -227,7 +227,6 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       deckCards: newDeckCards,
       lastPlayedHand: cardsPlayed,
       lastPlayedById: playerId,
-      passCount: 0, 
       lockedHandType: newLockedHandType,
       winner: newWinner,
     );
@@ -254,20 +253,17 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     final newParticipants = List<BigTwoPlayer>.from(state.participants);
     newParticipants[playerIndex] = newPlayer;
 
-    int newPassCount = state.passCount + 1;
-    print("pass_turn state.passCount + 1");//TODO
-
     BigTwoState tempState = state.copyWith(
       participants: newParticipants,
       lastPlayedById: playerId,
-      passCount: newPassCount,
+      passCount: _currentPassCount(newParticipants),
     );
 
     return _nextTurn(tempState);
   }
 
   BigTwoState _nextTurn(BigTwoState state) {
-    String? nextPid = state.nextPlayerId();
+    String? nextPlayerId = state.nextPlayerId();
 
     List<BigTwoPlayer> participants = state.participants;
     String lockedHandType = state.lockedHandType;
@@ -275,21 +271,16 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     List<String> lastPlayedHand = state.lastPlayedHand;
     String lastPlayedById = state.lastPlayedById;
 
-    // Check if everyone else passed (Round Over / Free Turn for next player)
-    // passCount counts how many CONSECUTIVE passes.
-    // In 3 player game, if 2 people pass, the 3rd gets free turn.
-    // seats.length - 1 is the threshold.
-
-    if (passCount >= state.seats.length - 1 || nextPid == null) {
+    if (passCount >= state.seats.length - 1 || nextPlayerId == null) {
       // Reset hasPassed for all if participant is not a VirtualPlayer
       participants = participants.map((p) => p.copyWith(hasPassed: p.isVirtualPlayer)).toList();
       lockedHandType = "";
-      passCount = 0;
+      passCount = _currentPassCount(participants);
       lastPlayedHand = []; // Reset last played hand on new round
       // lastPlayedById stays, but it doesn't matter as lockedHandType is empty
     }
 
-    if (nextPid == null) {
+    if (nextPlayerId == null) {
       return state.copyWith(
         participants: participants,
         passCount: passCount,
@@ -297,11 +288,6 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         lastPlayedHand: lastPlayedHand,
       );
     }
-    String nextPlayerId = nextPid;
-
-    // Check if the next player is Virtual.
-    // If Virtual, they automatically pass.
-    final nextPlayer = participants.firstWhere((p) => p.uid == nextPlayerId);
 
     return state.copyWith(
         currentPlayerId: nextPlayerId,
@@ -311,6 +297,10 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         lastPlayedHand: lastPlayedHand,
         lastPlayedById: lastPlayedById,
     );
+  }
+  
+  int _currentPassCount(List<BigTwoPlayer> players) {
+    return players.where((p) => p.hasPassed).length;
   }
 
   @override
