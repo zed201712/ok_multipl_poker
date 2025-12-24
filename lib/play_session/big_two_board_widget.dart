@@ -164,8 +164,9 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                    }
                 } : null,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isHolding ? null : Colors.grey,
-                  side: isHolding ? null : const BorderSide(color: Colors.grey),
+                  // 根據是否持有，顯示不同顏色
+                  foregroundColor: isHolding ? Colors.amber : Colors.grey,
+                  side: isHolding ? const BorderSide(color: Colors.amber) : const BorderSide(color: Colors.grey),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
