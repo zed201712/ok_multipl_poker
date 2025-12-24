@@ -189,7 +189,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     // 3. Normal Turn Logic (Priority Loop)
     
     // Step 1: Get Playable Patterns
-    final playablePatterns = _delegate.getPlayablePatterns(state, sortedHand);
+    final playablePatterns = _delegate.getPlayablePatterns(state);
     
     // Step 2: Priority List
     const priorityList = [

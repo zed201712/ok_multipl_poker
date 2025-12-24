@@ -30,7 +30,7 @@ void main() {
       );
 
       final handCards = player.cards.map(PlayingCard.fromString).toList();
-      final patterns = delegate.getPlayablePatterns(state, handCards);
+      final patterns = delegate.getPlayablePatterns(state);
       
       expect(patterns, containsAll(BigTwoCardPattern.values));
     });
@@ -44,7 +44,7 @@ void main() {
       );
 
       final handCards = player.cards.map(PlayingCard.fromString).toList();
-      final patterns = delegate.getPlayablePatterns(state, handCards);
+      final patterns = delegate.getPlayablePatterns(state);
       
       expect(patterns, contains(BigTwoCardPattern.single));
       expect(patterns, contains(BigTwoCardPattern.fourOfAKind)); // Bomb

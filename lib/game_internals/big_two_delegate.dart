@@ -688,11 +688,11 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   // --- AI Helpers ---
 
   /// 功能 3: 回傳該玩家現在可以出的牌型種類 (考慮了 lockedHandType)
-  List<BigTwoCardPattern> getPlayablePatterns(BigTwoState state, List<PlayingCard> handCards) {
+  List<BigTwoCardPattern> getPlayablePatterns(BigTwoState state, {List<PlayingCard>? handCards}) {
     if (state.lockedHandType.isEmpty) {
         return BigTwoCardPattern.values;
     }
-    
+
     final locked = BigTwoCardPattern.fromJson(state.lockedHandType);
     final patterns = <BigTwoCardPattern>[locked];
     
@@ -704,8 +704,14 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         // Only higher Straight Flush beats Straight Flush
         // already added locked (SF)
     }
-    
-    return patterns;
+
+    if (handCards == null) return patterns;
+
+    final checkedPatterns = patterns
+        .where((pattern) => _getCandidates(handCards, pattern).isNotEmpty)
+        .toList();
+
+    return checkedPatterns;
   }
 
   /// 功能 4: 針對特定牌型，回傳所有可打出的牌組 (必須 beat lastPlayedHand)
@@ -714,28 +720,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       List<PlayingCard> handCards, 
       BigTwoCardPattern pattern
   ) {
-    List<List<PlayingCard>> candidates = [];
-
-    switch (pattern) {
-        case BigTwoCardPattern.single:
-            candidates = findSingles(handCards);
-            break;
-        case BigTwoCardPattern.pair:
-            candidates = findPairs(handCards);
-            break;
-        case BigTwoCardPattern.straight:
-            candidates = findStraights(handCards);
-            break;
-        case BigTwoCardPattern.fullHouse:
-            candidates = findFullHouses(handCards);
-            break;
-        case BigTwoCardPattern.fourOfAKind:
-            candidates = findFourOfAKinds(handCards);
-            break;
-        case BigTwoCardPattern.straightFlush:
-            candidates = findStraightFlushes(handCards);
-            break;
-    }
+    final candidates = _getCandidates(handCards, pattern);
     
     // Filter by "isBeating"
     final validCombinations = <List<String>>[];
@@ -779,7 +764,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
 
   /// 功能 5: 回傳當前所有可打出的牌組
   List<List<String>> getAllPlayableCombinations(BigTwoState state, List<PlayingCard> handCards) {
-      final patterns = getPlayablePatterns(state, handCards);
+      final patterns = getPlayablePatterns(state);
       final allCombos = <List<String>>[];
       
       for (final p in patterns) {
@@ -787,5 +772,35 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       }
       
       return allCombos;
+  }
+
+  List<List<PlayingCard>> _getCandidates(
+      List<PlayingCard> handCards,
+      BigTwoCardPattern pattern
+      ) {
+      List<List<PlayingCard>> candidates = [];
+
+      switch (pattern) {
+        case BigTwoCardPattern.single:
+          candidates = findSingles(handCards);
+          break;
+        case BigTwoCardPattern.pair:
+          candidates = findPairs(handCards);
+          break;
+        case BigTwoCardPattern.straight:
+          candidates = findStraights(handCards);
+          break;
+        case BigTwoCardPattern.fullHouse:
+          candidates = findFullHouses(handCards);
+          break;
+        case BigTwoCardPattern.fourOfAKind:
+          candidates = findFourOfAKinds(handCards);
+          break;
+        case BigTwoCardPattern.straightFlush:
+          candidates = findStraightFlushes(handCards);
+          break;
+      }
+
+      return candidates;
   }
 }
