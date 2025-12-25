@@ -4,7 +4,6 @@ import 'package:ok_multipl_poker/game_internals/card_player.dart';
 import 'package:ok_multipl_poker/play_session/playing_card_image_widget.dart';
 import 'package:provider/provider.dart';
 
-import '../game_internals/big_two_board_state.dart';
 import 'playing_card_widget.dart';
 
 /// A widget that displays a player's hand and allows for card selection.
