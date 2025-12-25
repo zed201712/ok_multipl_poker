@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/play_session/playing_card_image_widget.dart';
 import 'package:ok_multipl_poker/play_session/playing_card_widget.dart';
 import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
+import 'package:ok_multipl_poker/widgets/card_container.dart';
 
 import '../game_internals/playing_card.dart';
+import '../widgets/rounded_label.dart';
 
 class TableCardWrapWidget extends StatelessWidget {
   final List<PlayingCard> lastPlayedCards;
@@ -62,27 +64,6 @@ class TableCardWrapWidget extends StatelessWidget {
   }
 }
 
-class _LastPlayedLabel extends StatelessWidget {
-  final String title;
-
-  const _LastPlayedLabel({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.orange),
-      ),
-      child: Text(
-        'Last Played: $title',
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
 
 class _LastPlayedWidget extends StatelessWidget {
   final String title;
@@ -96,18 +77,10 @@ class _LastPlayedWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // 上一次出的牌 (Last Played Hand) - 顯示在上方或顯眼處
-        if (title.isNotEmpty) ...[
-          _LastPlayedLabel(title: title),
-          Container(
-            padding: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ShowOnlyCardAreaWidget(cards: lastPlayedCards),
-          ),
-          //const SizedBox(height: 20),
-        ],
+        CardContainer(
+          title: 'Last Played: $title',
+          child: ShowOnlyCardAreaWidget(cards: lastPlayedCards),
+        ),
       ],
     );
   }
