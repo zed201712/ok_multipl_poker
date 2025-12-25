@@ -168,7 +168,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                    final nextSelection = _bigTwoManager.selectNextPattern(
                      hand: _player.hand,
                      currentSelection: _player.selectedCards,
-                     pattern: pattern, 
+                     pattern: pattern,
                    );
                    if (nextSelection.isNotEmpty) {
                      _player.setCardSelection(nextSelection);
@@ -186,6 +186,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           return Provider<BigTwoState>.value(
             value: bigTwoState,
             child: Scaffold(
+              backgroundColor: Colors.transparent,
               body: Stack(
                 children: [
                   // --- 桌面區域 (Last Played Hand & Deck) ---
@@ -275,7 +276,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                     ),
 
                   // --- 除錯工具 ---
-                  ..._debugWidgets(bigTwoState),
+                  //..._debugWidgets(bigTwoState),
                 ],
               ),
             ),

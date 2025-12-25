@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart' hide Level;
+import 'package:ok_multipl_poker/widgets/background_image_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../audio/audio_controller.dart';
@@ -55,50 +56,56 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
       ],
       child: IgnorePointer(
         ignoring: _duringCelebration,
-        child: Scaffold(
-          backgroundColor: palette.backgroundPlaySession,
-          body: Stack(
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: InkResponse(
-                      onTap: () => GoRouter.of(context).push('/settings'),
-                      child: Image.asset(
-                        'assets/images/settings.png',
-                        semanticLabel: 'Settings',
+        child:
+          BackgroundImageWidget(
+              imagePath: 'assets/images/goblin_cards/goblin_bg_002.png',
+              child:
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Stack(
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: InkResponse(
+                            onTap: () => GoRouter.of(context).push('/settings'),
+                            child: Image.asset(
+                              'assets/images/settings.png',
+                              semanticLabel: 'Settings',
+                            ),
+                          ),
+                        ),
+                        const Expanded(
+                          child: BigTwoBoardWidget(),
+                        ),
+                        // const Spacer(),
+                        // const BoardWidget(),
+                        // const Text('Drag cards to the two areas above.'),
+                        // const Spacer(),
+
+                        // Padding(
+                        //   padding: const EdgeInsets.all(8.0),
+                        //   child: MyButton(
+                        //     onPressed: () => GoRouter.of(context).go('/'),
+                        //     child: const Text('Back'),
+                        //   ),
+                        // ),
+                      ],
+                    ),
+                    SizedBox.expand(
+                      child: Visibility(
+                        visible: _duringCelebration,
+                        child: IgnorePointer(
+                          child: Confetti(isStopped: !_duringCelebration),
+                        ),
                       ),
                     ),
-                  ),
-                  const Expanded(
-                    child: BigTwoBoardWidget(),
-                  ),
-                  // const Spacer(),
-                  // const BoardWidget(),
-                  // const Text('Drag cards to the two areas above.'),
-                  // const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: MyButton(
-                      onPressed: () => GoRouter.of(context).go('/'),
-                      child: const Text('Back'),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox.expand(
-                child: Visibility(
-                  visible: _duringCelebration,
-                  child: IgnorePointer(
-                    child: Confetti(isStopped: !_duringCelebration),
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+          )
       ),
     );
   }

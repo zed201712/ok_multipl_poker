@@ -35,9 +35,16 @@ _____
 整理容易理解的文字內容, 而不是程式碼
 
 風格: 遵循 `effective_dart` 程式碼風格，並為新的類別和公共方法添加 DartDoc 註解。
-
-@tic_tac_toe_game_page.dart
 _____
+依據 @big_two_delegate_spec_012.md 的風格
+並依據 commit c42328b96486f06e2f23ada5b4267ef02707b9ff 的內容 產生 big_two_delegate_spec_010.md檔案
+建立spec檔案 big_two_delegate_spec_010.md
+
+| **任務 ID (Task ID)** | `FEAT-BIG-TWO-DELEGATE-010` |
+| **創建日期 (Date)** | `2025/12/25` |
+
+然後給commit message
+-----
 
 寫提示詞, 用來產生 @ai_dev_spec_template.md 風格的 spec
 我要製作一個4人poker card遊戲, bigtwo操作頁面的bigtwo_board_widget.dart
