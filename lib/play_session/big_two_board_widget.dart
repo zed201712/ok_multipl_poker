@@ -153,23 +153,19 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           // 遊戲進行中 (Playing) 或 結束 (Finished)
           final bigTwoState = gameState.customState;
 
-          // 1. 取得所有持有的牌型
-          final holdingPatterns = _bigTwoManager.getHoldingPatterns(_player.hand);
+          // 1. 判斷是否輪到我
+          final isMyTurn = gameState.currentPlayerId == _userId;
           
           // 2. 按鈕生成
           // 使用 BigTwoCardPattern Enum 替代硬編碼
           final handTypeButtons = BigTwoCardPattern.values.map((pattern) {
-            final isHolding = holdingPatterns.contains(pattern);
+            final isEnable = isMyTurn && _selectNextPattern(bigTwoState, pattern).isNotEmpty;;
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: MyButton(
                 // 若不持有該牌型，禁用按鈕
-                onPressed: isHolding ? () {
-                   final nextSelection = _bigTwoManager.selectNextPattern(
-                     hand: _player.hand,
-                     currentSelection: _player.selectedCards,
-                     pattern: pattern,
-                   );
+                onPressed: isEnable ? () {
+                  final nextSelection = _selectNextPattern(bigTwoState, pattern);
                    if (nextSelection.isNotEmpty) {
                      _player.setCardSelection(nextSelection);
                    }
@@ -181,8 +177,6 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
           final otherPlayers = _bigTwoManager.otherPlayers(_userId, bigTwoState);
 
-          // 判斷是否輪到我
-          final isMyTurn = gameState.currentPlayerId == _userId;
           return Provider<BigTwoState>.value(
             value: bigTwoState,
             child: Scaffold(
@@ -283,6 +277,18 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           );
         },
       ),
+    );
+  }
+
+  List<PlayingCard> _selectNextPattern(
+      BigTwoState bigTwoState,
+      BigTwoCardPattern pattern,
+      ) {
+    return _bigTwoManager.selectNextPattern(
+      bigTwoState: bigTwoState,
+      hand: _player.hand,
+      currentSelection: _player.selectedCards,
+      pattern: pattern,
     );
   }
 
