@@ -33,9 +33,9 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   }
 
   @override
-  Future<String> getPlayerAvatarPath() async {
+  Future<String> getPlayerAvatarNumber() async {
     final prefs = await instanceFuture;
-    return prefs.getString('playerAvatarPath') ?? 'assets/images/goblin_cards/goblin_1_001.png';
+    return prefs.getString('playerAvatarNumber') ?? '1';
   }
 
   @override
@@ -69,9 +69,9 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   }
 
   @override
-  Future<void> savePlayerAvatarPath(String value) async {
+  Future<void> savePlayerAvatarNumber(String value) async {
     final prefs = await instanceFuture;
-    await prefs.setString('playerAvatarPath', value);
+    await prefs.setString('playerAvatarNumber', value);
   }
 
   @override

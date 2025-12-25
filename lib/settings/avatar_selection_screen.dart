@@ -29,7 +29,7 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
     // 這裡我們假設圖片命名規則為 goblin_1_001.png 到 goblin_1_013.png
     // 以及 goblin_bg_001.png, goblin_bg_002.png (背景圖可能不適合當頭像，這裡僅列出卡片圖)
     
-    final manifestContent = await DefaultAssetBundle.of(context).loadString('AssetManifest.json');
+    // final manifestContent = await DefaultAssetBundle.of(context).loadString('AssetManifest.json');
     // 簡單解析 AssetManifest (實際應使用 jsonDecode)
     // 這裡為了簡化，直接生成已知列表
     
@@ -68,11 +68,16 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
           itemCount: _avatarPaths.length,
           itemBuilder: (context, index) {
             final path = _avatarPaths[index];
-            final isSelected = settings.playerAvatarPath.value == path;
+            final avatarNumber = (index + 1).toString();
+            // 比較時，settings.playerAvatarNumber.value 可能是 "1"，而我們這邊是 "1"。
+            // 只要確保儲存的和比較的是一致的 (不含前導零，或者都含前導零)。
+            // SettingsController 的 setPlayerAvatarNumber 存入的是 raw string。
+            // 我們這裡存入 (index + 1).toString() 即 "1", "10"。
+            final isSelected = settings.playerAvatarNumber.value == avatarNumber;
             
             return InkWell(
               onTap: () {
-                settings.setPlayerAvatarPath(path);
+                settings.setPlayerAvatarNumber(avatarNumber);
                 GoRouter.of(context).pop();
               },
               child: Container(

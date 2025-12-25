@@ -29,8 +29,8 @@ class SettingsController {
   /// 玩家的名稱。用於最高分列表等地方。
   ValueNotifier<String> playerName = ValueNotifier('Player');
 
-  /// 玩家的頭像路徑。
-  ValueNotifier<String> playerAvatarPath = ValueNotifier('assets/images/goblin_cards/goblin_1_001.png');
+  /// 玩家的頭像編號。
+  ValueNotifier<String> playerAvatarNumber = ValueNotifier('1');
 
   /// 是否已完成初次使用者引導 (Onboarding)。
   ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
@@ -55,10 +55,14 @@ class SettingsController {
     _store.savePlayerName(playerName.value);
   }
 
-  void setPlayerAvatarPath(String path) {
-    playerAvatarPath.value = path;
-    _store.savePlayerAvatarPath(playerAvatarPath.value);
+  void setPlayerAvatarNumber(String number) {
+    playerAvatarNumber.value = number;
+    _store.savePlayerAvatarNumber(playerAvatarNumber.value);
   }
+
+  /// 取得當前頭像的完整路徑。
+  String get currentAvatarPath => 
+      'assets/images/goblin_cards/goblin_1_${playerAvatarNumber.value.padLeft(3, '0')}.png';
   
   void setHasCompletedOnboarding(bool value) {
     hasCompletedOnboarding.value = value;
@@ -99,7 +103,36 @@ class SettingsController {
           .getMusicOn(defaultValue: true)
           .then((value) => musicOn.value = value),
       _store.getPlayerName().then((value) => playerName.value = value),
-      _store.getPlayerAvatarPath().then((value) => playerAvatarPath.value = value),
+      _store.getPlayerAvatarNumber().then((value) {
+        // Migration logic: if the value looks like a path (contains "assets/"), 
+        // try to parse the number or reset to default.
+        if (value.contains('assets/')) {
+           // Attempt to extract number from "goblin_1_XXX.png"
+           // This is a simple heuristic. If it fails, we fallback to '1'.
+           try {
+             final RegExp regex = RegExp(r'goblin_1_(\d{3})\.png');
+             final match = regex.firstMatch(value);
+             if (match != null) {
+               final numberStr = match.group(1)!;
+               final number = int.parse(numberStr).toString(); // remove leading zeros if any, or keep as string
+               // Since our setter pads left, we can just store the simple string "1", "5", etc.
+               // or keep "001". The current logic uses padLeft(3, '0') on the getter, 
+               // so storing "1" is fine.
+               playerAvatarNumber.value = int.parse(numberStr).toString();
+               // Save the migrated value
+               _store.savePlayerAvatarNumber(playerAvatarNumber.value);
+               return playerAvatarNumber.value;
+             }
+           } catch (e) {
+             _log.warning('Failed to migrate avatar path: $value, resetting to default.');
+           }
+           // Fallback default
+           playerAvatarNumber.value = '1';
+           _store.savePlayerAvatarNumber('1');
+           return '1';
+        }
+        return playerAvatarNumber.value = value;
+      }),
       _store.getHasCompletedOnboarding().then((value) => hasCompletedOnboarding.value = value),
     ]);
 

@@ -13,7 +13,7 @@ abstract class SettingsPersistence {
 
   Future<String> getPlayerName();
 
-  Future<String> getPlayerAvatarPath();
+  Future<String> getPlayerAvatarNumber();
 
   Future<bool> getHasCompletedOnboarding();
 
@@ -25,7 +25,7 @@ abstract class SettingsPersistence {
 
   Future<void> savePlayerName(String value);
 
-  Future<void> savePlayerAvatarPath(String value);
+  Future<void> savePlayerAvatarNumber(String value);
 
   Future<void> saveHasCompletedOnboarding(bool value);
 

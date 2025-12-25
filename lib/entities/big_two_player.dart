@@ -9,6 +9,7 @@ class BigTwoPlayer {
   final List<String> cards;
   final bool hasPassed;
   final bool isVirtualPlayer;
+  final String avatarNumber;
 
   BigTwoPlayer({
     required this.uid,
@@ -16,6 +17,7 @@ class BigTwoPlayer {
     required this.name,
     this.hasPassed = false,
     this.isVirtualPlayer = false,
+    this.avatarNumber = '1',
   });
 
   factory BigTwoPlayer.fromJson(Map<String, dynamic> json) =>
@@ -29,6 +31,7 @@ class BigTwoPlayer {
     List<String>? cards,
     bool? hasPassed,
     bool? isVirtualPlayer,
+    String? avatarNumber,
   }) {
     return BigTwoPlayer(
         uid: uid ?? this.uid,
@@ -36,6 +39,7 @@ class BigTwoPlayer {
         name: name ?? this.name,
         hasPassed: hasPassed ?? this.hasPassed,
         isVirtualPlayer: isVirtualPlayer ?? this.isVirtualPlayer,
+        avatarNumber: avatarNumber ?? this.avatarNumber,
     );
   }
 }

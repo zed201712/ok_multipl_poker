@@ -147,6 +147,7 @@ class FirestoreRoomStateController {
         : _firestore.collection(_collectionName).doc().id;
 
     final playerName = _settingsController.playerName.value;
+    final avatarNumber = _settingsController.playerAvatarNumber.value;
     final roomData = {
       'creatorUid': creatorUid,
       'managerUid': creatorUid,
@@ -158,7 +159,11 @@ class FirestoreRoomStateController {
       'visibility': visibility,
       'randomizeSeats': randomizeSeats,
       'participants': [
-        {'id': creatorUid, 'name': playerName}
+        {
+          'id': creatorUid,
+          'name': playerName,
+          'avatarNumber': avatarNumber,
+        }
       ],
       'seats': [creatorUid],
       'createdAt': FieldValue.serverTimestamp(),
@@ -209,7 +214,12 @@ class FirestoreRoomStateController {
     if (availableRooms.isNotEmpty) {
       final roomToJoin = Room.fromFirestore(availableRooms.first);
       final playerName = _settingsController.playerName.value;
-      await sendRequest(roomId: roomToJoin.roomId, body: {'action': 'join', 'name': playerName});
+      final avatarNumber = _settingsController.playerAvatarNumber.value;
+      await sendRequest(roomId: roomToJoin.roomId, body: {
+        'action': 'join',
+        'name': playerName,
+        'avatarNumber': avatarNumber,
+      });
       setRoomId(roomToJoin.roomId);
       return roomToJoin.roomId;
     } else {
@@ -321,7 +331,8 @@ class FirestoreRoomStateController {
 
       final newParticipant = {
         'id': request.participantId,
-        'name': request.body['name'] ?? ''
+        'name': request.body['name'] ?? '',
+        'avatarNumber': request.body['avatarNumber'] ?? '1',
       };
 
       transaction.update(roomRef, {
@@ -460,7 +471,12 @@ class FirestoreRoomStateController {
 
   Future<void> requestToJoinRoom({required String roomId}) async {
     final playerName = _settingsController.playerName.value;
-    await sendRequest(roomId: roomId, body: {'action': 'join', 'name': playerName});
+    final avatarNumber = _settingsController.playerAvatarNumber.value;
+    await sendRequest(roomId: roomId, body: {
+      'action': 'join',
+      'name': playerName,
+      'avatarNumber': avatarNumber,
+    });
   }
 
   Future<void> sendAlivePing({required String roomId}) async {

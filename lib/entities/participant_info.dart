@@ -6,10 +6,12 @@ part 'participant_info.g.dart';
 class ParticipantInfo {
   final String id;
   final String name;
+  final String avatarNumber;
 
   ParticipantInfo({
     required this.id,
     required this.name,
+    this.avatarNumber = '1',
   });
 
   factory ParticipantInfo.fromJson(Map<String, dynamic> json) =>

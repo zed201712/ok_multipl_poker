@@ -50,8 +50,8 @@ class SettingsScreen extends StatelessWidget {
               },
               child: Center(
                 child: ValueListenableBuilder<String>(
-                  valueListenable: settings.playerAvatarPath,
-                  builder: (context, path, _) {
+                  valueListenable: settings.playerAvatarNumber,
+                  builder: (context, number, _) {
                     return Container(
                       width: 100,
                       height: 100,
@@ -59,7 +59,7 @@ class SettingsScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 3),
                         image: DecorationImage(
-                          image: AssetImage(path),
+                          image: AssetImage(settings.currentAvatarPath),
                           fit: BoxFit.cover,
                         ),
                       ),

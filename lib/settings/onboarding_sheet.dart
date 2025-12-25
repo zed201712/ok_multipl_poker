@@ -67,8 +67,8 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                 child: Column(
                   children: [
                     ValueListenableBuilder<String>(
-                      valueListenable: settings.playerAvatarPath,
-                      builder: (context, path, _) {
+                      valueListenable: settings.playerAvatarNumber,
+                      builder: (context, number, _) {
                         return Container(
                           width: 100,
                           height: 100,
@@ -76,7 +76,7 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 3),
                             image: DecorationImage(
-                              image: AssetImage(path),
+                              image: AssetImage(settings.currentAvatarPath),
                               fit: BoxFit.cover,
                             ),
                           ),

@@ -22,10 +22,12 @@ class FakeSettingsController implements SettingsController {
   @override
   ValueNotifier<bool> soundsOn = ValueNotifier(true);
 
-  /// 玩家的頭像路徑。
-  ValueNotifier<String> playerAvatarPath = ValueNotifier('assets/images/goblin_cards/goblin_1_001.png');
+  /// 玩家的頭像編號。
+  @override
+  ValueNotifier<String> playerAvatarNumber = ValueNotifier('1');
 
   /// 是否已完成初次使用者引導 (Onboarding)。
+  @override
   ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
 
   // The original `_store` is private and not part of the public interface,
@@ -63,6 +65,12 @@ class FakeSettingsController implements SettingsController {
   }
 
   @override
-  void setPlayerAvatarPath(String path) {
+  void setPlayerAvatarNumber(String number) {
+    playerAvatarNumber.value = number;
+    // No persistence.
   }
+  
+  @override
+  String get currentAvatarPath => 
+      'assets/images/goblin_cards/goblin_1_${playerAvatarNumber.value.padLeft(3, '0')}.png';
 }
