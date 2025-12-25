@@ -5,6 +5,7 @@ import 'package:ok_multipl_poker/entities/participant_info.dart';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
+import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 
 void main() {
   group('BigTwoDelegate', () {
@@ -51,86 +52,86 @@ void main() {
 
     group('getCardPattern', () {
       test('identifies Single', () {
-        expect(delegate.getCardPattern(['C3']), BigTwoCardPattern.single);
+        expect(delegate.getCardPattern(['C3'].toPlayingCards()), BigTwoCardPattern.single);
       });
       test('identifies Pair', () {
-        expect(delegate.getCardPattern(['C3', 'D3']), BigTwoCardPattern.pair);
+        expect(delegate.getCardPattern(['C3', 'D3'].toPlayingCards()), BigTwoCardPattern.pair);
       });
       test('identifies Straight', () {
-        expect(delegate.getCardPattern(['C3', 'D4', 'H5', 'S6', 'C7']), BigTwoCardPattern.straight);
+        expect(delegate.getCardPattern(['C3', 'D4', 'H5', 'S6', 'C7'].toPlayingCards()), BigTwoCardPattern.straight);
       });
       test('identifies FullHouse', () {
-        expect(delegate.getCardPattern(['C3', 'D3', 'H3', 'S4', 'C4']), BigTwoCardPattern.fullHouse);
+        expect(delegate.getCardPattern(['C3', 'D3', 'H3', 'S4', 'C4'].toPlayingCards()), BigTwoCardPattern.fullHouse);
       });
       test('identifies FourOfAKind', () {
-        expect(delegate.getCardPattern(['C3', 'D3', 'H3', 'S3', 'C4']), BigTwoCardPattern.fourOfAKind);
+        expect(delegate.getCardPattern(['C3', 'D3', 'H3', 'S3', 'C4'].toPlayingCards()), BigTwoCardPattern.fourOfAKind);
       });
       test('identifies StraightFlush', () {
-        expect(delegate.getCardPattern(['C3', 'C4', 'C5', 'C6', 'C7']), BigTwoCardPattern.straightFlush);
+        expect(delegate.getCardPattern(['C3', 'C4', 'C5', 'C6', 'C7'].toPlayingCards()), BigTwoCardPattern.straightFlush);
       });
       test('returns null for invalid pattern', () {
-        expect(delegate.getCardPattern(['C3', 'D4']), null); // Random 2 cards
-        expect(delegate.getCardPattern(['C3', 'D3', 'H3']), null); // Triplet not valid in Big Two usually
+        expect(delegate.getCardPattern(['C3', 'D4'].toPlayingCards()), null); // Random 2 cards
+        expect(delegate.getCardPattern(['C3', 'D3', 'H3'].toPlayingCards()), null); // Triplet not valid in Big Two usually
       });
 
       test('returns null for invalid Straight pattern', () {
-        expect(delegate.getCardPattern(['D10', 'D11', 'D12', 'D13', 'C1', 'C2']), null);
-        expect(delegate.getCardPattern(['D11', 'D12', 'D13', 'C1', 'C2']), null);
-        expect(delegate.getCardPattern(['D12', 'D13', 'C1', 'C2', 'C3']), null);
+        expect(delegate.getCardPattern(['D10', 'D11', 'D12', 'D13', 'C1', 'C2'].toPlayingCards()), null);
+        expect(delegate.getCardPattern(['D11', 'D12', 'D13', 'C1', 'C2'].toPlayingCards()), null);
+        expect(delegate.getCardPattern(['D12', 'D13', 'C1', 'C2', 'C3'].toPlayingCards()), null);
       });
 
       // Spec 011: Strict Straight Validation
       test('identifies 10-J-Q-K-A as Straight', () {
           // 10, 11, 12, 13, 1
-          expect(delegate.getCardPattern(['D10', 'D11', 'D12', 'D13', 'H1']), BigTwoCardPattern.straight);
+          expect(delegate.getCardPattern(['D10', 'D11', 'D12', 'D13', 'H1'].toPlayingCards()), BigTwoCardPattern.straight);
       });
       test('identifies A-2-3-4-5 as Straight', () {
           // 1, 2, 3, 4, 5
-          expect(delegate.getCardPattern(['D1', 'D2', 'D3', 'D4', 'H5']), BigTwoCardPattern.straight);
+          expect(delegate.getCardPattern(['D1', 'D2', 'D3', 'D4', 'H5'].toPlayingCards()), BigTwoCardPattern.straight);
       });
       test('rejects J-Q-K-A-2 (11,12,13,1,2)', () {
-          expect(delegate.getCardPattern(['D11', 'D12', 'D13', 'H1', 'H2']), null);
+          expect(delegate.getCardPattern(['D11', 'D12', 'D13', 'H1', 'H2'].toPlayingCards()), null);
       });
       test('rejects Q-K-A-2-3 (12,13,1,2,3)', () {
-          expect(delegate.getCardPattern(['D12', 'D13', 'H1', 'H2', 'H3']), null);
+          expect(delegate.getCardPattern(['D12', 'D13', 'H1', 'H2', 'H3'].toPlayingCards()), null);
       });
       test('rejects K-A-2-3-4 (13,1,2,3,4)', () {
-          expect(delegate.getCardPattern(['D13', 'H1', 'H2', 'H3', 'H4']), null);
+          expect(delegate.getCardPattern(['D13', 'H1', 'H2', 'H3', 'H4'].toPlayingCards()), null);
       });
     });
 
     group('isBeating', () {
       test('Single comparison', () {
-        expect(delegate.isBeating(['D3'], ['C3']), true); // Diamond > Club
-        expect(delegate.isBeating(['C3'], ['D3']), false);
-        expect(delegate.isBeating(['C4'], ['D3']), true);
+        expect(delegate.isBeating(['D3'].toPlayingCards(), ['C3'].toPlayingCards()), true); // Diamond > Club
+        expect(delegate.isBeating(['C3'].toPlayingCards(), ['D3'].toPlayingCards()), false);
+        expect(delegate.isBeating(['C4'].toPlayingCards(), ['D3'].toPlayingCards()), true);
       });
       test('Pair comparison', () {
-        expect(delegate.isBeating(['S3', 'H3'], ['C3', 'D3']), true); // Spades/Hearts > Clubs/Diamonds
-        expect(delegate.isBeating(['C4', 'D4'], ['S3', 'H3']), true);
+        expect(delegate.isBeating(['S3', 'H3'].toPlayingCards(), ['C3', 'D3'].toPlayingCards()), true); // Spades/Hearts > Clubs/Diamonds
+        expect(delegate.isBeating(['C4', 'D4'].toPlayingCards(), ['S3', 'H3'].toPlayingCards()), true);
       });
       test('FullHouse comparison (compare triplet)', () {
         // 44433 vs 33344
-        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S3', 'C3'], ['C3', 'D3', 'H3', 'S4', 'C4']), true);
+        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S3', 'C3'].toPlayingCards(), ['C3', 'D3', 'H3', 'S4', 'C4'].toPlayingCards()), true);
       });
       test('FourOfAKind comparison (compare quad)', () {
         // 44443 vs 33334
-        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S4', 'C3'], ['C3', 'D3', 'H3', 'S3', 'C4']), true);
+        expect(delegate.isBeating(['C4', 'D4', 'H4', 'S4', 'C3'].toPlayingCards(), ['C3', 'D3', 'H3', 'S3', 'C4'].toPlayingCards()), true);
       });
       
       // Spec 010: Custom Straight Comparison
       test('Straight comparison: Normal vs Normal', () {
           // 3-4-5-6-7 (7-high) vs 8-9-10-J-Q (Q-high)
-          expect(delegate.isBeating(['C8', 'C9', 'C10', 'C11', 'C12'], ['C3', 'C4', 'C5', 'C6', 'C7']), true);
+          expect(delegate.isBeating(['C8', 'C9', 'C10', 'C11', 'C12'].toPlayingCards(), ['C3', 'C4', 'C5', 'C6', 'C7'].toPlayingCards()), true);
           // Q-high vs 7-high
-          expect(delegate.isBeating(['C3', 'C4', 'C5', 'C6', 'C7'], ['C8', 'C9', 'C10', 'C11', 'C12']), false);
+          expect(delegate.isBeating(['C3', 'C4', 'C5', 'C6', 'C7'].toPlayingCards(), ['C8', 'C9', 'C10', 'C11', 'C12'].toPlayingCards()), false);
       });
 
       test('Straight comparison: Min (A-2-3-4-5) vs Normal (3-4-5-6-7)', () {
          // A-2-3-4-5 is Level 0 (Min), 3-4-5-6-7 is Level 1 (Normal)
          // So Min should LOSE to Normal, even though 2 > 7 in rank.
-         final minStraight = ['D1', 'D2', 'D3', 'D4', 'D5']; // A, 2, 3, 4, 5
-         final normalStraight = ['C3', 'C4', 'C5', 'C6', 'C7']; // 7-high
+         final minStraight = ['D1', 'D2', 'D3', 'D4', 'D5'].toPlayingCards(); // A, 2, 3, 4, 5
+         final normalStraight = ['C3', 'C4', 'C5', 'C6', 'C7'].toPlayingCards(); // 7-high
 
          expect(delegate.isBeating(minStraight, normalStraight), false);
          expect(delegate.isBeating(normalStraight, minStraight), true);
@@ -139,8 +140,8 @@ void main() {
       test('Straight comparison: Min (A-2-3-4-5) vs Max (2-3-4-5-6)', () {
         // A-2-3-4-5 is Level 0 (Min), 3-4-5-6-7 is Level 1 (Normal)
         // So Min should LOSE to Normal, even though 2 > 7 in rank.
-        final minStraight = ['D1', 'D2', 'D3', 'D4', 'D5']; // A, 2, 3, 4, 5
-        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
+        final minStraight = ['D1', 'D2', 'D3', 'D4', 'D5'].toPlayingCards(); // A, 2, 3, 4, 5
+        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'].toPlayingCards();
 
         expect(delegate.isBeating(minStraight, maxStraight), false);
         expect(delegate.isBeating(maxStraight, minStraight), true);
@@ -149,24 +150,24 @@ void main() {
       // Spec 011: Verify 10-J-Q-K-A is Normal (Level 1)
       test('Straight comparison: Max (2-3-4-5-6) vs 10-J-Q-K-A (Normal)', () {
          // Max > Normal
-         final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
-         final normalStraightA = ['D10', 'D11', 'D12', 'D13', 'H1']; // 10, J, Q, K, A
+         final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'].toPlayingCards();
+         final normalStraightA = ['D10', 'D11', 'D12', 'D13', 'H1'].toPlayingCards(); // 10, J, Q, K, A
 
          expect(delegate.isBeating(maxStraight, normalStraightA), true);
          expect(delegate.isBeating(normalStraightA, maxStraight), false);
       });
 
       test('returns false for invalid Straight pattern C2', () {
-        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
-        final invalidStraight = ['D11', 'D12', 'D13', 'C1', 'C2'];
+        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'].toPlayingCards();
+        final invalidStraight = ['D11', 'D12', 'D13', 'C1', 'C2'].toPlayingCards();
 
         expect(delegate.isBeating(maxStraight, invalidStraight), false);
         expect(delegate.isBeating(invalidStraight, maxStraight), false);
       });
 
       test('returns false for invalid Straight pattern C3', () {
-        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'];
-        final invalidStraight = ['D12', 'D13', 'C1', 'C2', 'C3'];
+        final maxStraight = ['D2', 'D3', 'D4', 'D5', 'D6'].toPlayingCards();
+        final invalidStraight = ['D12', 'D13', 'C1', 'C2', 'C3'].toPlayingCards();
 
         expect(delegate.isBeating(maxStraight, invalidStraight), false);
         expect(delegate.isBeating(invalidStraight, maxStraight), false);
@@ -174,8 +175,8 @@ void main() {
       
       test('Straight comparison: 10-J-Q-K-A (Normal A-high) vs 3-4-5-6-7 (Normal 7-high)', () {
          // Both Normal, compare Rank. A > 7.
-         final normalStraightA = ['D10', 'D11', 'D12', 'D13', 'H1'];
-         final normalStraight7 = ['C3', 'C4', 'C5', 'C6', 'D7'];
+         final normalStraightA = ['D10', 'D11', 'D12', 'D13', 'H1'].toPlayingCards();
+         final normalStraight7 = ['C3', 'C4', 'C5', 'C6', 'D7'].toPlayingCards();
 
          expect(delegate.isBeating(normalStraightA, normalStraight7), true);
          expect(delegate.isBeating(normalStraight7, normalStraightA), false);
@@ -184,8 +185,8 @@ void main() {
       test('Straight comparison: Max (D2-3-4-5-6) vs Max (C2-3-4-5-6)', () {
         // 2-3-4-5-6 is Level 2 (Max). J-Q-K-A-2 is Level 1 (Normal 2-high).
         // Max > Normal.
-        final maxD2Straight = ['D2', 'D3', 'D4', 'D5', 'D6'];
-        final maxC2Straight = ['C2', 'C3', 'C4', 'C5', 'C6'];
+        final maxD2Straight = ['D2', 'D3', 'D4', 'D5', 'D6'].toPlayingCards();
+        final maxC2Straight = ['C2', 'C3', 'C4', 'C5', 'C6'].toPlayingCards();
 
         expect(delegate.isBeating(maxD2Straight, maxC2Straight), true);
         expect(delegate.isBeating(maxC2Straight, maxD2Straight), false);
@@ -194,8 +195,8 @@ void main() {
       test('Straight comparison: Same Type (Min vs Min) compare suit of 2', () {
           // A-2-3-4-5 (Diamond 2) vs A-2-3-4-5 (Club 2)
           // Diamond > Club
-          final minD = ['C1', 'S2', 'C3', 'C4', 'C5']; // Contains S2
-          final minC = ['D1', 'C2', 'D3', 'D4', 'D5']; // Contains C2
+          final minD = ['C1', 'S2', 'C3', 'C4', 'C5'].toPlayingCards(); // Contains S2
+          final minC = ['D1', 'C2', 'D3', 'D4', 'D5'].toPlayingCards(); // Contains C2
           
           // Wait, 'S2' (Spade) > 'C2' (Club).
           // My setup above: minD has S2. minC has C2.
@@ -204,8 +205,8 @@ void main() {
 
       test('StraightFlush comparison: Min (A-2-3-4-5) vs Normal (3-4-5-6-7)', () {
           // Same logic applies to Straight Flush
-          final minSF = ['D1', 'D2', 'D3', 'D4', 'D5'];
-          final normalSF = ['C3', 'C4', 'C5', 'C6', 'C7'];
+          final minSF = ['D1', 'D2', 'D3', 'D4', 'D5'].toPlayingCards();
+          final normalSF = ['C3', 'C4', 'C5', 'C6', 'C7'].toPlayingCards();
           
           expect(delegate.isBeating(minSF, normalSF), false); // Min < Normal
           expect(delegate.isBeating(normalSF, minSF), true);
@@ -215,8 +216,8 @@ void main() {
     group('checkPlayValidity', () {
       test('allows any valid pattern on free turn', () {
         final state = initialState.copyWith(lockedHandType: '');
-        expect(delegate.checkPlayValidity(state, ['C3'], BigTwoCardPattern.single), true);
-        expect(delegate.checkPlayValidity(state, ['C3', 'D3'], BigTwoCardPattern.pair), true);
+        expect(delegate.checkPlayValidity(state, ['C3'].toPlayingCards(), playedPattern: BigTwoCardPattern.single), true);
+        expect(delegate.checkPlayValidity(state, ['C3', 'D3'].toPlayingCards(), playedPattern: BigTwoCardPattern.pair), true);
       });
 
       test('requires matching pattern on normal turn', () {
@@ -224,8 +225,8 @@ void main() {
           lockedHandType: BigTwoCardPattern.single.toJson(),
           lastPlayedHand: ['C3']
         );
-        expect(delegate.checkPlayValidity(state, ['C3', 'D3'], BigTwoCardPattern.pair), false);
-        expect(delegate.checkPlayValidity(state, ['D3'], BigTwoCardPattern.single), true);
+        expect(delegate.checkPlayValidity(state, ['C3', 'D3'].toPlayingCards(), playedPattern: BigTwoCardPattern.pair), false);
+        expect(delegate.checkPlayValidity(state, ['D3'].toPlayingCards(), playedPattern: BigTwoCardPattern.single), true);
       });
 
       test('requires beating previous hand', () {
@@ -233,8 +234,8 @@ void main() {
             lockedHandType: BigTwoCardPattern.single.toJson(),
             lastPlayedHand: ['D3']
         );
-        expect(delegate.checkPlayValidity(state, ['C3'], BigTwoCardPattern.single), false); // C3 < D3
-        expect(delegate.checkPlayValidity(state, ['H3'], BigTwoCardPattern.single), true); // H3 > D3
+        expect(delegate.checkPlayValidity(state, ['C3'].toPlayingCards(), playedPattern: BigTwoCardPattern.single), false); // C3 < D3
+        expect(delegate.checkPlayValidity(state, ['H3'].toPlayingCards(), playedPattern: BigTwoCardPattern.single), true); // H3 > D3
       });
     });
 

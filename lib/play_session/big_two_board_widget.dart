@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,8 @@ class BigTwoBoardWidget extends StatefulWidget {
 class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   // 使用 FirestoreBigTwoController
   late final FirestoreBigTwoController _gameController;
+  late final StreamSubscription _gameStateStreamSubscription;
+
   final CardPlayer _player = CardPlayer();
   // 保留本地 Delegate 用於 UI 解析 (myPlayer, otherPlayers)
   final _bigTwoManager = BigTwoDelegate(); 
@@ -66,6 +70,18 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
       settingsController: settings,
       delegate: _bigTwoManager
     );
+
+    _gameStateStreamSubscription = _gameController.gameStateStream.listen((gameState) {
+      final bigTwoState = gameState?.customState;
+      if (bigTwoState == null) return;
+
+      // 更新本地玩家 狀態
+      final myPlayerState = _bigTwoManager.myPlayer(_userId, bigTwoState);
+      _player.name = myPlayerState.name;
+      // 將 String 轉回 PlayingCard 供 CardPlayer 使用
+      final sortedCards = _bigTwoManager.sortCardsByRank(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());;
+      _player.replaceWith(sortedCards);
+    });
   }
 
   @override
@@ -73,6 +89,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     _debugTextController.dispose();
     _gameController.dispose();
     _player.dispose();
+    _gameStateStreamSubscription.cancel();
     super.dispose();
   }
   
@@ -97,7 +114,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsController>(); // watch for changes
 
-    return Provider<CardPlayer>(
+    return ChangeNotifierProvider<CardPlayer>(
       create: (_) => _player,
       child: StreamBuilder<TurnBasedGameState<BigTwoState>?>(
         stream: _gameController.gameStateStream,
@@ -134,14 +151,6 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
           // 遊戲進行中 (Playing) 或 結束 (Finished)
           final bigTwoState = gameState.customState;
-
-          // 更新本地玩家手牌 UI 狀態
-          // 注意：需確保 _bigTwoManager 的邏輯與後端一致
-          final myPlayerState = _bigTwoManager.myPlayer(_userId, bigTwoState);
-          _player.name = myPlayerState.name;
-          // 將 String 轉回 PlayingCard 供 CardPlayer 使用
-          final sortedCards = _bigTwoManager.sortCardsByRank(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());;
-          _player.replaceWith(sortedCards);
 
           // 1. 取得所有持有的牌型
           final holdingPatterns = _bigTwoManager.getHoldingPatterns(_player.hand);
@@ -218,42 +227,38 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 10,
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // 標示自己是否為 Current Player
-                            if (isMyTurn)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  "YOUR TURN",
-                                  style: TextStyle(fontWeight: FontWeight.bold,
-                                      color: Colors.black),
-                                ),
+                      padding: const EdgeInsets.only(bottom: 20.0),
+                      child:
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 標示自己是否為 Current Player
+                          if (isMyTurn)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                            ChangeNotifierProvider.value(
-                              value: _player,
-                              child: SelectablePlayerHandWidget(
-                                buttonWidgets: handTypeButtons,
+                              child: const Text(
+                                "YOUR TURN",
+                                style: TextStyle(fontWeight: FontWeight.bold,
+                                    color: Colors.black),
                               ),
                             ),
-                          ],
-                        ),
-                        // --- 操作按鈕區域 (Play / Pass) ---
-                        _functionButtons(isMyTurn),
-                      ]
-                    )
+                          ChangeNotifierProvider.value(
+                            value: _player,
+                            child: SelectablePlayerHandWidget(
+                              buttonWidgets: handTypeButtons,
+                            ),
+                          ),
+
+                          // --- 操作按鈕區域 (Play / Pass) ---
+                          _functionButtons(bigTwoState),
+                        ],
+                      )
                   ),
                 ),
 
@@ -337,39 +342,76 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
       ),
     ];
   }
+  Widget _functionButtons(BigTwoState bigTwoState) {
+    final isMyTurn = bigTwoState.currentPlayerId == _userId;
 
-  Widget _functionButtons(bool isMyTurn) {
-    return Positioned(
-      bottom: 40,
-      right: 40,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Play 按鈕
-          MyButton(
-            onPressed: isMyTurn ? () {
-              final selectedCards = _player.selectedCards;
-              if (selectedCards.isNotEmpty) {
-                // 使用 FirestoreBigTwoController 直接出牌
-                _gameController.playCards(selectedCards);
-                // 出牌後清除選擇
-                _player.selectedCards.clear();
-              }
-            } : null, // 非回合時禁用
-            child: const Text('Play'),
-          ),
+    return Consumer<CardPlayer>(
+      builder: (context, player, _) {
+        final selectedCards = player.selectedCards;
 
-          SizedBox(height: 20),
+        final playButtonEnable =
+            isMyTurn &&
+                _bigTwoManager.checkPlayValidity(
+                  bigTwoState,
+                  selectedCards,
+                );
 
-          // Pass 按鈕
-          MyButton(
-              onPressed: isMyTurn ? () {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Pass
+            MyButton(
+              onPressed: isMyTurn && !bigTwoState.isFirstTurn
+                  ? () {
                 _gameController.passTurn();
-              } : null,
-              child: Text('Pass')
-          ),
-        ],
-      ),
+              }
+                  : null,
+              child: const Text('Pass'),
+            ),
+
+            const SizedBox(width: 40),
+
+            // Cancel
+            MyButton(
+              onPressed: selectedCards.isNotEmpty
+                  ? () {
+                player.setCardSelection([]);
+              }
+                  : null,
+              child: const Text('Cancel'),
+            ),
+
+            const SizedBox(width: 20),
+
+            // Play
+            MyButton(
+              onPressed: playButtonEnable
+                  ? () {
+                if (selectedCards.isNotEmpty) {
+                  _gameController.playCards(selectedCards);
+                  player.setCardSelection([]);
+                }
+              }
+                  : null,
+              child: const Text('Play'),
+            ),
+          ],
+        );
+        // Positioned(
+        //   bottom: 40,
+        //   right: 40,
+        //   child: Row(
+        //     mainAxisSize: MainAxisSize.min,
+        //     children: [
+        //       passButton,
+        //       SizedBox(width: 40),
+        //       cancelButton,
+        //       SizedBox(width: 20),
+        //       playButton
+        //     ],
+        //   ),
+        // );
+      },
     );
   }
 

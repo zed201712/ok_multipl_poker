@@ -20,6 +20,8 @@ class BigTwoState {
   final List<String> discardCards;
   final String lockedHandType;
 
+  bool get isFirstTurn => discardCards.isEmpty && lastPlayedHand.isEmpty && deckCards.isEmpty;
+
   BigTwoState({
     required this.participants,
     required this.seats,

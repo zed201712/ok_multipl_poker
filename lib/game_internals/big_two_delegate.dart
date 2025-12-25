@@ -77,8 +77,8 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
        if (playerIndex != -1) {
          final updatedCards = List<String>.from(players[playerIndex].cards)..add(extraCardStr);
          // Sort hand for tidiness (optional but good)
-         final sortedHand = sortCardsByRank(updatedCards.map(PlayingCard.fromString).toList())
-             .map(PlayingCard.cardToString).toList();
+         final sortedHand = sortCardsByRank(updatedCards.toPlayingCards())
+             .toStringCards();
          
          players[playerIndex] = players[playerIndex].copyWith(cards: sortedHand);
        }
@@ -189,14 +189,14 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     // 2. Validate move logic (Big Two Rules)
     
     // Special rule: First hand of game must contain lowest card
-    if (!validateFirstPlay(state, cardsPlayed)) return state;
+    final cards = cardsPlayed.toPlayingCards();
+    if (!validateFirstPlay(state, cards)) return state;
 
     // Determine hand type and check validity
-    final BigTwoCardPattern? playedPattern = getCardPattern(cardsPlayed);
-    if (playedPattern == null) return state; // Invalid pattern
+    final BigTwoCardPattern? playedPattern = getCardPattern(cards);
 
     // Check validity against locked state
-    if (!checkPlayValidity(state, cardsPlayed, playedPattern)) {
+    if (playedPattern == null || !checkPlayValidity(state, cards, playedPattern: playedPattern)) {
       return state;
     }
 
@@ -322,8 +322,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   // --- Helper Methods for Card Logic ---
   
   /// Identifies the pattern of the played cards.
-  BigTwoCardPattern? getCardPattern(List<String> cardsStr) {
-    final cards = cardsStr.map(PlayingCard.fromString).toList();
+  BigTwoCardPattern? getCardPattern(List<PlayingCard> cards) {
 
     if (isSingle(cards)) return BigTwoCardPattern.single;
     if (isPair(cards)) return BigTwoCardPattern.pair;
@@ -338,14 +337,14 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     return null;
   }
 
-  bool validateFirstPlay(BigTwoState state, List<String> cardsPlayed) {
-    bool isFirstTurn = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
-    if (!isFirstTurn) return true;
+  bool validateFirstPlay(BigTwoState state, List<PlayingCard> cardsPlayed) {
+    if (!state.isFirstTurn) return true;
     
     // Find the required lowest card
     final lowestCardStr = _findLowestHumanCard(state.participants);
+    final lowestCard = PlayingCard.fromString(lowestCardStr);
     
-    if (!cardsPlayed.contains(lowestCardStr)) {
+    if (!cardsPlayed.contains(lowestCard)) {
       return false; // First play must contain the lowest human card
     }
     return true;
@@ -354,11 +353,13 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   /// Finds non-virtual player's lowest card
   String _findLowestHumanCard(List<BigTwoPlayer> players) {
     PlayingCard? lowestCard;
-    
+    PlayingCard c3 = PlayingCard(CardSuit.clubs, 3);
+    String stringC3 = PlayingCard.cardToString(c3);
+
     for (final player in players) {
       if (player.isVirtualPlayer) continue;
 
-      final hand = player.cards.map(PlayingCard.fromString).toList();
+      final hand = player.cards.toPlayingCards();
       if (hand.isEmpty) continue;
       
       final sortedHand = sortCardsByRank(hand);
@@ -366,38 +367,47 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       
       if (lowestCard == null) {
         lowestCard = playerLowest;
-        if (PlayingCard.cardToString(lowestCard) == 'C3') return 'C3';
+        if (c3 == lowestCard) return stringC3;
       } else {
         if (_compareCards(playerLowest, lowestCard) < 0) {
           lowestCard = playerLowest;
-          if (PlayingCard.cardToString(lowestCard) == 'C3') return 'C3';
+          if (c3 == lowestCard) return stringC3;
         }
       }
     }
-    return lowestCard != null ? PlayingCard.cardToString(lowestCard) : 'C3';
+    return lowestCard != null ? PlayingCard.cardToString(lowestCard) : stringC3;
   }
 
   /// Checks if the played cards are valid against the current state logic.
-  bool checkPlayValidity(BigTwoState state, List<String> cardsPlayed, BigTwoCardPattern playedPattern) {
+  bool checkPlayValidity(BigTwoState state, List<PlayingCard> cardsPlayed, {BigTwoCardPattern? playedPattern}) {
+    final checkedCardPattern = playedPattern ?? getCardPattern(cardsPlayed);
+    if (checkedCardPattern == null) return false;
+
+    if (state.isFirstTurn) {
+      final lowerCard = PlayingCard.fromString(_findLowestHumanCard(state.participants));
+      return cardsPlayed.contains(lowerCard);
+    }
+
     if (state.lockedHandType.isEmpty) {
       // Free turn: Any valid pattern is allowed
       return true;
     }
+    final lastPlayedCards = state.lastPlayedHand.toPlayingCards();
 
     final lockedPattern = BigTwoCardPattern.fromJson(state.lockedHandType);
 
     // Special Bomb/Beat Rules
     // 1. Straight Flush beats anything except higher Straight Flush
-    if (playedPattern == BigTwoCardPattern.straightFlush) {
+    if (checkedCardPattern == BigTwoCardPattern.straightFlush) {
       if (lockedPattern != BigTwoCardPattern.straightFlush) {
         return true; // Bomb!
       }
       // Compare two Straight Flushes
-      return isBeating(cardsPlayed, state.lastPlayedHand);
+      return isBeating(cardsPlayed, lastPlayedCards);
     }
 
     // 2. Four of a Kind beats anything except Straight Flush and higher Four of a Kind
-    if (playedPattern == BigTwoCardPattern.fourOfAKind) {
+    if (checkedCardPattern == BigTwoCardPattern.fourOfAKind) {
       if (lockedPattern == BigTwoCardPattern.straightFlush) {
         return false; // Can't beat SF
       }
@@ -405,20 +415,20 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         return true; // Bomb! (Beats Straight, FullHouse, etc.)
       }
       // Compare two Four of a Kinds
-      return isBeating(cardsPlayed, state.lastPlayedHand);
+      return isBeating(cardsPlayed, lastPlayedCards);
     }
 
     // Standard Rule: Must match pattern
-    if (playedPattern != lockedPattern) {
+    if (checkedCardPattern != lockedPattern) {
       return false;
     }
 
     // Compare same pattern
-    return isBeating(cardsPlayed, state.lastPlayedHand);
+    return isBeating(cardsPlayed, lastPlayedCards);
   }
 
   /// Compares if [current] beats [previous]. Assumes both are of [pattern] or logic handled before.
-  bool isBeating(List<String> currentStr, List<String> previousStr) {
+  bool isBeating(List<PlayingCard> currentStr, List<PlayingCard> previousStr) {
     if (currentStr.length != previousStr.length) return false;
     final currentPattern = getCardPattern(currentStr);
     final previousPattern = getCardPattern(previousStr);
@@ -444,41 +454,38 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   }
 
   /// Compares if [current] beats [previous]. Assumes both are of [pattern] or logic handled before.
-  bool _beatsSamePattern(List<String> currentStr, List<String> previousStr, BigTwoCardPattern pattern) {
-    if (currentStr.length != previousStr.length) return false;
-
-    final current = currentStr.map(PlayingCard.fromString).toList();
-    final previous = previousStr.map(PlayingCard.fromString).toList();
+  bool _beatsSamePattern(List<PlayingCard> currentCards, List<PlayingCard> previousCards, BigTwoCardPattern pattern) {
+    if (currentCards.length != previousCards.length) return false;
 
     switch (pattern) {
       case BigTwoCardPattern.single:
-        return _compareCards(current[0], previous[0]) > 0;
+        return _compareCards(currentCards[0], previousCards[0]) > 0;
       case BigTwoCardPattern.pair:
-         final cMax = sortCardsByRank(current).last;
-         final pMax = sortCardsByRank(previous).last;
+         final cMax = sortCardsByRank(currentCards).last;
+         final pMax = sortCardsByRank(previousCards).last;
          return _compareCards(cMax, pMax) > 0;
 
       case BigTwoCardPattern.straight:
       case BigTwoCardPattern.straightFlush:
-        final cLevel = _getStraightLevel(current);
-        final pLevel = _getStraightLevel(previous);
+        final cLevel = _getStraightLevel(currentCards);
+        final pLevel = _getStraightLevel(previousCards);
 
         if (cLevel != pLevel) {
           return cLevel > pLevel;
         }
 
-        final cRank = _getStraightRankCard(current);
-        final pRank = _getStraightRankCard(previous);
+        final cRank = _getStraightRankCard(currentCards);
+        final pRank = _getStraightRankCard(previousCards);
         return _compareCards(cRank, pRank) > 0;
 
       case BigTwoCardPattern.fullHouse:
-        final cTrip = _getTripletRank(current);
-        final pTrip = _getTripletRank(previous);
+        final cTrip = _getTripletRank(currentCards);
+        final pTrip = _getTripletRank(previousCards);
         return getBigTwoValue(cTrip) > getBigTwoValue(pTrip);
 
       case BigTwoCardPattern.fourOfAKind:
-        final cQuad = _getQuadRank(current);
-        final pQuad = _getQuadRank(previous);
+        final cQuad = _getQuadRank(currentCards);
+        final pQuad = _getQuadRank(previousCards);
         return getBigTwoValue(cQuad) > getBigTwoValue(pQuad);
     }
   }
@@ -562,7 +569,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   }
 
   /// 功能 4: 針對特定牌型，回傳所有可打出的牌組 (必須 beat lastPlayedHand)
-  List<List<String>> getPlayableCombinations(
+  List<List<PlayingCard>> getPlayableCombinations(
       BigTwoState state, 
       List<PlayingCard> handCards, 
       BigTwoCardPattern pattern
@@ -570,19 +577,20 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     final candidates = _getCandidates(handCards, pattern);
     
     // Filter by "isBeating"
-    final validCombinations = <List<String>>[];
+    final validCombinations = <List<PlayingCard>>[];
     for (final combo in candidates) {
-        final comboStr = combo.map(PlayingCard.cardToString).toList();
-        
         // If lockedHandType is empty, any combination of valid pattern is valid
         // But need to respect First Turn rule?
         // The helper "getPlayableCombinations" usually implies valid moves for current turn.
         // We should check `validateFirstPlay` as well if it's the first turn.
         
         // However, isBeating requires a previous hand.
-        if (state.lockedHandType.isEmpty) {
-             if (validateFirstPlay(state, comboStr)) {
-                 validCombinations.add(comboStr);
+        if (state.lockedHandType == '') {
+            validCombinations.add(combo);
+        }
+        else if (state.isFirstTurn) {
+             if (validateFirstPlay(state, combo)) {
+                 validCombinations.add(combo);
              }
         } else {
              // Check if pattern matches locked pattern or is a bomb
@@ -598,10 +606,10 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
              }
 
              if (isBomb) {
-               validCombinations.add(comboStr);
+               validCombinations.add(combo);
              }
-             else if (pattern == lockedPattern && isBeating(comboStr, state.lastPlayedHand)) {
-               validCombinations.add(comboStr);
+             else if (pattern == lockedPattern && isBeating(combo, state.lastPlayedHand.toPlayingCards())) {
+               validCombinations.add(combo);
              }
         }
     }
@@ -610,9 +618,9 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
   }
 
   /// 功能 5: 回傳當前所有可打出的牌組
-  List<List<String>> getAllPlayableCombinations(BigTwoState state, List<PlayingCard> handCards) {
+  List<List<PlayingCard>> getAllPlayableCombinations(BigTwoState state, List<PlayingCard> handCards) {
       final patterns = getPlayablePatterns(state);
-      final allCombos = <List<String>>[];
+      final allCombos = <List<PlayingCard>>[];
       
       for (final p in patterns) {
           allCombos.addAll(getPlayableCombinations(state, handCards, p));

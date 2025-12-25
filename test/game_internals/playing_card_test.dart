@@ -34,5 +34,13 @@ void main() {
         }
       }
     });
+
+    test('PlayingCard Equatable', () {
+      PlayingCard c3 = PlayingCard(CardSuit.clubs, 3);
+      String stringC3 = PlayingCard.cardToString(c3);
+      expect(c3 == PlayingCard(CardSuit.clubs, 3), isTrue);
+      expect(c3 == PlayingCard.fromString(stringC3), isTrue);
+      expect(PlayingCard(CardSuit.clubs, 3) == PlayingCard.fromString(stringC3), isTrue);
+    });
   });
 }

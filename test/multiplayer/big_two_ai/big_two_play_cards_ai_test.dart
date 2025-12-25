@@ -3,6 +3,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
+import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_play_cards_ai.dart';
@@ -96,9 +97,9 @@ void main() {
         participants: [],
         seats: [aiUserId],
         currentPlayerId: aiUserId,
-        lastPlayedHand: [], 
-        lastPlayedById: aiUserId, // Free turn
-        lockedHandType: '',
+        lastPlayedHand: ['C2', 'S3', 'S4' , 'H5', 'D6'],
+        lastPlayedById: aiUserId,
+        lockedHandType: BigTwoCardPattern.straight.toJson(),
       );
 
       // Act
@@ -138,9 +139,9 @@ void main() {
         participants: [],
         seats: [aiUserId],
         currentPlayerId: aiUserId,
-        lastPlayedHand: [], 
+        lastPlayedHand: ['C2', 'S2', 'S7' , 'H7', 'D7'],
         lastPlayedById: aiUserId,
-        lockedHandType: '',
+        lockedHandType: BigTwoCardPattern.fullHouse.toJson(),
       );
 
       // Act

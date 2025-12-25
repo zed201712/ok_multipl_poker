@@ -160,7 +160,6 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     
     // The first card in sortedHand is the lowest value card according to Big Two rules.
     final lowestCard = sortedHand.first;
-    final lowestCardStr = PlayingCard.cardToString(lowestCard);
 
     // AI logic wrapped PlayingCard list in a Player object context for delegate helpers,
     // but now delegate helpers accept List<PlayingCard> directly.
@@ -168,13 +167,11 @@ class BigTwoPlayCardsAI implements BigTwoAI {
 
     // 2. Check First Turn
     // Condition: lastPlayedHand empty && lastPlayedById empty
-    final isFirstTurnOfGame = state.lastPlayedHand.isEmpty && state.lastPlayedById.isEmpty;
-    
-    if (isFirstTurnOfGame) {
+    if (state.isFirstTurn) {
         final allCombos = _delegate.getAllPlayableCombinations(state, sortedHand);
         
         // Filter: Must contain lowest card
-        final validCombos = allCombos.where((combo) => combo.contains(lowestCardStr)).toList();
+        final validCombos = allCombos.where((combo) => combo.contains(lowestCard)).toList();
         
         if (validCombos.isEmpty) {
             // Should not happen if logic is correct, but return lowest single as fallback or null
@@ -183,7 +180,8 @@ class BigTwoPlayCardsAI implements BigTwoAI {
         
         // Randomly pick one
         final random = Random();
-        return validCombos[random.nextInt(validCombos.length)];
+        final pickedCombos = validCombos[random.nextInt(validCombos.length)];
+        return pickedCombos.toStringCards();
     }
 
     // 3. Normal Turn Logic (Priority Loop)
@@ -210,14 +208,15 @@ class BigTwoPlayCardsAI implements BigTwoAI {
         if (candidates.isEmpty) continue;
         
         // Safety Check for same pattern beating (Delegate should handle, but spec requires explicit check)
-        List<List<String>> verifiedCandidates = candidates;
+        List<List<PlayingCard>> verifiedCandidates = candidates;
         
         // Check if locked pattern matches current pattern (Normal beating logic)
         // Or if it's a bomb situation
+        final lastPlayedCards = state.lastPlayedHand.toPlayingCards();
         if (state.lockedHandType.isNotEmpty) {
              final lockedPattern = BigTwoCardPattern.fromJson(state.lockedHandType);
              if (lockedPattern == pattern) {
-                 verifiedCandidates = candidates.where((c) => _delegate.isBeating(c, state.lastPlayedHand)).toList();
+                 verifiedCandidates = candidates.where((c) => _delegate.isBeating(c, lastPlayedCards)).toList();
              }
              // If bomb (SF or 4K), getPlayableCombinations usually handles isBeating internally for bombs too?
              // Spec says "Delegate should have filtered", but "safety check: if pattern == lockedHandType, confirm isBeating".
@@ -235,7 +234,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
         // So the first one in `verifiedCandidates` should be the smallest.
         
         // Just to be sure, we pick the first one.
-        return verifiedCandidates.first;
+        return verifiedCandidates.map((e)=>e.toStringCards()).first;
     }
 
     // 4. Return null (Pass)

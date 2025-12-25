@@ -119,3 +119,15 @@ class PlayingCard extends Equatable {
     }
   }
 }
+
+extension StringCardArray on List<String> {
+  List<PlayingCard> toPlayingCards() {
+    return map(PlayingCard.fromString).toList();
+  }
+}
+
+extension PlayingCardArray on List<PlayingCard> {
+  List<String> toStringCards() {
+    return map(PlayingCard.cardToString).toList();
+  }
+}

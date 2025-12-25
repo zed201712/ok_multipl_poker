@@ -63,7 +63,8 @@ void main() {
       );
 
       final handCards = player.cards.map(PlayingCard.fromString).toList();
-      final combos = delegate.getPlayableCombinations(state, handCards, BigTwoCardPattern.single);
+      final combos = delegate.getPlayableCombinations(state, handCards, BigTwoCardPattern.single)
+          .map((e)=>e.toStringCards());
       
       // Should beat D3 (Value: 3, Suit: Diamonds=2)
       // C3 (3, Clubs=1) -> No
@@ -94,7 +95,8 @@ void main() {
       // (H3,S3) -> High S3 > D3 -> Yes
       
       final handCards = player.cards.map(PlayingCard.fromString).toList();
-      final combos = delegate.getPlayableCombinations(state, handCards, BigTwoCardPattern.pair);
+      final combos = delegate.getPlayableCombinations(state, handCards, BigTwoCardPattern.pair)
+          .map((e)=>e.toStringCards());
 
       // Verify
       // C3,D3 pair is the one played.
@@ -118,11 +120,11 @@ void main() {
       final allCombos = delegate.getAllPlayableCombinations(state, handCards);
       
       // Should contain singles > D3
-      expect(allCombos.any((c) => c.length == 1 && c.contains('H3')), isTrue);
+      expect(allCombos.any((c) => c.length == 1 && c.contains(PlayingCard.fromString('H3'))), isTrue);
       
       // Should contain bombs (Four of a Kind) if any
       // Player has 3333, 4444, 5555.
-      expect(allCombos.any((c) => c.length == 5 && delegate.isFourOfAKind(c.map(PlayingCard.fromString).toList())), isTrue);
+      expect(allCombos.any((c) => c.length == 5 && delegate.isFourOfAKind(c)), isTrue);
     });
   });
 
