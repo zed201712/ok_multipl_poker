@@ -17,8 +17,8 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     final deck = PlayingCard.createDeck();
     final players = <BigTwoPlayer>[];
     var seats = List<String>.from(room.seats);
-    //seats = room.randomizeSeats ? (seats..shuffle()) : seats;
-    
+    seats = room.randomizeSeats ? (seats..shuffle()) : seats;
+
     // Add Virtual Player
     if (seats.length <= 2) {
       final virtualPlayerCount = 3 - seats.length;
