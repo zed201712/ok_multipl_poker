@@ -6,8 +6,8 @@ import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
 import 'package:ok_multipl_poker/widgets/card_container.dart';
 
 import '../game_internals/playing_card.dart';
-import '../widgets/rounded_label.dart';
 
+@Deprecated('Use BigTwoBoardCardArea instead')
 class TableCardWrapWidget extends StatelessWidget {
   final List<PlayingCard> lastPlayedCards;
   final String lastPlayedTitle;

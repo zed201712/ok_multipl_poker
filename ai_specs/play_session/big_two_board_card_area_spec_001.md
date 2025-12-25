@@ -45,7 +45,7 @@
 4.  **整合 (`BigTwoBoardWidget`)**
     *   **Provider 注入：** 在 `BigTwoBoardWidget` 的 `StreamBuilder` 內部，使用 `Provider.value` (或適當的 Provider 建構子) 將 `gameState.customState` (即 `BigTwoState`) 提供給子樹。
     *   **替換元件：** 將原本使用的 `TableCardWrapWidget` 替換為 `BigTwoBoardCardArea`。
-    *   **彈窗實作：** 實作 `onDiscardPileTap`，呼叫 `AlertOverlay` 並顯示 `ShowOnlyCardAreaWidget`，內容為 `state.discardCards`。
+    *   **彈窗實作：** 實作 `onDiscardPileTap`，顯示 `ShowOnlyCardAreaWidget`，內容為 `state.discardCards`。
 
 ---
 
@@ -73,7 +73,7 @@
     *   確認 `BigTwoBoardCardArea` 能正確顯示 Last Played Cards 和 Deck Cards。
     *   確認 Discard Pile 顯示在 Last Played Cards 的右側 (或依設計排列)。
 2.  **互動檢查：**
-    *   點擊 Discard Pile 圖片，確認彈出 `AlertOverlay`。
+    *   點擊 Discard Pile 圖片，確認彈出 `ShowOnlyCardAreaWidget`，內容為 `state.discardCards`。
     *   彈窗內容應正確顯示所有已棄掉的牌 (`discardCards`)。
 3.  **狀態更新：**
     *   當遊戲進行 (出牌/Pass) 時，確認 UI (Last Played, Discard Pile) 能即時更新。
