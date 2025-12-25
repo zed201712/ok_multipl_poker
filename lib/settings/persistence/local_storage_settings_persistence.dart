@@ -33,6 +33,18 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   }
 
   @override
+  Future<String> getPlayerAvatarPath() async {
+    final prefs = await instanceFuture;
+    return prefs.getString('playerAvatarPath') ?? 'assets/images/goblin_cards/goblin_1_001.png';
+  }
+
+  @override
+  Future<bool> getHasCompletedOnboarding() async {
+    final prefs = await instanceFuture;
+    return prefs.getBool('hasCompletedOnboarding') ?? false;
+  }
+
+  @override
   Future<bool> getSoundsOn({required bool defaultValue}) async {
     final prefs = await instanceFuture;
     return prefs.getBool('soundsOn') ?? defaultValue;
@@ -54,6 +66,18 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   Future<void> savePlayerName(String value) async {
     final prefs = await instanceFuture;
     await prefs.setString('playerName', value);
+  }
+
+  @override
+  Future<void> savePlayerAvatarPath(String value) async {
+    final prefs = await instanceFuture;
+    await prefs.setString('playerAvatarPath', value);
+  }
+
+  @override
+  Future<void> saveHasCompletedOnboarding(bool value) async {
+    final prefs = await instanceFuture;
+    await prefs.setBool('hasCompletedOnboarding', value);
   }
 
   @override

@@ -15,6 +15,12 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
 
   String playerName = 'Player';
 
+  /// 玩家的頭像路徑。
+  String playerAvatarPath = 'assets/images/goblin_cards/goblin_1_001.png';
+
+  /// 是否已完成初次使用者引導 (Onboarding)。
+  bool hasCompletedOnboarding = false;
+
   @override
   Future<bool> getAudioOn({required bool defaultValue}) async => audioOn;
 
@@ -28,6 +34,12 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   Future<bool> getSoundsOn({required bool defaultValue}) async => soundsOn;
 
   @override
+  Future<String> getPlayerAvatarPath() async => playerAvatarPath;
+
+  @override
+  Future<bool> getHasCompletedOnboarding() async => hasCompletedOnboarding;
+
+  @override
   Future<void> saveAudioOn(bool value) async => audioOn = value;
 
   @override
@@ -38,4 +50,10 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
 
   @override
   Future<void> saveSoundsOn(bool value) async => soundsOn = value;
+
+  @override
+  Future<void> savePlayerAvatarPath(String value) async => playerAvatarPath = value;
+
+  @override
+  Future<void> saveHasCompletedOnboarding(bool value) async => hasCompletedOnboarding = value;
 }

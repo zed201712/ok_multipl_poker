@@ -22,11 +22,17 @@ class FakeSettingsController implements SettingsController {
   @override
   ValueNotifier<bool> soundsOn = ValueNotifier(true);
 
+  /// 玩家的頭像路徑。
+  ValueNotifier<String> playerAvatarPath = ValueNotifier('assets/images/goblin_cards/goblin_1_001.png');
+
+  /// 是否已完成初次使用者引導 (Onboarding)。
+  ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
+
   // The original `_store` is private and not part of the public interface,
   // so we don't need to (and can't) implement it here.
   // The same applies to private methods like `_loadStateFromPersistence`.
 
-  FakeSettingsController();
+  //FakeSettingsController();
 
   @override
   void setPlayerName(String name) {
@@ -50,5 +56,13 @@ class FakeSettingsController implements SettingsController {
   void toggleSoundsOn() {
     soundsOn.value = !soundsOn.value;
     // No persistence.
+  }
+
+  @override
+  void setHasCompletedOnboarding(bool value) {
+  }
+
+  @override
+  void setPlayerAvatarPath(String path) {
   }
 }

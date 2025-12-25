@@ -29,6 +29,12 @@ class SettingsController {
   /// 玩家的名稱。用於最高分列表等地方。
   ValueNotifier<String> playerName = ValueNotifier('Player');
 
+  /// 玩家的頭像路徑。
+  ValueNotifier<String> playerAvatarPath = ValueNotifier('assets/images/goblin_cards/goblin_1_001.png');
+
+  /// 是否已完成初次使用者引導 (Onboarding)。
+  ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
+
   /// 音效（sfx）是否開啟。
   ValueNotifier<bool> soundsOn = ValueNotifier(true);
 
@@ -47,6 +53,16 @@ class SettingsController {
   void setPlayerName(String name) {
     playerName.value = name;
     _store.savePlayerName(playerName.value);
+  }
+
+  void setPlayerAvatarPath(String path) {
+    playerAvatarPath.value = path;
+    _store.savePlayerAvatarPath(playerAvatarPath.value);
+  }
+  
+  void setHasCompletedOnboarding(bool value) {
+    hasCompletedOnboarding.value = value;
+    _store.saveHasCompletedOnboarding(hasCompletedOnboarding.value);
   }
 
   void toggleAudioOn() {
@@ -83,6 +99,8 @@ class SettingsController {
           .getMusicOn(defaultValue: true)
           .then((value) => musicOn.value = value),
       _store.getPlayerName().then((value) => playerName.value = value),
+      _store.getPlayerAvatarPath().then((value) => playerAvatarPath.value = value),
+      _store.getHasCompletedOnboarding().then((value) => hasCompletedOnboarding.value = value),
     ]);
 
     _log.fine(() => 'Loaded settings: $loadedValues');

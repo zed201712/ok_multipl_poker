@@ -1,0 +1,129 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ok_multipl_poker/settings/avatar_selection_screen.dart';
+import 'package:provider/provider.dart';
+
+import '../style/palette.dart';
+import 'settings.dart';
+
+class OnboardingSheet extends StatefulWidget {
+  const OnboardingSheet({super.key});
+
+  @override
+  State<OnboardingSheet> createState() => _OnboardingSheetState();
+}
+
+class _OnboardingSheetState extends State<OnboardingSheet> {
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = context.read<SettingsController>();
+    _nameController = TextEditingController(text: settings.playerName.value);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<SettingsController>();
+    final palette = context.read<Palette>();
+
+    return PopScope(
+      canPop: false, // Prevent dismissing without completing
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: palette.backgroundSettings,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Welcome, Goblin!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Permanent Marker',
+                fontSize: 35,
+              ),
+            ),
+            const SizedBox(height: 30),
+            
+            // Avatar Selection
+            Center(
+              child: InkWell(
+                onTap: () {
+                   Navigator.of(context).push(
+                     MaterialPageRoute(builder: (context) => const AvatarSelectionScreen())
+                   );
+                },
+                child: Column(
+                  children: [
+                    ValueListenableBuilder<String>(
+                      valueListenable: settings.playerAvatarPath,
+                      builder: (context, path, _) {
+                        return Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            image: DecorationImage(
+                              image: AssetImage(path),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('Tap to change avatar'),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+
+            // Name Input
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Your Name',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                settings.setPlayerName(value);
+              },
+            ),
+
+            const SizedBox(height: 40),
+
+            // Let's Play Button
+            ElevatedButton(
+              onPressed: () {
+                settings.setHasCompletedOnboarding(true);
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                 padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text(
+                "Let's Play!",
+                style: TextStyle(fontSize: 20, fontFamily: 'Permanent Marker'),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}

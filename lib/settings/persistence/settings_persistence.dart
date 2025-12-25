@@ -13,6 +13,10 @@ abstract class SettingsPersistence {
 
   Future<String> getPlayerName();
 
+  Future<String> getPlayerAvatarPath();
+
+  Future<bool> getHasCompletedOnboarding();
+
   Future<bool> getSoundsOn({required bool defaultValue});
 
   Future<void> saveAudioOn(bool value);
@@ -20,6 +24,10 @@ abstract class SettingsPersistence {
   Future<void> saveMusicOn(bool value);
 
   Future<void> savePlayerName(String value);
+
+  Future<void> savePlayerAvatarPath(String value);
+
+  Future<void> saveHasCompletedOnboarding(bool value);
 
   Future<void> saveSoundsOn(bool value);
 }

@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ok_multipl_poker/settings/avatar_selection_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../player_progress/player_progress.dart';
@@ -38,6 +39,42 @@ class SettingsScreen extends StatelessWidget {
                 height: 1,
               ),
             ),
+            _gap,
+            
+            // Avatar Selection Row
+            InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const AvatarSelectionScreen())
+                );
+              },
+              child: Center(
+                child: ValueListenableBuilder<String>(
+                  valueListenable: settings.playerAvatarPath,
+                  builder: (context, path, _) {
+                    return Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        image: DecorationImage(
+                          image: AssetImage(path),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: Text('Tap to change avatar'),
+              ),
+            ),
+            
             _gap,
             const _NameChangeLine('Name'),
             ValueListenableBuilder<bool>(

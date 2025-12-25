@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ok_multipl_poker/settings/onboarding_sheet.dart';
 import 'package:provider/provider.dart';
 
 import '../audio/audio_controller.dart';
@@ -22,6 +23,20 @@ class MainMenuScreen extends StatelessWidget {
     final palette = context.watch<Palette>();
     final settingsController = context.watch<SettingsController>();
     final audioController = context.watch<AudioController>();
+    
+    // Check onboarding on build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       if (!settingsController.hasCompletedOnboarding.value) {
+          showModalBottomSheet(
+             context: context, 
+             isDismissible: false,
+             enableDrag: false,
+             isScrollControlled: true,
+             builder: (context) => const OnboardingSheet()
+          );
+       }
+    });
+
     return BackgroundImageWidget(
         imagePath: 'assets/images/goblin_cards/goblin_bg_001.png',
         child:
