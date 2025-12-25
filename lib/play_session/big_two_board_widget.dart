@@ -170,7 +170,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             final isHolding = holdingPatterns.contains(pattern);
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: OutlinedButton(
+              child: MyButton(
                 // 若不持有該牌型，禁用按鈕
                 onPressed: isHolding ? () {
                    final nextSelection = _bigTwoManager.selectNextPattern(
@@ -182,13 +182,6 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                      _player.setCardSelection(nextSelection);
                    }
                 } : null,
-                style: OutlinedButton.styleFrom(
-                  // 根據是否持有，顯示不同顏色
-                  foregroundColor: isHolding ? Colors.amber : Colors.grey,
-                  side: isHolding ? const BorderSide(color: Colors.amber) : const BorderSide(color: Colors.grey),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
                 child: Text(pattern.displayName),
               ),
             );
