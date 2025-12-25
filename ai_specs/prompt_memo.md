@@ -1,9 +1,9 @@
 根據 @firestore_message_controller_spec.md 生成程式碼
 _____
 
-根據 @firestore_room_state_controller_spec.md 寫1個spec
-| **任務 ID (Task ID)** | `FEAT-DEMO-ROOM-STATE-WIDGET-001` |
-| **創建日期 (Date)** | `2025/12/05` |
+用 @big_two_delegate_spec_012.md 的風格, 寫1個spec
+| **任務 ID (Task ID)** | `FEAT-BIG-TWO-Board-Card_Area-001` |
+| **創建日期 (Date)** | `2025/12/25` |
 
 狀態管理, 使用Provider
 遵循 `effective_dart` 程式碼風格
@@ -14,7 +14,7 @@ _____
 
 檢查有無邏輯錯誤, 並提供改善建議
 
-然後給這個spec 1個用來作commit的commit message
+然後給這個spec 接下來要寫的程式碼, 1個commit message
 _____
 我review了, @firestore_turn_based_game_controller_spec_003.md的修改
 並對下列檔案進行了修改
