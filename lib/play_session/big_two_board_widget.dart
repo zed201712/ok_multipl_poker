@@ -24,6 +24,7 @@ import 'package:ok_multipl_poker/play_session/debug_text_widget.dart';
 import '../entities/big_two_player.dart';
 import '../services/error_message_service.dart';
 import '../settings/settings.dart';
+import '../style/palette.dart';
 
 class BigTwoBoardWidget extends StatefulWidget {
   const BigTwoBoardWidget({super.key});
@@ -143,6 +144,11 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                       onPressed: _onMatchRoom,
                       child: const Text('開始配對 (Match Room)'),
                     ),
+
+                  const SizedBox(height: 20),
+                  _leaveButton(),
+                  const SizedBox(height: 20),
+
                   if (gameState != null && gameState.gameStatus == GameStatus.matching)
                     const CircularProgressIndicator(),
                 ],
@@ -257,13 +263,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                               },
                               child: const Text('Restart'),
                             ),
-                            TextButton(
-                              onPressed: () {
-                                _gameController.leaveRoom();
-                                GoRouter.of(context).go('/');
-                              },
-                              child: const Text('Leave', style: TextStyle(color: Colors.white)),
-                            )
+                            _leaveButton()
                           ],
                         ),
                       ),
@@ -277,6 +277,16 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           );
         },
       ),
+    );
+  }
+
+  Widget _leaveButton() {
+    return ElevatedButton(
+      onPressed: () {
+        _gameController.leaveRoom();
+        GoRouter.of(context).go('/');
+      },
+      child: Text('Leave', style: TextStyle(color: Palette().ink)),
     );
   }
 
