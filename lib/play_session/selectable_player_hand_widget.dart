@@ -32,14 +32,14 @@ class SelectablePlayerHandWidget extends StatelessWidget {
         const SizedBox(height: 2),
         // The local player's interactive hand.
         Padding(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.only(top: 10),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: PlayingCardImageWidget.defaultHeight2 + 10),
+            constraints: BoxConstraints(minHeight: PlayingCardImageWidget.mediumHeight),
             child: ListenableBuilder(
               listenable: player,
               builder: (context, child) {
                 return Row(
-                  spacing: 6,
+                  spacing: 3,
                   children: player.hand.map((card) {
                     final isSelected = player.selectedCards.contains(card);
                     return GestureDetector(
@@ -54,8 +54,8 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                             // 'assets/images/goblin_cards/goblin_1_001.png',
                             'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
                           ),
-                          width: PlayingCardImageWidget.defaultWidth2,
-                          height: PlayingCardImageWidget.defaultHeight2,
+                          width: PlayingCardImageWidget.mediumWidth,
+                          height: PlayingCardImageWidget.mediumHeight,
                         ),
                       ),
                     );

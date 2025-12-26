@@ -91,8 +91,8 @@ class BigTwoBoardCardArea extends StatelessWidget {
             child: CardContainer(
               title: 'Discard Pile',
               child: SizedBox(
-                width: PlayingCardImageWidget.defaultWidth2 + 10,   // PlayingCardWidget.width 大約是 60 左右，可調整
-                height: PlayingCardImageWidget.defaultHeight2 + 10, // PlayingCardWidget.height 大約是 90 左右
+                width: PlayingCardImageWidget.smallWidth + 10,   // PlayingCardWidget.width 大約是 60 左右，可調整
+                height: PlayingCardImageWidget.smallHeight + 10, // PlayingCardWidget.height 大約是 90 左右
                 child: Image.asset(
                   'assets/images/goblin_cards/goblin_1_001.png',
                   // 暫時使用一張現有圖片作為背面或代表
@@ -112,8 +112,8 @@ class BigTwoBoardCardArea extends StatelessWidget {
       AssetImage(
         'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
       ),
-      width: PlayingCardImageWidget.defaultWidth2,
-      height: PlayingCardImageWidget.defaultHeight2,
+      width: PlayingCardImageWidget.smallWidth,
+      height: PlayingCardImageWidget.smallHeight,
     );
   }
 
