@@ -21,6 +21,9 @@ class SelectablePlayerHandWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final player = context.watch<CardPlayer>();
 
+    final cardWidth = 40.0;
+    final cardHeight = 40 * PlayingCardImageWidget.defaultHeight / PlayingCardImageWidget.defaultWidth;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -38,10 +41,8 @@ class SelectablePlayerHandWidget extends StatelessWidget {
             child: ListenableBuilder(
               listenable: player,
               builder: (context, child) {
-                return Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 10,
-                  runSpacing: 10,
+                return Row(
+                  spacing: 6,
                   children: player.hand.map((card) {
                     final isSelected = player.selectedCards.contains(card);
                     return GestureDetector(
@@ -51,11 +52,13 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                       child: Transform.translate(
                         offset: Offset(0, isSelected ? -10.0 : 0),
                         child: PlayingCardImageWidget(
-                            card,
+                          card,
                           AssetImage(
-                          // 'assets/images/goblin_cards/goblin_1_001.png',
-                          'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
-                        ),
+                            // 'assets/images/goblin_cards/goblin_1_001.png',
+                            'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
+                          ),
+                          width: cardWidth,
+                          height: cardHeight,
                         ),
                       ),
                     );

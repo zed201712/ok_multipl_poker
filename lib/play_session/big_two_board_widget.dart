@@ -27,6 +27,9 @@ import '../settings/settings.dart';
 import '../style/palette.dart';
 
 class BigTwoBoardWidget extends StatefulWidget {
+  // 定義設計解析度 (Design Resolution)
+  // 選擇一個較為修長的比例以適應現代手機，例如 iPhone 11 Pro Max / Pixel 的邏輯解析度範圍
+  static const Size designSize = Size(896, 414);
   const BigTwoBoardWidget({super.key});
 
   @override
@@ -130,19 +133,19 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
-                    Text('配對中 / 目前玩家(${_gameController.participantCount()})')
+                    Text('Matching...\nPlayers: ${_gameController.participantCount()}')
                   else
-                    const Text('準備開始大老二'),
+                    const Text('Ready to start'),
                   if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
                     ElevatedButton(
                       onPressed: _onStartGame,
-                      child: const Text('開始遊戲'),
+                      child: const Text('Start'),
                     ),
                   const SizedBox(height: 20),
                   if (!_isMatching && gameState == null)
                     ElevatedButton(
                       onPressed: _onMatchRoom,
-                      child: const Text('開始配對 (Match Room)'),
+                      child: const Text('Match Room'),
                     ),
 
                   const SizedBox(height: 20),
@@ -187,91 +190,99 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             value: bigTwoState,
             child: Scaffold(
               backgroundColor: Colors.transparent,
-              body: Stack(
-                children: [
-                  // --- 桌面區域 (Last Played Hand & Deck) ---
-
-                  Transform.translate(
-                    offset: const Offset(0, -100),
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 100),
-                        child: BigTwoBoardCardArea(),
-                      ),
-                    ),
-                  ),
-
-                  // --- 對手區域 ---
-                  ..._otherPlayerWidgets(otherPlayers, bigTwoState),
-
-                  // --- 玩家手牌區域 ---
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                        padding: const EdgeInsets.only(bottom: 20.0),
-                        child:
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // 標示自己是否為 Current Player
-                            if (isMyTurn)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  "YOUR TURN",
-                                  style: TextStyle(fontWeight: FontWeight.bold,
-                                      color: Colors.black),
-                                ),
-                              ),
-                            ChangeNotifierProvider.value(
-                              value: _player,
-                              child: SelectablePlayerHandWidget(
-                                buttonWidgets: handTypeButtons,
-                              ),
+              body: Center(
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: SizedBox(
+                    width: BigTwoBoardWidget.designSize.width,
+                    height: BigTwoBoardWidget.designSize.height,
+                    child: Stack(
+                      children: [
+                        // --- 桌面區域 (Last Played Hand & Deck) ---
+                  
+                        Transform.translate(
+                          offset: const Offset(0, -100),
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 100),
+                              child: BigTwoBoardCardArea(),
                             ),
-
-                            // --- 操作按鈕區域 (Play / Pass) ---
-                            _functionButtons(bigTwoState),
-                          ],
-                        )
-                    ),
-                  ),
-
-
-                  // --- 狀態提示 ---
-                  if (gameState.gameStatus == GameStatus.finished)
-                    Center(
-                      child: Container(
-                        color: Colors.black54,
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Winner: ${gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner}',
-                              style: const TextStyle(color: Colors.white, fontSize: 24),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                _gameController.restart();
-                              },
-                              child: const Text('Restart'),
-                            ),
-                            _leaveButton()
-                          ],
+                          ),
                         ),
-                      ),
+                  
+                        // --- 對手區域 ---
+                        ..._otherPlayerWidgets(otherPlayers, bigTwoState),
+                  
+                        // --- 玩家手牌區域 ---
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Padding(
+                              padding: const EdgeInsets.only(bottom: 20.0),
+                              child:
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // 標示自己是否為 Current Player
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: isMyTurn ? Colors.amber : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      "YOUR TURN",
+                                      style: TextStyle(fontWeight: FontWeight.bold,
+                                          color: isMyTurn ? Colors.black : Colors.transparent),
+                                    ),
+                                  ),
+                                  ChangeNotifierProvider.value(
+                                    value: _player,
+                                    child: SelectablePlayerHandWidget(
+                                      buttonWidgets: handTypeButtons,
+                                    ),
+                                  ),
+                  
+                                  // --- 操作按鈕區域 (Play / Pass) ---
+                                  _functionButtons(bigTwoState),
+                                ],
+                              )
+                          ),
+                        ),
+                  
+                  
+                        // --- 狀態提示 ---
+                        if (gameState.gameStatus == GameStatus.finished)
+                          Center(
+                            child: Container(
+                              color: Colors.black54,
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Winner: ${gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner}',
+                                    style: const TextStyle(color: Colors.white, fontSize: 24),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      _gameController.restart();
+                                    },
+                                    child: const Text('Restart'),
+                                  ),
+                                  _leaveButton()
+                                ],
+                              ),
+                            ),
+                          ),
+                  
+                        // --- 除錯工具 ---
+                        //..._debugWidgets(bigTwoState),
+                      ],
                     ),
-
-                  // --- 除錯工具 ---
-                  //..._debugWidgets(bigTwoState),
-                ],
+                  ),
+                ),
               ),
             ),
           );
