@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ok_multipl_poker/settings/avatar_selection_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../player_progress/player_progress.dart';
 import '../style/my_button.dart';
@@ -107,6 +108,33 @@ class SettingsScreen extends StatelessWidget {
                 );
               },
             ),
+            _gap,
+
+            // QR Code Display
+            Center(
+              child:
+              Image(
+                image: AssetImage(
+                  'assets/images/goblin_cards/goblin_qr.png',
+                ),
+                fit: BoxFit.contain,
+              ),
+
+            ),
+            // Center(
+            //   child:
+            //   Container(
+            //     color: Colors.white,
+            //     child: QrImageView(
+            //           data: '123',
+            //           version: QrVersions.auto,
+            //           size: 200.0,
+            //           // embeddedImage: const AssetImage('assets/images/goblin_cards/goblin_1_009.png'),
+            //           embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(45, 60),
+            //         ),
+            //       ),
+            //   ),
+            // ),
             _gap,
           ],
         ),
