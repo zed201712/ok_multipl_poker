@@ -88,6 +88,8 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                             onTap: () => GoRouter.of(context).push('/settings'),
                             child: Image.asset(
                               'assets/images/settings.png',
+                              width: 30,
+                              height: 30,
                               semanticLabel: 'Settings',
                             ),
                           ),

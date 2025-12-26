@@ -269,6 +269,10 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                                       ),
                                     ),
                                   ),
+
+                                  const SizedBox(width: 20),
+                                  // --- 操作按鈕區域 (Play / Pass) ---
+                                  _functionButtons(bigTwoState),
                                 ],
                               ),
 
@@ -278,9 +282,6 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                                   buttonWidgets: handTypeButtons,
                                 ),
                               ),
-
-                              // --- 操作按鈕區域 (Play / Pass) ---
-                              _functionButtons(bigTwoState),
                             ],
                           ),
                         ),
@@ -526,46 +527,46 @@ class _OpponentHand extends StatelessWidget {
     return
 
       FittedBox(
-          fit: BoxFit.scaleDown,
-          child:
-      Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        PlayerAvatarWidget(
-          avatarNumber: player.avatarNumber,
-          size: 30, // Adjust size as needed
-        ),
-        const SizedBox(width: 8),
-        Column(
+        fit: BoxFit.scaleDown,
+        child:
+        Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-                playerName,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: playerNameColor,
-                  fontWeight: player.hasPassed ? FontWeight.bold : null,
-                )
+            PlayerAvatarWidget(
+              avatarNumber: player.avatarNumber,
+              size: 30, // Adjust size as needed
             ),
-            const SizedBox(height: 8),
-            Row(
+            const SizedBox(width: 8),
+            Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.style, color: Colors.blueGrey, size: 30),
-                const SizedBox(width: 8),
                 Text(
-                  '$cardCount',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                    playerName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: playerNameColor,
+                      fontWeight: player.hasPassed ? FontWeight.bold : null,
+                    )
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.style, color: Colors.blueGrey, size: 30),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$cardCount',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ],
         ),
-      ],
-    ),
       );
   }
 }
