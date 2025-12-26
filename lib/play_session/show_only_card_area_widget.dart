@@ -14,19 +14,21 @@ class ShowOnlyCardAreaWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(10),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: PlayingCardWidget.height + 10),
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 10,
-          children: cards.map((card) => PlayingCardImageWidget(
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: PlayingCardImageWidget.defaultHeight2 + 10),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        runSpacing: 10,
+        children: cards.map((card) =>
+            PlayingCardImageWidget(
               card,
-              AssetImage('assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png')),
-          ).toList(),
-        ),
+              AssetImage(
+                  'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png'),
+              width: PlayingCardImageWidget.defaultWidth2,
+              height: PlayingCardImageWidget.defaultHeight2,
+            ),
+        ).toList(),
       ),
     );
   }

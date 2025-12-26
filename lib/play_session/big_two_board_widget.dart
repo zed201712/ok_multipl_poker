@@ -190,106 +190,195 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             value: bigTwoState,
             child: Scaffold(
               backgroundColor: Colors.transparent,
-              body: Center(
+              body:
+
+              Center(
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: SizedBox(
                     width: BigTwoBoardWidget.designSize.width,
                     height: BigTwoBoardWidget.designSize.height,
-                    child: Stack(
+                    child: Column(
                       children: [
-                        // --- 桌面區域 (Last Played Hand & Deck) ---
-                  
-                        Transform.translate(
-                          offset: const Offset(0, -100),
+                        Expanded(
+                          flex: 5,
                           child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 100),
-                              child: BigTwoBoardCardArea(),
-                            ),
+                            child: _buildTopOpponent(otherPlayers, bigTwoState),
                           ),
                         ),
-                  
-                        // --- 對手區域 ---
-                        ..._otherPlayerWidgets(otherPlayers, bigTwoState),
-                  
-                        // --- 玩家手牌區域 ---
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Padding(
-                              padding: const EdgeInsets.only(bottom: 20.0),
-                              child:
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // 標示自己是否為 Current Player
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    decoration: BoxDecoration(
-                                      color: isMyTurn ? Colors.amber : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      "YOUR TURN",
-                                      style: TextStyle(fontWeight: FontWeight.bold,
-                                          color: isMyTurn ? Colors.black : Colors.transparent),
-                                    ),
-                                  ),
-                                  ChangeNotifierProvider.value(
-                                    value: _player,
-                                    child: SelectablePlayerHandWidget(
-                                      buttonWidgets: handTypeButtons,
-                                    ),
-                                  ),
-                  
-                                  // --- 操作按鈕區域 (Play / Pass) ---
-                                  _functionButtons(bigTwoState),
-                                ],
-                              )
-                          ),
-                        ),
-                  
-                  
-                        // --- 狀態提示 ---
-                        if (gameState.gameStatus == GameStatus.finished)
-                          Center(
-                            child: Container(
-                              color: Colors.black54,
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Winner: ${gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 24),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      _gameController.restart();
-                                    },
-                                    child: const Text('Restart'),
-                                  ),
-                                  _leaveButton()
-                                ],
+
+                        Expanded(
+                          flex: 10,
+                          child:
+                          Row(
+                            children: [
+                              // Left Opponent (20%)
+                              SizedBox(
+                                width: BigTwoBoardWidget.designSize.width * 0.1,
+                                child: Center(
+                                  child: _buildLeftOpponent(otherPlayers, bigTwoState),
+                                ),
                               ),
-                            ),
+
+                              // Table Card Area (Center)
+                              Expanded(
+                                child: Center(
+                                  child: BigTwoBoardCardArea(),
+                                ),
+                              ),
+
+                              // Right Opponent (20%)
+                              SizedBox(
+                                width: BigTwoBoardWidget.designSize.width * 0.1,
+                                child: Center(
+                                  child: _buildRightOpponent(otherPlayers, bigTwoState),
+                                ),
+                              ),
+                            ],
                           ),
-                  
-                        // --- 除錯工具 ---
-                        //..._debugWidgets(bigTwoState),
+                        ),
+
+                        Expanded(
+                          flex: 14,
+                          child:
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // 標示自己是否為 Current Player
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: isMyTurn ? Colors.amber : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "YOUR TURN",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isMyTurn ? Colors.black : Colors
+                                        .transparent,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+
+                              ChangeNotifierProvider.value(
+                                value: _player,
+                                child: SelectablePlayerHandWidget(
+                                  buttonWidgets: handTypeButtons,
+                                ),
+                              ),
+
+                              // --- 操作按鈕區域 (Play / Pass) ---
+                              _functionButtons(bigTwoState),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
+
+              // Use Overlay or a separate top-level Stack for overlays like "Winner" or Debug tools
+              // For now, simple overlays can be added here if needed, but keeping the main game logic inside the Grid.
+              floatingActionButton: gameState.gameStatus == GameStatus.finished ?
+              Container(
+                color: Colors.black54,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Winner: ${gameState.customState
+                          .getParticipantByID(gameState.winner ?? "")
+                          ?.name ?? gameState.winner}',
+                      style: const TextStyle(color: Colors.white,
+                          fontSize: 24),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        _gameController.restart();
+                      },
+                      child: const Text('Restart'),
+                    ),
+                    _leaveButton()
+                  ],
+                ),
+              ) : null,
             ),
           );
         },
       ),
     );
   }
+
+  // --- Helper Methods to map opponents to positions ---
+  
+  // Note: The logic for mapping otherPlayers list to specific positions depends on 
+  // how _bigTwoManager.otherPlayers returns the list (ordered by turn order or seat).
+  // Assuming otherPlayers[0] is Top, [1] is Left, [2] is Right is NOT always correct 
+  // without consistent rotation logic.
+  // Below we use the same index logic as previous Stack implementation for consistency.
+  // previous logic: 
+  // 1 player -> Top
+  // 2 players -> Top, Left
+  // 3 players -> Top, Left, Right
+  // (Based on: 
+  //   List<int> fourPlayerSeatOrder = [1, 2, 0]; 
+  //   playersBySeatOrder[0] -> Top
+  //   playersBySeatOrder[1] -> Left
+  //   playersBySeatOrder[2] -> Right
+  // )
+
+  List<BigTwoPlayer> _getOrderedOpponents(List<BigTwoPlayer> otherPlayers) {
+     if (otherPlayers.isEmpty) return [];
+     
+     // Reuse the logic from previous _otherPlayerWidgets to maintain consistency
+     // The previous code had a specific mapping for 3 opponents.
+     // If fewer, it just took them in order.
+     
+     List<int> fourPlayerSeatOrder = [1, 2, 0];
+     if (otherPlayers.length == 3) {
+       return fourPlayerSeatOrder.map((i) => otherPlayers[i]).toList();
+     }
+     return otherPlayers;
+  }
+
+  Widget _buildTopOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
+    final ordered = _getOrderedOpponents(otherPlayers);
+    if (ordered.isNotEmpty) {
+      return _OpponentHand(bigTwoState: bigTwoState, player: ordered[0]);
+    }
+    return const SizedBox();
+  }
+
+  Widget _buildLeftOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
+    final ordered = _getOrderedOpponents(otherPlayers);
+    if (ordered.length > 1) {
+       // Left player was rotated in Stack layout. In Grid, we can keep it vertical or standard.
+       // Let's keep the rotation for visual consistency with "sides".
+       return RotatedBox(
+         quarterTurns: 1,
+         child: _OpponentHand(bigTwoState: bigTwoState, player: ordered[1]),
+       );
+    }
+    return const SizedBox();
+  }
+
+  Widget _buildRightOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
+    final ordered = _getOrderedOpponents(otherPlayers);
+    if (ordered.length > 2) {
+      return RotatedBox(
+        quarterTurns: 3,
+        child: _OpponentHand(bigTwoState: bigTwoState, player: ordered[2]),
+      );
+    }
+    return const SizedBox();
+  }
+
 
   Widget _leaveButton() {
     return ElevatedButton(
@@ -406,75 +495,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             ),
           ],
         );
-        // Positioned(
-        //   bottom: 40,
-        //   right: 40,
-        //   child: Row(
-        //     mainAxisSize: MainAxisSize.min,
-        //     children: [
-        //       passButton,
-        //       SizedBox(width: 40),
-        //       cancelButton,
-        //       SizedBox(width: 20),
-        //       playButton
-        //     ],
-        //   ),
-        // );
       },
     );
-  }
-
-  // --- 對手區域 ---
-  List<Widget> _otherPlayerWidgets(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
-    List<int> fourPlayerSeatOrder = [
-      1, //topCenter
-      2, //centerLeft
-      0, //centerRight
-    ];
-    final playersBySeatOrder = (otherPlayers.length == 3) ?
-      fourPlayerSeatOrder.map((i)=>otherPlayers[i]).toList() :
-      otherPlayers;
-    return [
-      if (otherPlayers.isNotEmpty)
-        Align(
-          alignment: Alignment.topCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 40.0),
-            child: _OpponentHand(
-              bigTwoState: bigTwoState,
-              player: playersBySeatOrder[0],
-            ),
-          ),
-        ),
-      if (otherPlayers.length > 1)
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20.0),
-            child: RotatedBox(
-              quarterTurns: 1,
-              child: _OpponentHand(
-                bigTwoState: bigTwoState,
-                player: playersBySeatOrder[1],
-              ),
-            ),
-          ),
-        ),
-      if (otherPlayers.length > 2)
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: _OpponentHand(
-                bigTwoState: bigTwoState,
-                player: playersBySeatOrder[2],
-              ),
-            ),
-          ),
-        ),
-    ];
   }
 }
 

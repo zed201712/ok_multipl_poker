@@ -21,9 +21,6 @@ class SelectablePlayerHandWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final player = context.watch<CardPlayer>();
 
-    final cardWidth = 40.0;
-    final cardHeight = 40 * PlayingCardImageWidget.defaultHeight / PlayingCardImageWidget.defaultWidth;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -32,12 +29,12 @@ class SelectablePlayerHandWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: buttonWidgets,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 2),
         // The local player's interactive hand.
         Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(2),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: PlayingCardWidget.height + 10),
+            constraints: BoxConstraints(minHeight: PlayingCardImageWidget.defaultHeight2 + 10),
             child: ListenableBuilder(
               listenable: player,
               builder: (context, child) {
@@ -57,8 +54,8 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                             // 'assets/images/goblin_cards/goblin_1_001.png',
                             'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
                           ),
-                          width: cardWidth,
-                          height: cardHeight,
+                          width: PlayingCardImageWidget.defaultWidth2,
+                          height: PlayingCardImageWidget.defaultHeight2,
                         ),
                       ),
                     );

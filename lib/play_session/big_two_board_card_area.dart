@@ -26,26 +26,21 @@ class BigTwoBoardCardArea extends StatelessWidget {
     //     .toList();
     final deckCards = <PlayingCard>[];
 
-    return Padding(
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 上層: Last Played Cards | Discard Pile
-          _firstLine(bigTwoState, context),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 上層: Last Played Cards | Discard Pile
+        _firstLine(bigTwoState, context),
 
-          const SizedBox(height: 10),
-
-          // 下層: Deck Cards
-          if (deckCards.isNotEmpty)
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 5,
-              runSpacing: 5,
-              children: deckCards.map(_buildCard).toList(),
-            ),
-        ],
-      ),
+        // 下層: Deck Cards
+        if (deckCards.isNotEmpty)
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 5,
+            runSpacing: 5,
+            children: deckCards.map(_buildCard).toList(),
+          ),
+      ],
     );
 
   }
@@ -69,12 +64,9 @@ class BigTwoBoardCardArea extends StatelessWidget {
       children: [
         // Left: Last Played Cards
         if (lastPlayedCards.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: CardContainer(
-              title: 'Last Played $lastPlayedTitle',
-              child: ShowOnlyCardAreaWidget(cards: lastPlayedCards),
-            ),
+          CardContainer(
+            title: 'Last Played $lastPlayedTitle',
+            child: ShowOnlyCardAreaWidget(cards: lastPlayedCards),
           ),
 
         const Expanded(child: SizedBox.shrink()),
@@ -99,8 +91,8 @@ class BigTwoBoardCardArea extends StatelessWidget {
             child: CardContainer(
               title: 'Discard Pile',
               child: SizedBox(
-                width: 60, // PlayingCardWidget.width 大約是 60 左右，可調整
-                height: 90, // PlayingCardWidget.height 大約是 90 左右
+                width: PlayingCardImageWidget.defaultWidth2 + 10,   // PlayingCardWidget.width 大約是 60 左右，可調整
+                height: PlayingCardImageWidget.defaultHeight2 + 10, // PlayingCardWidget.height 大約是 90 左右
                 child: Image.asset(
                   'assets/images/goblin_cards/goblin_1_001.png',
                   // 暫時使用一張現有圖片作為背面或代表
@@ -120,6 +112,8 @@ class BigTwoBoardCardArea extends StatelessWidget {
       AssetImage(
         'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
       ),
+      width: PlayingCardImageWidget.defaultWidth2,
+      height: PlayingCardImageWidget.defaultHeight2,
     );
   }
 

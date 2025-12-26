@@ -15,6 +15,9 @@ class PlayingCardImageWidget extends StatelessWidget {
   static const double defaultWidth = 57.1;
   static const double defaultHeight = 88.9;
 
+  static final defaultWidth2 = 40.0;
+  static final defaultHeight2 = 40 * PlayingCardImageWidget.defaultHeight / PlayingCardImageWidget.defaultWidth;
+
   final PlayingCard card;
   final ImageProvider image;
   final Player? player;
