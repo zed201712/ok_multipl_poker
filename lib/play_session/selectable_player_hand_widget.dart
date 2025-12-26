@@ -25,10 +25,8 @@ class SelectablePlayerHandWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Row of buttons to select the hand type.
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 10,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: buttonWidgets,
         ),
         const SizedBox(height: 10),

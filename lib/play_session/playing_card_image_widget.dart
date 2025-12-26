@@ -12,8 +12,8 @@ import 'playing_card_widget.dart';
 /// 與 [PlayingCardWidget] 相似，但支援自定義背景圖片，並將卡牌文字資訊移動至左上角。
 class PlayingCardImageWidget extends StatelessWidget {
   // 標準撲克牌的尺寸約為 57.1mm x 88.9mm。
-  static const double defaultWidth = 40.0;
-  static const double defaultHeight = 60.0;
+  static const double defaultWidth = 57.1;
+  static const double defaultHeight = 88.9;
 
   final PlayingCard card;
   final ImageProvider image;
