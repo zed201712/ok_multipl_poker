@@ -114,7 +114,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     _isProcessingTurn = true;
 
     try {
-      await Future.delayed(const Duration(milliseconds: 1000));
+      await Future.delayed(const Duration(milliseconds: 300));
       if (_isDisposed) return;
       
       final currentGameState = _gameController.gameStateStream.valueOrNull;
