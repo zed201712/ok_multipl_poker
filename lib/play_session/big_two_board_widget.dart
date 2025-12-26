@@ -523,7 +523,12 @@ class _OpponentHand extends StatelessWidget {
 
     final playerNameColor = player.hasPassed ? Colors.grey : (isCurrentTurn ? Colors.amber : null);
     
-    return Row(
+    return
+
+      FittedBox(
+          fit: BoxFit.scaleDown,
+          child:
+      Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -536,10 +541,10 @@ class _OpponentHand extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-                playerName, 
+                playerName,
                 style: theme.textTheme.titleMedium?.copyWith(
-                    color: playerNameColor,
-                    fontWeight: player.hasPassed ? FontWeight.bold : null,
+                  color: playerNameColor,
+                  fontWeight: player.hasPassed ? FontWeight.bold : null,
                 )
             ),
             const SizedBox(height: 8),
@@ -560,6 +565,7 @@ class _OpponentHand extends StatelessWidget {
           ],
         ),
       ],
-    );
+    ),
+      );
   }
 }

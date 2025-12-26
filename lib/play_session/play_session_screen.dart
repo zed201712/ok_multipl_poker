@@ -67,16 +67,6 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: InkResponse(
-                            onTap: () => GoRouter.of(context).push('/settings'),
-                            child: Image.asset(
-                              'assets/images/settings.png',
-                              semanticLabel: 'Settings',
-                            ),
-                          ),
-                        ),
                         const Expanded(
                           child: BigTwoBoardWidget(),
                         ),
@@ -92,6 +82,16 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                         //     child: const Text('Back'),
                         //   ),
                         // ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: InkResponse(
+                            onTap: () => GoRouter.of(context).push('/settings'),
+                            child: Image.asset(
+                              'assets/images/settings.png',
+                              semanticLabel: 'Settings',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox.expand(
