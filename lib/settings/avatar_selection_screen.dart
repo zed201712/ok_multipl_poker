@@ -15,10 +15,29 @@ class AvatarSelectionScreen extends StatefulWidget {
 
 class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
   final List<String> _avatarPaths = [];
+  late String _selectedAvatarNumber;
+
+  final String _defaultAvatarDescription = 'A mysterious goblin.';
+  final Map<String, String> _avatarDescriptions = {
+    '1': 'The brave beginner goblin.',
+    '2': 'The cunning card shark.',
+    '3': 'The wise old sage.',
+    '4': 'The quick-fingered thief.',
+    '5': 'The joyful jester.',
+    '6': 'The grumpy guard.',
+    '7': 'The lucky gambler.',
+    '8': 'The stoic warrior.',
+    '9': 'The mystical mage.',
+    '10': 'The royal advisor.',
+    '11': 'The forest scout.',
+    '12': 'The mountain climber.',
+    '13': 'The swamp dweller.',
+  };
 
   @override
   void initState() {
     super.initState();
+    _selectedAvatarNumber = context.read<SettingsController>().playerAvatarNumber.value;
     _loadAvatars();
   }
 
@@ -69,16 +88,14 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
           itemBuilder: (context, index) {
             final path = _avatarPaths[index];
             final avatarNumber = (index + 1).toString();
-            // 比較時，settings.playerAvatarNumber.value 可能是 "1"，而我們這邊是 "1"。
-            // 只要確保儲存的和比較的是一致的 (不含前導零，或者都含前導零)。
-            // SettingsController 的 setPlayerAvatarNumber 存入的是 raw string。
-            // 我們這裡存入 (index + 1).toString() 即 "1", "10"。
-            final isSelected = settings.playerAvatarNumber.value == avatarNumber;
+            // 比較時，使用本地狀態 _selectedAvatarNumber
+            final isSelected = _selectedAvatarNumber == avatarNumber;
             
             return InkWell(
               onTap: () {
-                settings.setPlayerAvatarNumber(avatarNumber);
-                GoRouter.of(context).pop();
+                setState(() {
+                  _selectedAvatarNumber = avatarNumber;
+                });
               },
               child: Container(
                 decoration: BoxDecoration(
@@ -93,7 +110,59 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
             );
           },
         ),
-        rectangularMenuArea: const SizedBox(),
+        rectangularMenuArea: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Description Text
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                _avatarDescriptions[_selectedAvatarNumber] ?? _defaultAvatarDescription,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Permanent Marker',
+                  fontSize: 20,
+                  color: Colors.white, // Assuming dark background or readable color
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Action Buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Cancel Button (X)
+                ElevatedButton(
+                  onPressed: () {
+                    GoRouter.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(20),
+                    backgroundColor: Colors.red, // Cancel color
+                  ),
+                  child: const Icon(Icons.close, size: 30, color: Colors.white),
+                ),
+                
+                // Confirm Button (Check)
+                ElevatedButton(
+                  onPressed: () {
+                    settings.setPlayerAvatarNumber(_selectedAvatarNumber);
+                    GoRouter.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(20),
+                    backgroundColor: Colors.green, // Confirm color
+                  ),
+                  child: const Icon(Icons.check, size: 30, color: Colors.white),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
