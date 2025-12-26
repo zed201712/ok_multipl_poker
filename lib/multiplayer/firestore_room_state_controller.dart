@@ -210,8 +210,20 @@ class FirestoreRoomStateController {
       final isActive = DateTime.now().difference(room.updatedAt!.toDate()) <= _aliveTime;
       return isActive && room.participants.length < room.maxPlayers;
     }).toList();
+    final myActiveRooms = querySnapshot.docs.where((doc) {
+      final room = Room.fromFirestore(doc);
+      if (room.updatedAt == null) return true;
+      final isActive = DateTime.now().difference(room.updatedAt!.toDate()) <= _aliveTime;
+      return isActive && room.participants.any((p) => p.id == currentUserId);
+    }).toList();
 
-    if (availableRooms.isNotEmpty) {
+    //resume
+    if (myActiveRooms.firstOrNull != null) {
+      final roomToJoin = Room.fromFirestore(myActiveRooms.first);
+      setRoomId(roomToJoin.roomId);
+      return roomToJoin.roomId;
+    }
+    else if (availableRooms.isNotEmpty) {
       final roomToJoin = Room.fromFirestore(availableRooms.first);
       final playerName = _settingsController.playerName.value;
       final avatarNumber = _settingsController.playerAvatarNumber.value;

@@ -170,7 +170,14 @@ class FirestoreTurnBasedGameController<T> {
         winner: winner,
         customState: updatedCustomState);
 
-    _updateRoomWithState(newGameState);
+    final serializedState = jsonEncode(newGameState.toJson(_delegate));
+    roomStateController.updateRoom(
+        roomId: room.roomId,
+        data: {
+          'body': serializedState,
+          'maxPlayers': room.participants.length,
+        }
+    );
   }
 
   Future<void> _updateRoomWithState(TurnBasedGameState<T> gameState) async {

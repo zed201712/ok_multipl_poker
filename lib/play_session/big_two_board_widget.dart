@@ -300,7 +300,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Winner: ${gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner}',
+                            'Winner: ${gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner}\nRestart: ${bigTwoState.restartRequesters.length} / ${bigTwoState.participants.length}',
                             style: const TextStyle(color: Colors.white, fontSize: 24),
                           ),
                           ElevatedButton(
