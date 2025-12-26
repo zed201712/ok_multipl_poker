@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ok_multipl_poker/play_session/big_two_board_card_area.dart';
 import 'package:ok_multipl_poker/widgets/card_container.dart';
+import 'package:ok_multipl_poker/widgets/player_avatar_widget.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
@@ -190,9 +191,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             value: bigTwoState,
             child: Scaffold(
               backgroundColor: Colors.transparent,
-              body:
-
-              Center(
+              body: Center(
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: SizedBox(
@@ -209,8 +208,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
                         Expanded(
                           flex: 10,
-                          child:
-                          Row(
+                          child: Row(
                             children: [
                               // Left Opponent (20%)
                               SizedBox(
@@ -240,28 +238,36 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
                         Expanded(
                           flex: 14,
-                          child:
-                          Column(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               // 標示自己是否為 Current Player
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                  color: isMyTurn ? Colors.amber : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  "YOUR TURN",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: isMyTurn ? Colors.black : Colors
-                                        .transparent,
-                                    fontSize: 10,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  PlayerAvatarWidget(
+                                    avatarNumber: settings.playerAvatarNumber.value,
+                                    size: 30, // Adjust size as needed
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: isMyTurn ? Colors.amber : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      "YOUR TURN",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isMyTurn ? Colors.black : Colors.transparent,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
 
                               ChangeNotifierProvider.value(
@@ -281,33 +287,30 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                   ),
                 ),
               ),
-
               // Use Overlay or a separate top-level Stack for overlays like "Winner" or Debug tools
               // For now, simple overlays can be added here if needed, but keeping the main game logic inside the Grid.
-              floatingActionButton: gameState.gameStatus == GameStatus.finished ?
-              Container(
-                color: Colors.black54,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Winner: ${gameState.customState
-                          .getParticipantByID(gameState.winner ?? "")
-                          ?.name ?? gameState.winner}',
-                      style: const TextStyle(color: Colors.white,
-                          fontSize: 24),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        _gameController.restart();
-                      },
-                      child: const Text('Restart'),
-                    ),
-                    _leaveButton()
-                  ],
-                ),
-              ) : null,
+              floatingActionButton: gameState.gameStatus == GameStatus.finished
+                  ? Container(
+                      color: Colors.black54,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Winner: ${gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner}',
+                            style: const TextStyle(color: Colors.white, fontSize: 24),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              _gameController.restart();
+                            },
+                            child: const Text('Restart'),
+                          ),
+                          _leaveButton()
+                        ],
+                      ),
+                    )
+                  : null,
             ),
           );
         },
@@ -517,28 +520,40 @@ class _OpponentHand extends StatelessWidget {
     final isCurrentTurn = player.uid == bigTwoState.currentPlayerId;
 
     final playerNameColor = player.hasPassed ? Colors.grey : (isCurrentTurn ? Colors.amber : null);
-    return Column(
+    
+    return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-            playerName, 
-            style: theme.textTheme.titleMedium?.copyWith(
-                color: playerNameColor,
-                fontWeight: player.hasPassed ? FontWeight.bold : null,
-            )
+        PlayerAvatarWidget(
+          avatarNumber: player.avatarNumber,
+          size: 30, // Adjust size as needed
         ),
-        const SizedBox(height: 8),
-        Row(
+        const SizedBox(width: 8),
+        Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.style, color: Colors.blueGrey, size: 30),
-            const SizedBox(width: 8),
             Text(
-              '$cardCount',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+                playerName, 
+                style: theme.textTheme.titleMedium?.copyWith(
+                    color: playerNameColor,
+                    fontWeight: player.hasPassed ? FontWeight.bold : null,
+                )
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.style, color: Colors.blueGrey, size: 30),
+                const SizedBox(width: 8),
+                Text(
+                  '$cardCount',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
