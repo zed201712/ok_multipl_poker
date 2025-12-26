@@ -83,6 +83,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
 
       // 更新本地玩家 狀態
       final myPlayerState = _bigTwoManager.myPlayer(_userId, bigTwoState);
+      if (myPlayerState == null) return;
+
       _player.name = myPlayerState.name;
       // 將 String 轉回 PlayingCard 供 CardPlayer 使用
       final sortedCards = _bigTwoManager.sortCardsByRank(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());;

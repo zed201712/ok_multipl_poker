@@ -101,7 +101,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
     );
   }
 
-  BigTwoPlayer myPlayer(String myUserId, BigTwoState bigTwoState) => bigTwoState.participants.firstWhere((p) => p.uid == myUserId);
+  BigTwoPlayer? myPlayer(String myUserId, BigTwoState bigTwoState) => bigTwoState.participants.firstWhereOrNull((p) => p.uid == myUserId);
 
   List<BigTwoPlayer> otherPlayers(String myUserId, BigTwoState bigTwoState) {
     final seatedPlayers = bigTwoState.seatedPlayersList();
