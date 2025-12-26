@@ -38,10 +38,14 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       final hand = deck.sublist(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
       
       String name;
+      String avatarNumber;
       if (isVirtual) {
         name = uid;
+        avatarNumber = room.participants.first.avatarNumber;
       } else {
-        name = room.participants.firstWhere((p) => p.id == seats[i]).name;
+        final participant = room.participants.firstWhere((p) => p.id == seats[i]);
+        name = participant.name;
+        avatarNumber = participant.avatarNumber;
       }
 
       players.add(BigTwoPlayer(
@@ -50,6 +54,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
         cards: hand.map(PlayingCard.cardToString).toList(),
         hasPassed: isVirtual,
         isVirtualPlayer: isVirtual,
+        avatarNumber: avatarNumber,
       ));
     }
 
