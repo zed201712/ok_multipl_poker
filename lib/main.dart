@@ -5,6 +5,9 @@
 import 'dart:developer' as dev;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +47,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
-    Provider.value(value: FirebaseFirestore.instance, child: const MyApp()),
+    Provider<FirebaseFirestore>.value(value: FirebaseFirestore.instance, child: const MyApp()),
   );
 }
 
@@ -62,6 +65,7 @@ class MyApp extends StatelessWidget {
         // `context.watch()` or `context.read()`.
         // See `lib/main_menu/main_menu_screen.dart` for example usage.
         providers: [
+          Provider<FirebaseAuth>(create: (context) => FirebaseAuth.instance),
           Provider(create: (context) => SettingsController()),
           Provider(create: (context) => Palette()),
           ChangeNotifierProvider(create: (context) => PlayerProgress()),
