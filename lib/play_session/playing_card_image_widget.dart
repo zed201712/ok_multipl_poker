@@ -49,24 +49,25 @@ class PlayingCardImageWidget extends StatelessWidget {
         width: cardWidth,
         height: cardHeight,
         decoration: BoxDecoration(
-          color: palette.trueWhite,
-          image: DecorationImage(
-            image: image,
-            fit: BoxFit.fitWidth,
-            alignment: Alignment.bottomCenter,
-          ),
-          border: Border.all(color: palette.ink),
-          borderRadius: BorderRadius.circular(5),
+          color: Colors.white,
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(1, 0, 0, 0),
-            child: Text(
-              '${card.suit.asCharacter} ${card.value}',
-              textAlign: TextAlign.center,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(1, 0, 0, 0),
+              child: Text(
+                '${card.suit.asCharacter} ${card.value}',
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
+            Expanded(
+              child: Image(
+                image: image,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
         ),
       ),
     );
