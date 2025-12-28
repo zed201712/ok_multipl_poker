@@ -28,7 +28,7 @@ class ShowOnlyCardAreaWidget extends StatelessWidget {
             PlayingCardImageWidget(
               card,
               AssetImage(
-                settingsController.currentCardTheme.getCardImagePath(card)
+                settingsController.currentCardThemeManager.getCardImagePath(card)
               ),
               width: PlayingCardImageWidget.smallWidth,
               height: PlayingCardImageWidget.smallHeight,

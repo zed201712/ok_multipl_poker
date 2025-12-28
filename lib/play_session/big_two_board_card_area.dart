@@ -96,7 +96,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
                 width: PlayingCardImageWidget.smallWidth + 10,   // PlayingCardWidget.width 大約是 60 左右，可調整
                 height: PlayingCardImageWidget.smallHeight + 10, // PlayingCardWidget.height 大約是 90 左右
                 child: Image.asset(
-                  settingsController.currentCardTheme.cardBackImagePath,
+                  settingsController.currentCardThemeManager.cardBackImagePath,
                   // 暫時使用一張現有圖片作為背面或代表
                   fit: BoxFit.contain,
                 ),
@@ -112,7 +112,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
     return PlayingCardImageWidget(
       card,
       AssetImage(
-          settingsController.currentCardTheme.getCardImagePath(card),
+          settingsController.currentCardThemeManager.getCardImagePath(card),
       ),
       width: PlayingCardImageWidget.smallWidth,
       height: PlayingCardImageWidget.smallHeight,

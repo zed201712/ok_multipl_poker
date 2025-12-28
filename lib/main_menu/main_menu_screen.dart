@@ -38,7 +38,7 @@ class MainMenuScreen extends StatelessWidget {
     });
 
     return BackgroundImageWidget(
-        imagePath: settingsController.currentCardTheme.mainBackgroundImagePath,
+        imagePath: settingsController.currentCardThemeManager.mainBackgroundImagePath,
         child:
         Scaffold(
           backgroundColor: Colors.transparent,

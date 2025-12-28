@@ -7,8 +7,7 @@ import 'package:logging/logging.dart';
 import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dart';
 
 import '../style/card_theme_manager/avatar_entity.dart';
-import '../style/card_theme_manager/goblin_card_theme_manager.dart';
-import '../style/card_theme_manager/weave_card_theme_manager.dart';
+import '../style/card_theme_manager/big_two_card_theme.dart';
 import 'persistence/local_storage_settings_persistence.dart';
 import 'persistence/settings_persistence.dart';
 
@@ -30,11 +29,14 @@ class SettingsController {
 
   ValueNotifier<bool> testModeOn = ValueNotifier(false);
 
-  /// 玩家的名稱。用於最高分列表等地方。
+  /// 玩家的名稱。
   ValueNotifier<String> playerName = ValueNotifier('Player');
 
   /// 玩家的頭像編號。
   ValueNotifier<int> playerAvatarNumber = ValueNotifier(0);
+
+  /// 當前選擇的卡片主題。
+  ValueNotifier<BigTwoCardTheme> currentCardTheme = ValueNotifier(BigTwoCardTheme.weaveDreamMiniature);
 
   /// 是否已完成初次使用者引導 (Onboarding)。
   ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
@@ -45,7 +47,11 @@ class SettingsController {
   /// 音樂是否開啟。
   ValueNotifier<bool> musicOn = ValueNotifier(true);
 
-  late final List<AvatarEntity> avatarList = currentCardTheme.avatars;
+  /// 取得當前主題的 Manager 實體
+  CardThemeManager get currentCardThemeManager => currentCardTheme.value.cardManager;
+
+  /// 取得當前主題的頭像列表
+  List<AvatarEntity> avatarList = [];
 
   /// 建立一個由 [store] 支援的 [SettingsController] 新實例。
   ///
@@ -54,10 +60,11 @@ class SettingsController {
   SettingsController({SettingsPersistence? store})
       : _store = store ?? LocalStorageSettingsPersistence() {
     _loadStateFromPersistence();
-  }
 
-  //CardThemeManager currentCardTheme = GoblinCardThemeManager();
-  CardThemeManager currentCardTheme = WeaveCardThemeManager();
+    avatarList = BigTwoCardTheme.values
+        .expand((e)=>e.cardManager.avatars)
+        .toList();
+  }
 
   void setPlayerName(String name) {
     playerName.value = name;
@@ -69,8 +76,24 @@ class SettingsController {
     _store.savePlayerAvatarNumber(playerAvatarNumber.value);
   }
 
+  void setCardTheme(BigTwoCardTheme theme) {
+    currentCardTheme.value = theme;
+    _store.saveCardTheme(theme.name);
+    // Ensure avatar number is valid for the new theme
+    if (playerAvatarNumber.value >= avatarList.length) {
+      setPlayerAvatarNumber(0);
+    }
+  }
+
   /// 取得當前頭像的完整路徑。
-  String get currentAvatarPath => avatarList[playerAvatarNumber.value].avatarImagePath;
+  String get currentAvatarPath {
+    final list = avatarList;
+    final index = playerAvatarNumber.value;
+    if (index >= 0 && index < list.length) {
+      return list[index].avatarImagePath;
+    }
+    return list.isNotEmpty ? list[0].avatarImagePath : '';
+  }
   
   void setHasCompletedOnboarding(bool value) {
     hasCompletedOnboarding.value = value;
@@ -113,6 +136,13 @@ class SettingsController {
       _store.getPlayerName().then((value) => playerName.value = value),
       _store.getPlayerAvatarNumber().then((value) => playerAvatarNumber.value = value),
       _store.getHasCompletedOnboarding().then((value) => hasCompletedOnboarding.value = value),
+      _store.getCardTheme().then((value) {
+        final theme = BigTwoCardTheme.values.firstWhere(
+          (e) => e.name == value,
+          orElse: () => BigTwoCardTheme.weaveDreamMiniature,
+        );
+        currentCardTheme.value = theme;
+      }),
     ]);
 
     _log.fine(() => 'Loaded settings: $loadedValues');

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:ok_multipl_poker/style/card_theme_manager/avatar_entity.dart';
 import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dart';
 
+import '../style/card_theme_manager/big_two_card_theme.dart';
 import '../style/card_theme_manager/goblin_card_theme_manager.dart';
 import 'settings.dart';
 
@@ -78,8 +79,20 @@ class FakeSettingsController implements SettingsController {
       'assets/images/goblin_cards/goblin_1_${playerAvatarNumber.value.toString().padLeft(3, '0')}.png';
 
   @override
-  CardThemeManager currentCardTheme = GoblinCardThemeManager();
+  ValueNotifier<BigTwoCardTheme> currentCardTheme = ValueNotifier(BigTwoCardTheme.weaveDreamMiniature);
 
   @override
-  List<AvatarEntity> get avatarList => [];
+  List<AvatarEntity> avatarList = [];
+
+  @override
+  CardThemeManager get currentCardThemeManager => currentCardTheme.value.cardManager;
+
+  @override
+  void setCardTheme(BigTwoCardTheme theme) {
+    currentCardTheme.value = theme;
+    // Ensure avatar number is valid for the new theme
+    if (playerAvatarNumber.value >= avatarList.length) {
+      setPlayerAvatarNumber(0);
+    }
+  }
 }

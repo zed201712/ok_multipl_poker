@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ok_multipl_poker/settings/avatar_selection_screen.dart';
+import 'package:ok_multipl_poker/style/card_theme_manager/big_two_card_theme.dart'
+   ;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -78,6 +80,52 @@ class SettingsScreen extends StatelessWidget {
             
             _gap,
             const _NameChangeLine('Name'),
+
+            // Card Theme Selection Row
+            ValueListenableBuilder<BigTwoCardTheme>(
+              valueListenable: settings.currentCardTheme,
+              builder: (context, theme, _) {
+                return Row(
+                  children: [
+                    const Text(
+                      'Theme',
+                      style: TextStyle(fontFamily: 'Permanent Marker', fontSize: 30),
+                    ),
+                    Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios),
+                          onPressed: () {
+                            settings.setCardTheme(theme.previous());
+                          },
+                        ),
+                        Container(
+                          width: 120, // Adjust size as needed
+                          height: 160,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white, width: 2),
+                            borderRadius: BorderRadius.circular(8),
+                            image: DecorationImage(
+                              image: AssetImage(theme.cardManager.themePreviewImagePath),
+                              fit: BoxFit.contain, // Or cover, depending on the asset aspect ratio
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward_ios),
+                          onPressed: () {
+                            settings.setCardTheme(theme.next());
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+
             ValueListenableBuilder<bool>(
               valueListenable: settings.soundsOn,
               builder: (context, soundsOn, child) => _SettingsLine(
@@ -121,20 +169,6 @@ class SettingsScreen extends StatelessWidget {
               ),
 
             ),
-            // Center(
-            //   child:
-            //   Container(
-            //     color: Colors.white,
-            //     child: QrImageView(
-            //           data: '123',
-            //           version: QrVersions.auto,
-            //           size: 200.0,
-            //           // embeddedImage: const AssetImage('assets/images/goblin_cards/goblin_1_009.png'),
-            //           embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(45, 60),
-            //         ),
-            //       ),
-            //   ),
-            // ),
             _gap,
           ],
         ),

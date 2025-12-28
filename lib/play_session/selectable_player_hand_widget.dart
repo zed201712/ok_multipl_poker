@@ -53,7 +53,7 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                         child: PlayingCardImageWidget(
                           card,
                           AssetImage(
-                            settingsController.currentCardTheme.getCardImagePath(card)
+                            settingsController.currentCardThemeManager.getCardImagePath(card)
                           ),
                           width: PlayingCardImageWidget.mediumWidth,
                           height: PlayingCardImageWidget.mediumHeight,

@@ -39,6 +39,12 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   }
 
   @override
+  Future<String> getCardTheme() async {
+    final prefs = await instanceFuture;
+    return prefs.getString('cardTheme') ?? 'weaveDreamMiniature';
+  }
+
+  @override
   Future<bool> getHasCompletedOnboarding() async {
     final prefs = await instanceFuture;
     return prefs.getBool('hasCompletedOnboarding') ?? false;
@@ -72,6 +78,12 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   Future<void> savePlayerAvatarNumber(int value) async {
     final prefs = await instanceFuture;
     await prefs.setInt('playerAvatarNumber', value);
+  }
+
+  @override
+  Future<void> saveCardTheme(String value) async {
+    final prefs = await instanceFuture;
+    await prefs.setString('cardTheme', value);
   }
 
   @override

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:ok_multipl_poker/style/card_theme_manager/big_two_card_theme.dart';
+
 import 'settings_persistence.dart';
 
 /// An in-memory implementation of [SettingsPersistence].
@@ -20,6 +22,8 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
 
   /// 是否已完成初次使用者引導 (Onboarding)。
   bool hasCompletedOnboarding = false;
+
+  BigTwoCardTheme cardTheme = BigTwoCardTheme.weaveDreamMiniature;
 
   @override
   Future<bool> getAudioOn({required bool defaultValue}) async => audioOn;
@@ -56,4 +60,15 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
 
   @override
   Future<void> saveHasCompletedOnboarding(bool value) async => hasCompletedOnboarding = value;
+
+  @override
+  Future<String> getCardTheme() async {
+    return cardTheme.name;
+  }
+
+  @override
+  Future<void> saveCardTheme(String value) async {
+    cardTheme = BigTwoCardTheme.values.firstWhere(
+      (e) => e.name == value);
+  }
 }

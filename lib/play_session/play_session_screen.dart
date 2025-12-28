@@ -59,7 +59,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
         ignoring: _duringCelebration,
         child:
           BackgroundImageWidget(
-              imagePath: settingsController.currentCardTheme.gameBackgroundImagePath,
+              imagePath: settingsController.currentCardThemeManager.gameBackgroundImagePath,
               child:
               Scaffold(
                 backgroundColor: Colors.transparent,

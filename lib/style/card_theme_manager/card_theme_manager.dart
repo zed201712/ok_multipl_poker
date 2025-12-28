@@ -6,5 +6,6 @@ abstract class CardThemeManager {
   String get mainBackgroundImagePath;
   String get gameBackgroundImagePath;
   String get cardBackImagePath;
+  String get themePreviewImagePath;
   String getCardImagePath(PlayingCard card);
 }
