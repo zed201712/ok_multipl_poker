@@ -8,6 +8,7 @@ import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dar
 
 import '../style/card_theme_manager/avatar_entity.dart';
 import '../style/card_theme_manager/goblin_card_theme_manager.dart';
+import '../style/card_theme_manager/weave_card_theme_manager.dart';
 import 'persistence/local_storage_settings_persistence.dart';
 import 'persistence/settings_persistence.dart';
 
@@ -44,7 +45,7 @@ class SettingsController {
   /// 音樂是否開啟。
   ValueNotifier<bool> musicOn = ValueNotifier(true);
 
-  final List<AvatarEntity> avatarList = GoblinCardThemeManager().avatars;
+  late final List<AvatarEntity> avatarList = currentCardTheme.avatars;
 
   /// 建立一個由 [store] 支援的 [SettingsController] 新實例。
   ///
@@ -55,7 +56,8 @@ class SettingsController {
     _loadStateFromPersistence();
   }
 
-  CardThemeManager currentCardTheme = GoblinCardThemeManager();
+  //CardThemeManager currentCardTheme = GoblinCardThemeManager();
+  CardThemeManager currentCardTheme = WeaveCardThemeManager();
 
   void setPlayerName(String name) {
     playerName.value = name;

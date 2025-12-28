@@ -48,6 +48,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/goblin_cards/
+    - assets/images/weave_cards/
     - assets/music/
     - assets/sfx/
 
