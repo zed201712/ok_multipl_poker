@@ -10,7 +10,7 @@ ParticipantInfo _$ParticipantInfoFromJson(Map<String, dynamic> json) =>
     ParticipantInfo(
       id: json['id'] as String,
       name: json['name'] as String,
-      avatarNumber: json['avatarNumber'] as String? ?? '1',
+      avatarNumber: (json['avatarNumber'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$ParticipantInfoToJson(ParticipantInfo instance) =>

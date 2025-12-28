@@ -38,7 +38,7 @@ class MainMenuScreen extends StatelessWidget {
     });
 
     return BackgroundImageWidget(
-        imagePath: 'assets/images/goblin_cards/goblin_bg_001.png',
+        imagePath: settingsController.currentCardTheme.mainBackgroundImagePath,
         child:
         Scaffold(
           backgroundColor: Colors.transparent,

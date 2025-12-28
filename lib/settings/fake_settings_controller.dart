@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:ok_multipl_poker/style/card_theme_manager/avatar_entity.dart';
+import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dart';
 
+import '../style/card_theme_manager/goblin_card_theme_manager.dart';
 import 'settings.dart';
 
 /// A fake implementation of [SettingsController] for testing purposes.
@@ -24,7 +27,7 @@ class FakeSettingsController implements SettingsController {
 
   /// 玩家的頭像編號。
   @override
-  ValueNotifier<String> playerAvatarNumber = ValueNotifier('1');
+  ValueNotifier<int> playerAvatarNumber = ValueNotifier(0);
 
   /// 是否已完成初次使用者引導 (Onboarding)。
   @override
@@ -65,12 +68,18 @@ class FakeSettingsController implements SettingsController {
   }
 
   @override
-  void setPlayerAvatarNumber(String number) {
+  void setPlayerAvatarNumber(int number) {
     playerAvatarNumber.value = number;
     // No persistence.
   }
   
   @override
   String get currentAvatarPath => 
-      'assets/images/goblin_cards/goblin_1_${playerAvatarNumber.value.padLeft(3, '0')}.png';
+      'assets/images/goblin_cards/goblin_1_${playerAvatarNumber.value.toString().padLeft(3, '0')}.png';
+
+  @override
+  CardThemeManager currentCardTheme = GoblinCardThemeManager();
+
+  @override
+  List<AvatarEntity> get avatarList => [];
 }

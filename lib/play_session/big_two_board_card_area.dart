@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../entities/big_two_state.dart';
 import '../game_internals/big_two_card_pattern.dart';
 import '../game_internals/playing_card.dart';
+import '../settings/settings.dart';
 
 class BigTwoBoardCardArea extends StatelessWidget {
   //final VoidCallback? onDiscardPileTap;
@@ -20,6 +21,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
     // 透過 Provider 取得 BigTwoState
     // 使用 watch 以便在狀態變更時重繪
     final bigTwoState = context.watch<BigTwoState>();
+    final settingsController = context.watch<SettingsController>();
 
     // final deckCards = bigTwoState.deckCards
     //     .map((c) => PlayingCard.fromString(c))
@@ -30,7 +32,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // 上層: Last Played Cards | Discard Pile
-        _firstLine(bigTwoState, context),
+        _firstLine(bigTwoState, context, settingsController),
 
         // 下層: Deck Cards
         if (deckCards.isNotEmpty)
@@ -38,14 +40,14 @@ class BigTwoBoardCardArea extends StatelessWidget {
             alignment: WrapAlignment.center,
             spacing: 5,
             runSpacing: 5,
-            children: deckCards.map(_buildCard).toList(),
+            children: deckCards.map((e) => _buildCard(e, settingsController)).toList(),
           ),
       ],
     );
 
   }
 
-  Widget _firstLine(BigTwoState bigTwoState, BuildContext context) {
+  Widget _firstLine(BigTwoState bigTwoState, BuildContext context, SettingsController settingsController) {
     // 解析 lastPlayedTitle (lockedHandType display name)
     String lastPlayedTitle = "";
     if (bigTwoState.lockedHandType.isNotEmpty) {
@@ -94,7 +96,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
                 width: PlayingCardImageWidget.smallWidth + 10,   // PlayingCardWidget.width 大約是 60 左右，可調整
                 height: PlayingCardImageWidget.smallHeight + 10, // PlayingCardWidget.height 大約是 90 左右
                 child: Image.asset(
-                  'assets/images/goblin_cards/goblin_1_001.png',
+                  settingsController.currentCardTheme.cardBackImagePath,
                   // 暫時使用一張現有圖片作為背面或代表
                   fit: BoxFit.contain,
                 ),
@@ -105,12 +107,12 @@ class BigTwoBoardCardArea extends StatelessWidget {
     );
   }
 
-  Widget _buildCard(PlayingCard card) {
+  Widget _buildCard(PlayingCard card, SettingsController settingsController) {
     // 這裡復用 PlayingCardImageWidget，與 TableCardWrapWidget 邏輯一致
     return PlayingCardImageWidget(
       card,
       AssetImage(
-        'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
+          settingsController.currentCardTheme.getCardImagePath(card),
       ),
       width: PlayingCardImageWidget.smallWidth,
       height: PlayingCardImageWidget.smallHeight,

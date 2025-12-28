@@ -38,7 +38,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       final hand = deck.sublist(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
       
       String name;
-      String avatarNumber;
+      int avatarNumber;
       if (isVirtual) {
         name = uid;
         avatarNumber = room.participants.first.avatarNumber;

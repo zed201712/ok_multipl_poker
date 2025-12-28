@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
+import 'package:provider/provider.dart';
 
+import '../settings/settings.dart';
 import 'playing_card_image_widget.dart';
 import 'playing_card_widget.dart';
 
@@ -14,6 +16,8 @@ class ShowOnlyCardAreaWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settingsController = context.watch<SettingsController>();
+
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: PlayingCardImageWidget.smallHeight + 10),
       child: Wrap(
@@ -24,7 +28,8 @@ class ShowOnlyCardAreaWidget extends StatelessWidget {
             PlayingCardImageWidget(
               card,
               AssetImage(
-                  'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png'),
+                settingsController.currentCardTheme.getCardImagePath(card)
+              ),
               width: PlayingCardImageWidget.smallWidth,
               height: PlayingCardImageWidget.smallHeight,
             ),

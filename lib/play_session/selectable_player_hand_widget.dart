@@ -4,6 +4,7 @@ import 'package:ok_multipl_poker/game_internals/card_player.dart';
 import 'package:ok_multipl_poker/play_session/playing_card_image_widget.dart';
 import 'package:provider/provider.dart';
 
+import '../settings/settings.dart';
 import 'playing_card_widget.dart';
 
 /// A widget that displays a player's hand and allows for card selection.
@@ -20,6 +21,7 @@ class SelectablePlayerHandWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final player = context.watch<CardPlayer>();
+    final settingsController = context.watch<SettingsController>();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -51,8 +53,7 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                         child: PlayingCardImageWidget(
                           card,
                           AssetImage(
-                            // 'assets/images/goblin_cards/goblin_1_001.png',
-                            'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png',
+                            settingsController.currentCardTheme.getCardImagePath(card)
                           ),
                           width: PlayingCardImageWidget.mediumWidth,
                           height: PlayingCardImageWidget.mediumHeight,

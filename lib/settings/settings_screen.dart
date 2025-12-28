@@ -50,7 +50,7 @@ class SettingsScreen extends StatelessWidget {
                 );
               },
               child: Center(
-                child: ValueListenableBuilder<String>(
+                child: ValueListenableBuilder<int>(
                   valueListenable: settings.playerAvatarNumber,
                   builder: (context, number, _) {
                     return Container(

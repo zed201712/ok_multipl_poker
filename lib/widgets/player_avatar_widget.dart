@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:ok_multipl_poker/settings/settings.dart';
+import 'package:provider/provider.dart';
 
 class PlayerAvatarWidget extends StatelessWidget {
-  final String avatarNumber;
+  final int avatarNumber;
   final double size;
 
   const PlayerAvatarWidget({
@@ -13,8 +15,8 @@ class PlayerAvatarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Basic validation or fallback logic
-    final validNumber = int.tryParse(avatarNumber) != null ? avatarNumber : '1';
-    final assetPath = 'assets/images/goblin_cards/goblin_1_${validNumber.padLeft(3, '0')}.png';
+    final settingsController = context.watch<SettingsController>();
+    final assetPath = settingsController.avatarList[avatarNumber].avatarImagePath;
 
     return Container(
       width: size,

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart' hide Level;
+import 'package:ok_multipl_poker/settings/settings.dart';
 import 'package:ok_multipl_poker/widgets/background_image_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -48,7 +49,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.watch<Palette>();
+    final settingsController = context.watch<SettingsController>();
 
     return MultiProvider(
       providers: [
@@ -58,7 +59,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
         ignoring: _duringCelebration,
         child:
           BackgroundImageWidget(
-              imagePath: 'assets/images/goblin_cards/goblin_bg_002.png',
+              imagePath: settingsController.currentCardTheme.gameBackgroundImagePath,
               child:
               Scaffold(
                 backgroundColor: Colors.transparent,

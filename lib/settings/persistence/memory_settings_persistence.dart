@@ -16,7 +16,7 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   String playerName = 'Player';
 
   /// 玩家的頭像編號。
-  String playerAvatarNumber = '1';
+  int playerAvatarNumber = 0;
 
   /// 是否已完成初次使用者引導 (Onboarding)。
   bool hasCompletedOnboarding = false;
@@ -34,7 +34,7 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   Future<bool> getSoundsOn({required bool defaultValue}) async => soundsOn;
 
   @override
-  Future<String> getPlayerAvatarNumber() async => playerAvatarNumber;
+  Future<int> getPlayerAvatarNumber() async => playerAvatarNumber;
 
   @override
   Future<bool> getHasCompletedOnboarding() async => hasCompletedOnboarding;
@@ -52,7 +52,7 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   Future<void> saveSoundsOn(bool value) async => soundsOn = value;
 
   @override
-  Future<void> savePlayerAvatarNumber(String value) async => playerAvatarNumber = value;
+  Future<void> savePlayerAvatarNumber(int value) async => playerAvatarNumber = value;
 
   @override
   Future<void> saveHasCompletedOnboarding(bool value) async => hasCompletedOnboarding = value;

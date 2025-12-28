@@ -4,7 +4,10 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
+import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dart';
 
+import '../style/card_theme_manager/avatar_entity.dart';
+import '../style/card_theme_manager/goblin_card_theme_manager.dart';
 import 'persistence/local_storage_settings_persistence.dart';
 import 'persistence/settings_persistence.dart';
 
@@ -30,7 +33,7 @@ class SettingsController {
   ValueNotifier<String> playerName = ValueNotifier('Player');
 
   /// 玩家的頭像編號。
-  ValueNotifier<String> playerAvatarNumber = ValueNotifier('1');
+  ValueNotifier<int> playerAvatarNumber = ValueNotifier(0);
 
   /// 是否已完成初次使用者引導 (Onboarding)。
   ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
@@ -41,6 +44,8 @@ class SettingsController {
   /// 音樂是否開啟。
   ValueNotifier<bool> musicOn = ValueNotifier(true);
 
+  final List<AvatarEntity> avatarList = GoblinCardThemeManager().avatars;
+
   /// 建立一個由 [store] 支援的 [SettingsController] 新實例。
   ///
   /// 預設情況下，設定會使用 [LocalStorageSettingsPersistence] 進行持久化
@@ -50,19 +55,20 @@ class SettingsController {
     _loadStateFromPersistence();
   }
 
+  CardThemeManager currentCardTheme = GoblinCardThemeManager();
+
   void setPlayerName(String name) {
     playerName.value = name;
     _store.savePlayerName(playerName.value);
   }
 
-  void setPlayerAvatarNumber(String number) {
+  void setPlayerAvatarNumber(int number) {
     playerAvatarNumber.value = number;
     _store.savePlayerAvatarNumber(playerAvatarNumber.value);
   }
 
   /// 取得當前頭像的完整路徑。
-  String get currentAvatarPath => 
-      'assets/images/goblin_cards/goblin_1_${playerAvatarNumber.value.padLeft(3, '0')}.png';
+  String get currentAvatarPath => avatarList[playerAvatarNumber.value].avatarImagePath;
   
   void setHasCompletedOnboarding(bool value) {
     hasCompletedOnboarding.value = value;
@@ -103,36 +109,7 @@ class SettingsController {
           .getMusicOn(defaultValue: true)
           .then((value) => musicOn.value = value),
       _store.getPlayerName().then((value) => playerName.value = value),
-      _store.getPlayerAvatarNumber().then((value) {
-        // Migration logic: if the value looks like a path (contains "assets/"), 
-        // try to parse the number or reset to default.
-        if (value.contains('assets/')) {
-           // Attempt to extract number from "goblin_1_XXX.png"
-           // This is a simple heuristic. If it fails, we fallback to '1'.
-           try {
-             final RegExp regex = RegExp(r'goblin_1_(\d{3})\.png');
-             final match = regex.firstMatch(value);
-             if (match != null) {
-               final numberStr = match.group(1)!;
-               final number = int.parse(numberStr).toString(); // remove leading zeros if any, or keep as string
-               // Since our setter pads left, we can just store the simple string "1", "5", etc.
-               // or keep "001". The current logic uses padLeft(3, '0') on the getter, 
-               // so storing "1" is fine.
-               playerAvatarNumber.value = int.parse(numberStr).toString();
-               // Save the migrated value
-               _store.savePlayerAvatarNumber(playerAvatarNumber.value);
-               return playerAvatarNumber.value;
-             }
-           } catch (e) {
-             _log.warning('Failed to migrate avatar path: $value, resetting to default.');
-           }
-           // Fallback default
-           playerAvatarNumber.value = '1';
-           _store.savePlayerAvatarNumber('1');
-           return '1';
-        }
-        return playerAvatarNumber.value = value;
-      }),
+      _store.getPlayerAvatarNumber().then((value) => playerAvatarNumber.value = value),
       _store.getHasCompletedOnboarding().then((value) => hasCompletedOnboarding.value = value),
     ]);
 

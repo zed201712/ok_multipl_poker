@@ -67,7 +67,7 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                   },
                   child: Column(
                     children: [
-                      ValueListenableBuilder<String>(
+                      ValueListenableBuilder<int>(
                         valueListenable: settings.playerAvatarNumber,
                         builder: (context, number, _) {
                           return Container(
