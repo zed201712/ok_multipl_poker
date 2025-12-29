@@ -23,7 +23,7 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   /// 是否已完成初次使用者引導 (Onboarding)。
   bool hasCompletedOnboarding = false;
 
-  BigTwoCardTheme cardTheme = BigTwoCardTheme.weaveDreamMiniature;
+  BigTwoCardTheme cardTheme = BigTwoCardTheme.weaveZoo;
 
   @override
   Future<bool> getAudioOn({required bool defaultValue}) async => audioOn;

@@ -1,20 +1,20 @@
 import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dart';
 import 'package:ok_multipl_poker/style/card_theme_manager/goblin_card_theme_manager.dart';
-import 'package:ok_multipl_poker/style/card_theme_manager/weave_card_theme_manager.dart';
+import 'package:ok_multipl_poker/style/card_theme_manager/weave_zoo_card_theme_manager.dart';
 
 enum BigTwoCardTheme {
-  weaveDreamMiniature,
+  weaveZoo,
   goblin;
 
   // Use static final instances to avoid overhead of creating managers (and their avatar lists) repeatedly.
   static final _goblinManager = GoblinCardThemeManager();
-  static final _weaveManager = WeaveCardThemeManager();
+  static final _weaveManager = WeaveZooCardThemeManager();
 
   CardThemeManager get cardManager {
     switch (this) {
       case BigTwoCardTheme.goblin:
         return _goblinManager;
-      case BigTwoCardTheme.weaveDreamMiniature:
+      case BigTwoCardTheme.weaveZoo:
         return _weaveManager;
     }
   }

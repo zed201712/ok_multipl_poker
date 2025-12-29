@@ -36,7 +36,7 @@ class SettingsController {
   ValueNotifier<int> playerAvatarNumber = ValueNotifier(0);
 
   /// 當前選擇的卡片主題。
-  ValueNotifier<BigTwoCardTheme> currentCardTheme = ValueNotifier(BigTwoCardTheme.weaveDreamMiniature);
+  ValueNotifier<BigTwoCardTheme> currentCardTheme = ValueNotifier(BigTwoCardTheme.weaveZoo);
 
   /// 是否已完成初次使用者引導 (Onboarding)。
   ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
@@ -139,7 +139,7 @@ class SettingsController {
       _store.getCardTheme().then((value) {
         final theme = BigTwoCardTheme.values.firstWhere(
           (e) => e.name == value,
-          orElse: () => BigTwoCardTheme.weaveDreamMiniature,
+          orElse: () => BigTwoCardTheme.weaveZoo,
         );
         currentCardTheme.value = theme;
       }),

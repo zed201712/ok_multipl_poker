@@ -79,7 +79,7 @@ class FakeSettingsController implements SettingsController {
       'assets/images/goblin_cards/goblin_1_${playerAvatarNumber.value.toString().padLeft(3, '0')}.png';
 
   @override
-  ValueNotifier<BigTwoCardTheme> currentCardTheme = ValueNotifier(BigTwoCardTheme.weaveDreamMiniature);
+  ValueNotifier<BigTwoCardTheme> currentCardTheme = ValueNotifier(BigTwoCardTheme.weaveZoo);
 
   @override
   List<AvatarEntity> avatarList = [];
