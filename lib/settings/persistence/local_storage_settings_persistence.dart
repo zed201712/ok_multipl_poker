@@ -41,7 +41,13 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   @override
   Future<String> getCardTheme() async {
     final prefs = await instanceFuture;
-    return prefs.getString('cardTheme') ?? 'weaveDreamMiniature';
+    try {
+      return prefs.getString('cardTheme') ?? 'weaveDreamMiniature';
+    }
+    catch (e) {
+      print("getCardTheme error $e");
+      return 'weaveDreamMiniature';
+    }
   }
 
   @override
