@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ok_multipl_poker/settings/avatar_selection_screen.dart';
@@ -33,10 +34,10 @@ class SettingsScreen extends StatelessWidget {
         squarishMainArea: ListView(
           children: [
             _gap,
-            const Text(
-              'Settings',
+            Text(
+              'settings'.tr(),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Permanent Marker',
                 fontSize: 55,
                 height: 1,
@@ -71,15 +72,68 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.only(top: 8.0),
-                child: Text('Tap to change avatar'),
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text('tap_to_change_avatar'.tr()),
               ),
             ),
             
             _gap,
             const _NameChangeLine('Name'),
+
+            // Language Selection Row
+            ValueListenableBuilder<Locale>(
+              valueListenable: settings.currentLocale,
+              builder: (context, locale, _) {
+                String displayName;
+                if (locale.languageCode == 'zh') {
+                  displayName = '繁體中文';
+                } else if (locale.languageCode == 'ja') {
+                  displayName = '日本語';
+                } else {
+                  displayName = 'English';
+                }
+
+                return Row(
+                  children: [
+                    Text(
+                      'language'.tr(),
+                      style: const TextStyle(fontFamily: 'Permanent Marker', fontSize: 30),
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios),
+                          onPressed: () {
+                             settings.cycleLanguage(context);
+                          },
+                        ),
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            displayName,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Permanent Marker',
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward_ios),
+                          onPressed: () {
+                             settings.cycleLanguage(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
 
             // Card Theme Selection Row
             ValueListenableBuilder<BigTwoCardTheme>(
@@ -87,11 +141,11 @@ class SettingsScreen extends StatelessWidget {
               builder: (context, theme, _) {
                 return Row(
                   children: [
-                    const Text(
-                      'Theme',
-                      style: TextStyle(fontFamily: 'Permanent Marker', fontSize: 30),
+                    Text(
+                      'theme'.tr(),
+                      style: const TextStyle(fontFamily: 'Permanent Marker', fontSize: 30),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -129,7 +183,7 @@ class SettingsScreen extends StatelessWidget {
             ValueListenableBuilder<bool>(
               valueListenable: settings.soundsOn,
               builder: (context, soundsOn, child) => _SettingsLine(
-                'Sound FX',
+                'sound'.tr(),
                 Icon(soundsOn ? Icons.graphic_eq : Icons.volume_off),
                 onSelected: () => settings.toggleSoundsOn(),
               ),
@@ -137,21 +191,21 @@ class SettingsScreen extends StatelessWidget {
             ValueListenableBuilder<bool>(
               valueListenable: settings.musicOn,
               builder: (context, musicOn, child) => _SettingsLine(
-                'Music',
+                'music'.tr(),
                 Icon(musicOn ? Icons.music_note : Icons.music_off),
                 onSelected: () => settings.toggleMusicOn(),
               ),
             ),
             _SettingsLine(
-              'Reset progress',
+              'reset_progress'.tr(),
               const Icon(Icons.delete),
               onSelected: () {
                 context.read<PlayerProgress>().reset();
 
                 final messenger = ScaffoldMessenger.of(context);
                 messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Player progress has been reset.'),
+                  SnackBar(
+                    content: Text('progress_reset_message'.tr()),
                   ),
                 );
               },
@@ -159,7 +213,7 @@ class SettingsScreen extends StatelessWidget {
             _gap,
 
             // QR Code Display
-            Center(
+            const Center(
               child:
               Image(
                 image: AssetImage(
@@ -176,7 +230,7 @@ class SettingsScreen extends StatelessWidget {
           onPressed: () {
             GoRouter.of(context).pop();
           },
-          child: const Text('Back'),
+          child: Text('back'.tr()),
         ),
       ),
     );

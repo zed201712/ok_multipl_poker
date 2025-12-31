@@ -5,6 +5,7 @@
 import 'dart:developer' as dev;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
@@ -36,6 +37,8 @@ void main() async {
   });
 
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+
   // Put game into full screen mode on mobile devices.
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   // Lock the game to portrait mode on mobile devices.
@@ -46,9 +49,24 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await FirebaseAuth.instance.signInAnonymously();
+  // await FirebaseAuth.instance.signInAnonymously();
+  // runApp(
+  //   Provider<FirebaseFirestore>.value(value: FirebaseFirestore.instance, child: const MyApp()),
+  // );
   runApp(
-    Provider<FirebaseFirestore>.value(value: FirebaseFirestore.instance, child: const MyApp()),
+    EasyLocalization(
+      supportedLocales: const [
+        Locale('en'),
+        Locale('zh', 'TW'),
+        Locale('ja'),
+      ],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('en'),
+      child: Provider<FirebaseFirestore>.value(
+        value: FakeFirebaseFirestore(),
+        child: const MyApp(),
+      ), //TODO
+    ),
   );
 }
 
@@ -66,7 +84,8 @@ class MyApp extends StatelessWidget {
         // `context.watch()` or `context.read()`.
         // See `lib/main_menu/main_menu_screen.dart` for example usage.
         providers: [
-          Provider<FirebaseAuth>(create: (context) => FirebaseAuth.instance),
+          //Provider<FirebaseAuth>(create: (context) => FirebaseAuth.instance),
+          Provider<FirebaseAuth>(create: (context) => MockFirebaseAuth(signedIn: true)),//TODO
           Provider(create: (context) => SettingsController()),
           Provider(create: (context) => Palette()),
           ChangeNotifierProvider(create: (context) => PlayerProgress()),
@@ -92,6 +111,9 @@ class MyApp extends StatelessWidget {
 
             return MaterialApp.router(
               title: 'Big Two',
+              localizationsDelegates: context.localizationDelegates,
+              supportedLocales: context.supportedLocales,
+              locale: context.locale,
               theme:
                   ThemeData.from(
                     colorScheme: ColorScheme.fromSeed(

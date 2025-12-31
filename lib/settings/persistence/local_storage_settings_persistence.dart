@@ -51,6 +51,12 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   }
 
   @override
+  Future<String> getLocale({required String defaultValue}) async {
+    final prefs = await instanceFuture;
+    return prefs.getString('locale') ?? defaultValue;
+  }
+
+  @override
   Future<bool> getHasCompletedOnboarding() async {
     final prefs = await instanceFuture;
     return prefs.getBool('hasCompletedOnboarding') ?? false;
@@ -90,6 +96,12 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   Future<void> saveCardTheme(String value) async {
     final prefs = await instanceFuture;
     await prefs.setString('cardTheme', value);
+  }
+
+  @override
+  Future<void> saveLocale(String value) async {
+    final prefs = await instanceFuture;
+    await prefs.setString('locale', value);
   }
 
   @override

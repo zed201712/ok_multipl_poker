@@ -1,0 +1,14 @@
+{
+  "play": "プレイ",
+  "settings": "設定",
+  "music": "音楽",
+  "sound": "効果音",
+  "matching": "マッチング中...",
+  "ready": "準備完了",
+  "theme": "テーマ",
+  "language": "言語",
+  "reset_progress": "進行状況をリセット",
+  "progress_reset_message": "プレイヤーの進行状況がリセットされました。",
+  "tap_to_change_avatar": "タップしてアバターを変更",
+  "back": "戻る"
+}

@@ -12,6 +12,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   async: ^2.11.0
   audioplayers: ^6.0.0
@@ -29,6 +31,7 @@ dependencies:
   shared_preferences: ^2.2.3
   uuid: 4.5.2
   qr_flutter: 4.1.0
+  easy_localization: ^3.0.7
 
   json_annotation: 4.9.0
 
@@ -51,6 +54,7 @@ flutter:
     - assets/images/zoo_cards/
     - assets/music/
     - assets/sfx/
+    - assets/translations/
 
   fonts:
     - family: Permanent Marker

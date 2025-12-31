@@ -48,7 +48,7 @@ class FirestoreBigTwoController {
   }
 
   void _initTestModeAIs(FirebaseFirestore firestore, SettingsController settingsController) {
-    for (int i = 1; i <= 3; i++) {
+    for (int i = 1; i <= 2; i++) {
       final mockAuth = MockFirebaseAuth(
         signedIn: true, 
         mockUser: MockUser(

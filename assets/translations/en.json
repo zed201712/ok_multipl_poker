@@ -1,0 +1,16 @@
+{
+  "play": "Play",
+  "settings": "Settings",
+  "music": "Music",
+  "sound": "Sound",
+  "matching": "Matching...",
+  "ready": "Ready to start",
+  "start": "Start",
+  "match_room": "Match Room",
+  "theme": "Theme",
+  "language": "Language",
+  "reset_progress": "Reset progress",
+  "progress_reset_message": "Player progress has been reset.",
+  "tap_to_change_avatar": "Tap to change avatar",
+  "back": "Back"
+}

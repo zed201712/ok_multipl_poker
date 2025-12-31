@@ -2,7 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dart';
 
@@ -27,7 +29,7 @@ class SettingsController {
   /// [musicOn] 偏好設定。
   ValueNotifier<bool> audioOn = ValueNotifier(true);
 
-  ValueNotifier<bool> testModeOn = ValueNotifier(false);
+  ValueNotifier<bool> testModeOn = ValueNotifier(true);//TODO
 
   /// 玩家的名稱。
   ValueNotifier<String> playerName = ValueNotifier('Player');
@@ -46,6 +48,16 @@ class SettingsController {
 
   /// 音樂是否開啟。
   ValueNotifier<bool> musicOn = ValueNotifier(true);
+
+  /// 當前語言。
+  ValueNotifier<Locale> currentLocale = ValueNotifier(const Locale('en'));
+
+  /// 支援的語言列表 (對應 main.dart 中的設定)
+  static const List<Locale> supportedLocales = [
+    Locale('en'),
+    Locale('zh', 'TW'),
+    Locale('ja'),
+  ];
 
   /// 取得當前主題的 Manager 實體
   CardThemeManager get currentCardThemeManager => currentCardTheme.value.cardManager;
@@ -114,6 +126,27 @@ class SettingsController {
     soundsOn.value = !soundsOn.value;
     _store.saveSoundsOn(soundsOn.value);
   }
+  
+  /// 切換到下一個語言
+  void cycleLanguage(BuildContext context) {
+    int currentIndex = supportedLocales.indexWhere(
+            (element) => element.languageCode == currentLocale.value.languageCode);
+    
+    // 如果找不到 (比如第一次執行)，預設從 0 開始
+    if (currentIndex == -1) currentIndex = 0;
+
+    int nextIndex = (currentIndex + 1) % supportedLocales.length;
+    final nextLocale = supportedLocales[nextIndex];
+    
+    // 更新 ValueNotifier
+    currentLocale.value = nextLocale;
+    
+    // 更新 Context (EasyLocalization)
+    context.setLocale(nextLocale);
+    
+    // 儲存到 Persistence
+    _store.saveLocale(nextLocale.toString());
+  }
 
   /// 從注入的持久化儲存中非同步載入數值。
   Future<void> _loadStateFromPersistence() async {
@@ -142,6 +175,23 @@ class SettingsController {
           orElse: () => BigTwoCardTheme.weaveZoo,
         );
         currentCardTheme.value = theme;
+      }),
+      _store.getLocale(defaultValue: 'en').then((value) {
+        // 解析 locale string, 簡單實作: 若包含 '_' 則拆分，否則視為 languageCode
+        Locale locale;
+        if (value.contains('_')) {
+           final parts = value.split('_');
+           locale = Locale(parts[0], parts[1]);
+        } else {
+           locale = Locale(value);
+        }
+        
+        // 檢查是否為支援的語言，若否則退回預設
+        if (!supportedLocales.any((element) => element.languageCode == locale.languageCode)) {
+           locale = const Locale('en');
+        }
+        
+        currentLocale.value = locale;
       }),
     ]);
 

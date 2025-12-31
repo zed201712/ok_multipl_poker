@@ -16,6 +16,8 @@ abstract class SettingsPersistence {
   Future<int> getPlayerAvatarNumber();
   
   Future<String> getCardTheme();
+  
+  Future<String> getLocale({required String defaultValue});
 
   Future<bool> getHasCompletedOnboarding();
 
@@ -30,6 +32,8 @@ abstract class SettingsPersistence {
   Future<void> savePlayerAvatarNumber(int value);
   
   Future<void> saveCardTheme(String value);
+
+  Future<void> saveLocale(String value);
 
   Future<void> saveHasCompletedOnboarding(bool value);
 

@@ -24,6 +24,8 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   bool hasCompletedOnboarding = false;
 
   BigTwoCardTheme cardTheme = BigTwoCardTheme.weaveZoo;
+  
+  String locale = 'en';
 
   @override
   Future<bool> getAudioOn({required bool defaultValue}) async => audioOn;
@@ -71,4 +73,10 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
     cardTheme = BigTwoCardTheme.values.firstWhere(
       (e) => e.name == value);
   }
+
+  @override
+  Future<String> getLocale({required String defaultValue}) async => locale;
+
+  @override
+  Future<void> saveLocale(String value) async => locale = value;
 }

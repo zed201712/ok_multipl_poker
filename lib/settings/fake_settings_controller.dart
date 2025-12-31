@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/style/card_theme_manager/avatar_entity.dart';
 import 'package:ok_multipl_poker/style/card_theme_manager/card_theme_manager.dart';
 
@@ -33,6 +34,9 @@ class FakeSettingsController implements SettingsController {
   /// 是否已完成初次使用者引導 (Onboarding)。
   @override
   ValueNotifier<bool> hasCompletedOnboarding = ValueNotifier(false);
+
+  @override
+  ValueNotifier<Locale> currentLocale = ValueNotifier(const Locale('en'));
 
   // The original `_store` is private and not part of the public interface,
   // so we don't need to (and can't) implement it here.
@@ -72,6 +76,19 @@ class FakeSettingsController implements SettingsController {
   void setPlayerAvatarNumber(int number) {
     playerAvatarNumber.value = number;
     // No persistence.
+  }
+
+  @override
+  void cycleLanguage(BuildContext context) {
+    int currentIndex = SettingsController.supportedLocales.indexWhere(
+            (element) => element.languageCode == currentLocale.value.languageCode);
+
+    if (currentIndex == -1) currentIndex = 0;
+
+    int nextIndex = (currentIndex + 1) % SettingsController.supportedLocales.length;
+    final nextLocale = SettingsController.supportedLocales[nextIndex];
+
+    currentLocale.value = nextLocale;
   }
   
   @override

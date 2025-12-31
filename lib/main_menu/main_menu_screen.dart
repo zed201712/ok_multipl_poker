@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ok_multipl_poker/settings/onboarding_sheet.dart';
@@ -70,13 +71,13 @@ class MainMenuScreen extends StatelessWidget {
                             audioController.playSfx(SfxType.buttonTap);
                             GoRouter.of(context).go('/play');
                           },
-                          child: const Text('Play'),
+                          child: Text('play'.tr()),
                         ),
                         _gap,
                         MyButton(
                           onPressed: () =>
                               GoRouter.of(context).push('/settings'),
-                          child: const Text('Settings'),
+                          child: Text('settings'.tr()),
                         ),
                         _gap,
                         Padding(
