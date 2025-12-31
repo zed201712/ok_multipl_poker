@@ -48,7 +48,7 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Welcome, Goblin!',
+                'Welcome!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Permanent Marker',
