@@ -60,7 +60,7 @@ class PlayingCardImageWidget extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(1, 0, 0, 0),
               child: Text(
-                '${card.suit.asCharacter} ${card.value}',
+                '$card',
                 textAlign: TextAlign.center,
               ),
             ),
