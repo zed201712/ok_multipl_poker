@@ -105,7 +105,7 @@ class SettingsScreen extends StatelessWidget {
                         SizedBox(
                           width: 120,
                           child: Text(
-                            _getLanguageDisplayName(locale),
+                            _getLanguageDisplayName(context.locale),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: 'Permanent Marker',

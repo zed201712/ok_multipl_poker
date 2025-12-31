@@ -21,5 +21,12 @@
     "fullHouse": "フルハウス",
     "fourOfAKind": "フォーカード",
     "straightFlush": "ストレートフラッシュ"
-  }
+  },
+  "leave": "退出",
+  "pass": "パス",
+  "cancel": "キャンセル",
+  "play_action": "出す",
+  "welcome": "ようこそ!",
+  "your_name": "あなたの名前",
+  "lets_play": "遊ぼう!"
 }

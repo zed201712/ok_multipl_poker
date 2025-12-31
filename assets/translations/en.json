@@ -21,5 +21,12 @@
     "fullHouse": "Full House",
     "fourOfAKind": "Four of a Kind",
     "straightFlush": "Straight Flush"
-  }
+  },
+  "leave": "Leave",
+  "pass": "Pass",
+  "cancel": "Cancel",
+  "play_action": "Play",
+  "welcome": "Welcome!",
+  "your_name": "Your Name",
+  "lets_play": "Let's Play!"
 }

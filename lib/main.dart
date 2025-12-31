@@ -49,10 +49,7 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // await FirebaseAuth.instance.signInAnonymously();
-  // runApp(
-  //   Provider<FirebaseFirestore>.value(value: FirebaseFirestore.instance, child: const MyApp()),
-  // );
+  await FirebaseAuth.instance.signInAnonymously();
   runApp(
     EasyLocalization(
       supportedLocales: const [
@@ -62,10 +59,9 @@ void main() async {
       ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
-      child: Provider<FirebaseFirestore>.value(
-        value: FakeFirebaseFirestore(),
-        child: const MyApp(),
-      ), //TODO
+      child:
+      Provider<FirebaseFirestore>.value(value: FirebaseFirestore.instance, child: const MyApp()),
+      //Provider<FirebaseFirestore>.value(value: FakeFirebaseFirestore(), child: const MyApp()), //TODO
     ),
   );
 }
@@ -84,8 +80,8 @@ class MyApp extends StatelessWidget {
         // `context.watch()` or `context.read()`.
         // See `lib/main_menu/main_menu_screen.dart` for example usage.
         providers: [
-          //Provider<FirebaseAuth>(create: (context) => FirebaseAuth.instance),
-          Provider<FirebaseAuth>(create: (context) => MockFirebaseAuth(signedIn: true)),//TODO
+          Provider<FirebaseAuth>(create: (context) => FirebaseAuth.instance),
+          //Provider<FirebaseAuth>(create: (context) => MockFirebaseAuth(signedIn: true)),//TODO
           Provider(create: (context) => SettingsController()),
           Provider(create: (context) => Palette()),
           ChangeNotifierProvider(create: (context) => PlayerProgress()),

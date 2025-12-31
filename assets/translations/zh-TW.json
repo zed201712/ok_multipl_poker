@@ -21,5 +21,12 @@
     "fullHouse": "葫蘆",
     "fourOfAKind": "鐵支",
     "straightFlush": "同花順"
-  }
+  },
+  "leave": "離開",
+  "pass": "跳過",
+  "cancel": "取消",
+  "play_action": "出牌",
+  "welcome": "歡迎!",
+  "your_name": "你的名字",
+  "lets_play": "開始玩吧!"
 }

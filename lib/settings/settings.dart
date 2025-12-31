@@ -29,7 +29,7 @@ class SettingsController {
   /// [musicOn] 偏好設定。
   ValueNotifier<bool> audioOn = ValueNotifier(true);
 
-  ValueNotifier<bool> testModeOn = ValueNotifier(true);//TODO
+  ValueNotifier<bool> testModeOn = ValueNotifier(false);
 
   /// 玩家的名稱。
   ValueNotifier<String> playerName = ValueNotifier('Player');
@@ -130,7 +130,7 @@ class SettingsController {
   /// 切換到下一個語言
   void cycleLanguage(BuildContext context) {
     int currentIndex = supportedLocales.indexWhere(
-            (element) => element.languageCode == currentLocale.value.languageCode);
+            (element) => element.languageCode == context.locale.languageCode);
     
     // 如果找不到 (比如第一次執行)，預設從 0 開始
     if (currentIndex == -1) currentIndex = 0;

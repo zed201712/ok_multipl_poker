@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ok_multipl_poker/settings/avatar_selection_screen.dart';
@@ -47,10 +48,10 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Welcome!',
+              Text(
+                'welcome'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Permanent Marker',
                   fontSize: 35,
                 ),
@@ -85,7 +86,7 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      const Text('Tap to change avatar'),
+                      Text('tap_to_change_avatar'.tr()),
                     ],
                   ),
                 ),
@@ -96,9 +97,9 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
               // Name Input
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Your Name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'your_name'.tr(),
+                  border: const OutlineInputBorder(),
                 ),
                 onChanged: (value) {
                   settings.setPlayerName(value);
@@ -116,9 +117,9 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text(
-                  "Let's Play!",
-                  style: TextStyle(fontSize: 20, fontFamily: 'Permanent Marker'),
+                child: Text(
+                  "lets_play".tr(),
+                  style: const TextStyle(fontSize: 20, fontFamily: 'Permanent Marker'),
                 ),
               ),
               const SizedBox(height: 20),

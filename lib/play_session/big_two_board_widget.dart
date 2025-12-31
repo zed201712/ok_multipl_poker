@@ -393,7 +393,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
         _gameController.leaveRoom();
         GoRouter.of(context).go('/');
       },
-      child: Text('Leave', style: TextStyle(color: Palette().ink)),
+      child: Text('leave'.tr(), style: TextStyle(color: Palette().ink)),
     );
   }
 
@@ -471,7 +471,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 _gameController.passTurn();
               }
                   : null,
-              child: const Text('Pass'),
+              child: Text('pass'.tr()),
             ),
 
             const SizedBox(width: 40),
@@ -483,7 +483,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 player.setCardSelection([]);
               }
                   : null,
-              child: const Text('Cancel'),
+              child: Text('cancel'.tr()),
             ),
 
             const SizedBox(width: 20),
@@ -498,7 +498,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 }
               }
                   : null,
-              child: const Text('Play'),
+              child: Text('play_action'.tr()),
             ),
           ],
         );
