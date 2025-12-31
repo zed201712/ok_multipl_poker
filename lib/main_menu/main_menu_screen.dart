@@ -39,72 +39,76 @@ class MainMenuScreen extends StatelessWidget {
        }
     });
 
-    return
-      ValueListenableBuilder<BigTwoCardTheme>(
-          valueListenable: settingsController.currentCardTheme,
-          builder: (context, themeManager, child) {
-            return BackgroundImageWidget(
-                imagePath: themeManager.cardManager.mainBackgroundImagePath,
-                child:
-                Scaffold(
-                  backgroundColor: Colors.transparent,
-                  body: ResponsiveScreen(
-                    squarishMainArea: Center(
-                      child: Transform.rotate(
-                        angle: -0.1,
-                        child: const Text(
-                          'BigTwo!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Permanent Marker',
-                            fontSize: 55,
-                            height: 1,
+    return ValueListenableBuilder<Locale>(
+      valueListenable: settingsController.currentLocale,
+      builder: (context, locale, child) {
+        return ValueListenableBuilder<BigTwoCardTheme>(
+            valueListenable: settingsController.currentCardTheme,
+            builder: (context, themeManager, child) {
+              return BackgroundImageWidget(
+                  imagePath: themeManager.cardManager.mainBackgroundImagePath,
+                  child:
+                  Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: ResponsiveScreen(
+                      squarishMainArea: Center(
+                        child: Transform.rotate(
+                          angle: -0.1,
+                          child: const Text(
+                            'BigTwo!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Permanent Marker',
+                              fontSize: 55,
+                              height: 1,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    rectangularMenuArea: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        MyButton(
-                          onPressed: () {
-                            audioController.playSfx(SfxType.buttonTap);
-                            GoRouter.of(context).go('/play');
-                          },
-                          child: Text('play'.tr()),
-                        ),
-                        _gap,
-                        MyButton(
-                          onPressed: () =>
-                              GoRouter.of(context).push('/settings'),
-                          child: Text('settings'.tr()),
-                        ),
-                        _gap,
-                        Padding(
-                          padding: const EdgeInsets.only(top: 32),
-                          child: ValueListenableBuilder<bool>(
-                            valueListenable: settingsController.audioOn,
-                            builder: (context, audioOn, child) {
-                              return IconButton(
-                                onPressed: () =>
-                                    settingsController.toggleAudioOn(),
-                                icon: Icon(
-                                    audioOn ? Icons.volume_up : Icons
-                                        .volume_off),
-                              );
+                      rectangularMenuArea: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          MyButton(
+                            onPressed: () {
+                              audioController.playSfx(SfxType.buttonTap);
+                              GoRouter.of(context).go('/play');
                             },
+                            child: Text('play'.tr()),
                           ),
-                        ),
-                        _gap,
-                        const Text('Music by Mr Smith'),
-                        _gap,
-                      ],
+                          _gap,
+                          MyButton(
+                            onPressed: () =>
+                                GoRouter.of(context).push('/settings'),
+                            child: Text('settings'.tr()),
+                          ),
+                          _gap,
+                          Padding(
+                            padding: const EdgeInsets.only(top: 32),
+                            child: ValueListenableBuilder<bool>(
+                              valueListenable: settingsController.audioOn,
+                              builder: (context, audioOn, child) {
+                                return IconButton(
+                                  onPressed: () =>
+                                      settingsController.toggleAudioOn(),
+                                  icon: Icon(
+                                      audioOn ? Icons.volume_up : Icons
+                                          .volume_off),
+                                );
+                              },
+                            ),
+                          ),
+                          _gap,
+                          const Text('Music by Mr Smith'),
+                          _gap,
+                        ],
+                      ),
                     ),
-                  ),
-                )
-            );
-          }
-      );
+                  )
+              );
+            }
+        );
+      },
+    );
   }
 
   static const _gap = SizedBox(height: 10);
