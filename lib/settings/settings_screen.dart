@@ -96,12 +96,12 @@ class SettingsScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back_ios),
-                          onPressed: () {
-                             settings.cycleLanguage(context);
-                          },
-                        ),
+                        // IconButton(
+                        //   icon: const Icon(Icons.arrow_back_ios),
+                        //   onPressed: () {
+                        //      settings.cycleLanguage(context);
+                        //   },
+                        // ),
                         SizedBox(
                           width: 120,
                           child: Text(
