@@ -1,7 +1,7 @@
 根據 @firestore_message_controller_spec.md 生成程式碼
 _____
 
-用 @big_two_delegate_spec_012.md 的風格, 寫1個spec
+用 @big_two_delegate_spec_012.md 的風格, 寫1個spec, 建立spec檔案
 | **任務 ID (Task ID)** | `FEAT-BIG-TWO-Board-Card_Area-001` |
 | **創建日期 (Date)** | `2025/12/25` |
 

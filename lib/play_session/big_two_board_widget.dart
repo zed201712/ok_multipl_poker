@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -136,19 +137,19 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
-                    Text('Matching...\nPlayers: ${_gameController.participantCount()}')
+                    Text('${'matching'.tr()}\nPlayers: ${_gameController.participantCount()}')
                   else
-                    const Text('Ready to start'),
+                    Text('ready'.tr()),
                   if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
                     ElevatedButton(
                       onPressed: _onStartGame,
-                      child: const Text('Start'),
+                      child: Text('start'.tr()),
                     ),
                   const SizedBox(height: 20),
                   if (!_isMatching && gameState == null)
                     ElevatedButton(
                       onPressed: _onMatchRoom,
-                      child: const Text('Match Room'),
+                      child: Text('match_room'.tr()),
                     ),
 
                   const SizedBox(height: 20),
@@ -182,7 +183,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                      _player.setCardSelection(nextSelection);
                    }
                 } : null,
-                child: Text(pattern.displayName),
+                child: Text('patterns.${pattern.name}'.tr()),
               ),
             );
           }).toList();
@@ -261,7 +262,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      "YOUR TURN",
+                                      "your_turn".tr(),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: isMyTurn ? Colors.black : Colors.transparent,

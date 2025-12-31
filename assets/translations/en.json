@@ -12,5 +12,14 @@
   "reset_progress": "Reset progress",
   "progress_reset_message": "Player progress has been reset.",
   "tap_to_change_avatar": "Tap to change avatar",
-  "back": "Back"
+  "back": "Back",
+  "your_turn": "YOUR TURN",
+  "patterns": {
+    "single": "Single",
+    "pair": "Pair",
+    "straight": "Straight",
+    "fullHouse": "Full House",
+    "fourOfAKind": "Four of a Kind",
+    "straightFlush": "Straight Flush"
+  }
 }

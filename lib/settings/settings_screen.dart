@@ -28,74 +28,65 @@ class SettingsScreen extends StatelessWidget {
     final settings = context.watch<SettingsController>();
     final palette = context.watch<Palette>();
 
-    return Scaffold(
-      backgroundColor: palette.backgroundSettings,
-      body: ResponsiveScreen(
-        squarishMainArea: ListView(
-          children: [
-            _gap,
-            Text(
-              'settings'.tr(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Permanent Marker',
-                fontSize: 55,
-                height: 1,
-              ),
-            ),
-            _gap,
-            
-            // Avatar Selection Row
-            InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const AvatarSelectionScreen())
-                );
-              },
-              child: Center(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: settings.playerAvatarNumber,
-                  builder: (context, number, _) {
-                    return Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        image: DecorationImage(
-                          image: AssetImage(settings.currentAvatarPath),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+    return ValueListenableBuilder<Locale>(
+      valueListenable: settings.currentLocale,
+      builder: (context, locale, child) {
+        return Scaffold(
+          backgroundColor: palette.backgroundSettings,
+          body: ResponsiveScreen(
+            squarishMainArea: ListView(
+              children: [
+                _gap,
+                Text(
+                  'settings'.tr(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'Permanent Marker',
+                    fontSize: 55,
+                    height: 1,
+                  ),
+                ),
+                _gap,
+                
+                // Avatar Selection Row
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const AvatarSelectionScreen())
                     );
                   },
+                  child: Center(
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: settings.playerAvatarNumber,
+                      builder: (context, number, _) {
+                        return Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            image: DecorationImage(
+                              image: AssetImage(settings.currentAvatarPath),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text('tap_to_change_avatar'.tr()),
-              ),
-            ),
-            
-            _gap,
-            const _NameChangeLine('Name'),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text('tap_to_change_avatar'.tr()),
+                  ),
+                ),
+                
+                _gap,
+                const _NameChangeLine('Name'),
 
-            // Language Selection Row
-            ValueListenableBuilder<Locale>(
-              valueListenable: settings.currentLocale,
-              builder: (context, locale, _) {
-                String displayName;
-                if (locale.languageCode == 'zh') {
-                  displayName = '繁體中文';
-                } else if (locale.languageCode == 'ja') {
-                  displayName = '日本語';
-                } else {
-                  displayName = 'English';
-                }
-
-                return Row(
+                // Language Selection Row
+                Row(
                   children: [
                     Text(
                       'language'.tr(),
@@ -114,7 +105,7 @@ class SettingsScreen extends StatelessWidget {
                         SizedBox(
                           width: 120,
                           child: Text(
-                            displayName,
+                            _getLanguageDisplayName(locale),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: 'Permanent Marker',
@@ -131,109 +122,119 @@ class SettingsScreen extends StatelessWidget {
                       ],
                     ),
                   ],
-                );
-              },
-            ),
+                ),
 
-            // Card Theme Selection Row
-            ValueListenableBuilder<BigTwoCardTheme>(
-              valueListenable: settings.currentCardTheme,
-              builder: (context, theme, _) {
-                return Row(
-                  children: [
-                    Text(
-                      'theme'.tr(),
-                      style: const TextStyle(fontFamily: 'Permanent Marker', fontSize: 30),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                // Card Theme Selection Row
+                ValueListenableBuilder<BigTwoCardTheme>(
+                  valueListenable: settings.currentCardTheme,
+                  builder: (context, theme, _) {
+                    return Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back_ios),
-                          onPressed: () {
-                            settings.setCardTheme(theme.previous());
-                          },
+                        Text(
+                          'theme'.tr(),
+                          style: const TextStyle(fontFamily: 'Permanent Marker', fontSize: 30),
                         ),
-                        Container(
-                          width: 120, // Adjust size as needed
-                          height: 160,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white, width: 2),
-                            borderRadius: BorderRadius.circular(8),
-                            image: DecorationImage(
-                              image: AssetImage(theme.cardManager.themePreviewImagePath),
-                              fit: BoxFit.contain, // Or cover, depending on the asset aspect ratio
+                        const Spacer(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back_ios),
+                              onPressed: () {
+                                settings.setCardTheme(theme.previous());
+                              },
                             ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.arrow_forward_ios),
-                          onPressed: () {
-                            settings.setCardTheme(theme.next());
-                          },
+                            Container(
+                              width: 120, // Adjust size as needed
+                              height: 160,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.white, width: 2),
+                                borderRadius: BorderRadius.circular(8),
+                                image: DecorationImage(
+                                  image: AssetImage(theme.cardManager.themePreviewImagePath),
+                                  fit: BoxFit.contain, // Or cover, depending on the asset aspect ratio
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.arrow_forward_ios),
+                              onPressed: () {
+                                settings.setCardTheme(theme.next());
+                              },
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
-                );
-              },
-            ),
-
-            ValueListenableBuilder<bool>(
-              valueListenable: settings.soundsOn,
-              builder: (context, soundsOn, child) => _SettingsLine(
-                'sound'.tr(),
-                Icon(soundsOn ? Icons.graphic_eq : Icons.volume_off),
-                onSelected: () => settings.toggleSoundsOn(),
-              ),
-            ),
-            ValueListenableBuilder<bool>(
-              valueListenable: settings.musicOn,
-              builder: (context, musicOn, child) => _SettingsLine(
-                'music'.tr(),
-                Icon(musicOn ? Icons.music_note : Icons.music_off),
-                onSelected: () => settings.toggleMusicOn(),
-              ),
-            ),
-            _SettingsLine(
-              'reset_progress'.tr(),
-              const Icon(Icons.delete),
-              onSelected: () {
-                context.read<PlayerProgress>().reset();
-
-                final messenger = ScaffoldMessenger.of(context);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text('progress_reset_message'.tr()),
-                  ),
-                );
-              },
-            ),
-            _gap,
-
-            // QR Code Display
-            const Center(
-              child:
-              Image(
-                image: AssetImage(
-                  'assets/images/goblin_cards/goblin_qr.png',
+                    );
+                  },
                 ),
-                fit: BoxFit.contain,
-              ),
 
+                ValueListenableBuilder<bool>(
+                  valueListenable: settings.soundsOn,
+                  builder: (context, soundsOn, child) => _SettingsLine(
+                    'sound'.tr(),
+                    Icon(soundsOn ? Icons.graphic_eq : Icons.volume_off),
+                    onSelected: () => settings.toggleSoundsOn(),
+                  ),
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: settings.musicOn,
+                  builder: (context, musicOn, child) => _SettingsLine(
+                    'music'.tr(),
+                    Icon(musicOn ? Icons.music_note : Icons.music_off),
+                    onSelected: () => settings.toggleMusicOn(),
+                  ),
+                ),
+                _SettingsLine(
+                  'reset_progress'.tr(),
+                  const Icon(Icons.delete),
+                  onSelected: () {
+                    context.read<PlayerProgress>().reset();
+
+                    final messenger = ScaffoldMessenger.of(context);
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('progress_reset_message'.tr()),
+                      ),
+                    );
+                  },
+                ),
+                _gap,
+
+                // QR Code Display
+                const Center(
+                  child:
+                  Image(
+                    image: AssetImage(
+                      'assets/images/goblin_cards/goblin_qr.png',
+                    ),
+                    fit: BoxFit.contain,
+                  ),
+
+                ),
+                _gap,
+              ],
             ),
-            _gap,
-          ],
-        ),
-        rectangularMenuArea: MyButton(
-          onPressed: () {
-            GoRouter.of(context).pop();
-          },
-          child: Text('back'.tr()),
-        ),
-      ),
+            rectangularMenuArea: MyButton(
+              onPressed: () {
+                GoRouter.of(context).pop();
+              },
+              child: Text('back'.tr()),
+            ),
+          ),
+        );
+      }
     );
+  }
+
+  String _getLanguageDisplayName(Locale locale) {
+    if (locale.languageCode == 'zh') {
+      return '繁體中文';
+    } else if (locale.languageCode == 'ja') {
+      return '日本語';
+    } else {
+      return 'English';
+    }
   }
 }
 

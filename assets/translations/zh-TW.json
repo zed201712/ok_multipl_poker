@@ -10,5 +10,16 @@
   "reset_progress": "重置進度",
   "progress_reset_message": "玩家進度已重置。",
   "tap_to_change_avatar": "點擊更換頭像",
-  "back": "返回"
+  "back": "返回",
+  "start": "開始",
+  "match_room": "配對房間",
+  "your_turn": "輪到你了",
+  "patterns": {
+    "single": "單張",
+    "pair": "對子",
+    "straight": "順子",
+    "fullHouse": "葫蘆",
+    "fourOfAKind": "鐵支",
+    "straightFlush": "同花順"
+  }
 }
