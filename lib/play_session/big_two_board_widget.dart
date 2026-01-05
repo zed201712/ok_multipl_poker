@@ -203,7 +203,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                     child: Column(
                       children: [
                         Expanded(
-                          flex: 5,
+                          flex: 2,
                           child: Center(
                             child: Row(
                               spacing: 30,
@@ -221,7 +221,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                         ),
 
                         Expanded(
-                          flex: 10,
+                          flex: 7,
                           child: Row(
                             children: [
                               // Left Opponent (20%)
@@ -241,7 +241,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                         ),
 
                         Expanded(
-                          flex: 14,
+                          flex: 20,
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -284,6 +284,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                                   buttonWidgets: handTypeButtons,
                                 ),
                               ),
+                              Expanded(child: SizedBox.shrink()),
                             ],
                           ),
                         ),
@@ -556,46 +557,35 @@ class _OpponentHand extends StatelessWidget {
 
             const SizedBox(width: 8),
 
-            // Name + Card Count
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Player name
-                Text(
-                  playerName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: nameColor,
-                    fontWeight:
-                    hasPassed ? FontWeight.w500 : FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+            // Player name
+            Text(
+              playerName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: nameColor,
+                fontWeight:
+                hasPassed ? FontWeight.w500 : FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
 
-                const SizedBox(height: 6),
+            const SizedBox(height: 10),
 
-                // Card count
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.style,
-                      color: iconColor,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$cardCount',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: countColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            // Card count
+            Icon(
+              Icons.style,
+              color: iconColor,
+              size: 22,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$cardCount',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: countColor,
+              ),
             ),
           ],
         ),

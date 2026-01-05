@@ -1,12 +1,12 @@
 ## AI 專案任務指示文件 (Feature Task)
 
-| 區塊 | 內容 |
-|:---|:---|
-| **任務 ID (Task ID)** | `FEAT-BIG-TWO-UI-LAYOUT-014` |
+| 區塊 | 內容                                       |
+|:---|:-----------------------------------------|
+| **任務 ID (Task ID)** | `FEAT-BIG-TWO-UI-014`                    |
 | **標題 (Title)** | `BOARD LAYOUT REFACTOR & CARD AREA LIST` |
-| **創建日期 (Date)** | `2026/01/05` |
-| **目標版本 (Target Version)** | `N/A` |
-| **專案名稱 (Project)** | `ok_multipl_poker` |
+| **創建日期 (Date)** | `2026/01/05`                             |
+| **目標版本 (Target Version)** | `N/A`                                    |
+| **專案名稱 (Project)** | `ok_multipl_poker`                       |
 
 ---
 

@@ -27,9 +27,13 @@ class SelectablePlayerHandWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Row of buttons to select the hand type.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: buttonWidgets,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child:
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: buttonWidgets,
+          ),
         ),
         const SizedBox(height: 2),
         // The local player's interactive hand.
@@ -40,8 +44,9 @@ class SelectablePlayerHandWidget extends StatelessWidget {
             child: ListenableBuilder(
               listenable: player,
               builder: (context, child) {
-                return Row(
+                return Wrap(
                   spacing: 3,
+                  runSpacing: 10,
                   children: player.hand.map((card) {
                     final isSelected = player.selectedCards.contains(card);
                     return GestureDetector(
@@ -55,8 +60,8 @@ class SelectablePlayerHandWidget extends StatelessWidget {
                           AssetImage(
                             settingsController.currentCardThemeManager.getCardImagePath(card)
                           ),
-                          width: PlayingCardImageWidget.mediumWidth,
-                          height: PlayingCardImageWidget.mediumHeight,
+                          width: PlayingCardImageWidget.defaultWidth,
+                          height: PlayingCardImageWidget.defaultHeight,
                         ),
                       ),
                     );

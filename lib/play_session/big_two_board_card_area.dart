@@ -73,6 +73,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
             title: lastPlayedTitle.isNotEmpty 
                 ? 'game.last_played'.tr(args: [lastPlayedTitle])
                 : 'game.last_played_simple'.tr(),
+            position: TitlePosition.right,
             child: ShowOnlyCardAreaWidget(cards: lastPlayedCards),
           ),
 
@@ -97,6 +98,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
             },
             child: CardContainer(
               title: 'game.discard_pile'.tr(),
+              position: TitlePosition.left,
               child: SizedBox(
                 width: PlayingCardImageWidget.smallWidth + 10,   // PlayingCardWidget.width 大約是 60 左右，可調整
                 height: PlayingCardImageWidget.smallHeight + 10, // PlayingCardWidget.height 大約是 90 左右
