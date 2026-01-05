@@ -205,7 +205,18 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                         Expanded(
                           flex: 5,
                           child: Center(
-                            child: _buildTopOpponent(otherPlayers, bigTwoState),
+                            child: Row(
+                              spacing: 30,
+                              children: [
+                                const Expanded(child: SizedBox.shrink()),
+
+                                _buildLeftOpponent(otherPlayers, bigTwoState),
+                                _buildTopOpponent(otherPlayers, bigTwoState),
+                                _buildRightOpponent(otherPlayers, bigTwoState),
+
+                                const Expanded(child: SizedBox.shrink()),
+                              ],
+                            )
                           ),
                         ),
 
@@ -214,12 +225,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                           child: Row(
                             children: [
                               // Left Opponent (20%)
-                              SizedBox(
-                                width: BigTwoBoardWidget.designSize.width * 0.1,
-                                child: Center(
-                                  child: _buildLeftOpponent(otherPlayers, bigTwoState),
-                                ),
-                              ),
+                              SizedBox(width: BigTwoBoardWidget.designSize.width * 0.1,),
 
                               // Table Card Area (Center)
                               Expanded(
@@ -229,12 +235,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                               ),
 
                               // Right Opponent (20%)
-                              SizedBox(
-                                width: BigTwoBoardWidget.designSize.width * 0.1,
-                                child: Center(
-                                  child: _buildRightOpponent(otherPlayers, bigTwoState),
-                                ),
-                              ),
+                              SizedBox(width: BigTwoBoardWidget.designSize.width * 0.1,),
                             ],
                           ),
                         ),
@@ -255,7 +256,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                                   const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
+                                        horizontal: 16, vertical: 2),
                                     margin: const EdgeInsets.only(bottom: 8),
                                     decoration: BoxDecoration(
                                       color: isMyTurn ? Colors.amber : Colors.transparent,
@@ -266,7 +267,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: isMyTurn ? Colors.black : Colors.transparent,
-                                        fontSize: 10,
+                                        fontSize: 16,
                                       ),
                                     ),
                                   ),
@@ -372,10 +373,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     if (ordered.length > 1) {
        // Left player was rotated in Stack layout. In Grid, we can keep it vertical or standard.
        // Let's keep the rotation for visual consistency with "sides".
-       return RotatedBox(
-         quarterTurns: 1,
-         child: _OpponentHand(bigTwoState: bigTwoState, player: ordered[1]),
-       );
+      return _OpponentHand(bigTwoState: bigTwoState, player: ordered[1]);
     }
     return const SizedBox();
   }
@@ -383,10 +381,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   Widget _buildRightOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
     final ordered = _getOrderedOpponents(otherPlayers);
     if (ordered.length > 2) {
-      return RotatedBox(
-        quarterTurns: 3,
-        child: _OpponentHand(bigTwoState: bigTwoState, player: ordered[2]),
-      );
+      return _OpponentHand(bigTwoState: bigTwoState, player: ordered[2]);
     }
     return const SizedBox();
   }
@@ -511,7 +506,6 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     );
   }
 }
-
 class _OpponentHand extends StatelessWidget {
   final BigTwoState bigTwoState;
   final BigTwoPlayer player;
@@ -524,60 +518,88 @@ class _OpponentHand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     final cardCount = player.cards.length;
     final playerName = player.name;
     final isCurrentTurn = player.uid == bigTwoState.currentPlayerId;
+    final hasPassed = player.hasPassed;
 
-    final playerNameColor = player.hasPassed ? Colors.grey : (isCurrentTurn ? Colors.amber : null);
-    
-    return
+    final Color backgroundColor = hasPassed
+        ? Colors.black.withValues(alpha: 0.35)
+        : Colors.black.withValues(alpha: 0.55);
 
-      FittedBox(
-        fit: BoxFit.scaleDown,
-        child:
-            CardContainer(
-              child:
-              Row(
+    final Color nameColor = hasPassed
+        ? Colors.grey.shade400
+        : (isCurrentTurn ? Colors.amberAccent : Colors.white);
+
+    final Color countColor = hasPassed
+        ? Colors.grey.shade300
+        : Colors.white;
+
+    final Color iconColor = hasPassed
+        ? Colors.grey.shade500
+        : Colors.blueGrey.shade200;
+
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: CardContainer(
+        color: backgroundColor,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Avatar
+            PlayerAvatarWidget(
+              avatarNumber: player.avatarNumber,
+              size: 30,
+            ),
+
+            const SizedBox(width: 8),
+
+            // Name + Card Count
+            Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                PlayerAvatarWidget(
-                  avatarNumber: player.avatarNumber,
-                  size: 30, // Adjust size as needed
+                // Player name
+                Text(
+                  playerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: nameColor,
+                    fontWeight:
+                    hasPassed ? FontWeight.w500 : FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Column(
+
+                const SizedBox(height: 6),
+
+                // Card count
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                        playerName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: playerNameColor,
-                          fontWeight: player.hasPassed ? FontWeight.bold : null,
-                        )
+                    Icon(
+                      Icons.style,
+                      color: iconColor,
+                      size: 22,
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.style, color: Colors.blueGrey, size: 30),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$cardCount',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 6),
+                    Text(
+                      '$cardCount',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: countColor,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
-              color: Colors.white.withValues(alpha: 0.1),
-            )
-
-      );
+          ],
+        ),
+      ),
+    );
   }
 }

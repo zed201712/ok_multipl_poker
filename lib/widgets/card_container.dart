@@ -33,7 +33,7 @@ class CardContainer extends StatelessWidget {
             // 上一次出的牌 (Last Played Hand) - 顯示在上方或顯眼處
             if (title.isNotEmpty) ...[
               RoundedLabel(title: title),
-              //const SizedBox(height: 20),
+              const SizedBox(height: 6),
             ],
             child,
           ],

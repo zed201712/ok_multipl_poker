@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/play_session/playing_card_image_widget.dart';
+import 'package:ok_multipl_poker/play_session/show_only_card_area_list.dart';
 import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
 import 'package:ok_multipl_poker/widgets/card_container.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,7 @@ import '../entities/big_two_state.dart';
 import '../game_internals/big_two_card_pattern.dart';
 import '../game_internals/playing_card.dart';
 import '../settings/settings.dart';
+import '../style/palette.dart';
 
 class BigTwoBoardCardArea extends StatelessWidget {
   //final VoidCallback? onDiscardPileTap;
@@ -123,7 +125,9 @@ class BigTwoBoardCardArea extends StatelessWidget {
   }
 
   Widget _discardDialog(BigTwoState bigTwoState, BuildContext context) {
+    final palette = Palette();
     return Dialog(
+      backgroundColor: palette.backgroundSettings,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -134,10 +138,19 @@ class BigTwoBoardCardArea extends StatelessWidget {
           children: [
             //const Text('自訂 Dialog', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),),
             const SizedBox(height: 12),
-            CardContainer(
-                title: 'game.discard_pile'.tr(),
-                child: ShowOnlyCardAreaWidget(
-                    cards: bigTwoState.uselessCards.toPlayingCards())
+            SizedBox(
+              height: 200,
+              child:
+              CardContainer(
+                  title: 'game.discard_pile'.tr(),
+                  child:
+                  Expanded(
+                      child:
+                      ShowOnlyCardAreaList(
+                          cards: bigTwoState.uselessCards.toPlayingCards()
+                      )
+                  )
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
