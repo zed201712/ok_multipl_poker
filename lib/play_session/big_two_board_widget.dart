@@ -137,7 +137,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
-                    Text('${'matching'.tr()}\nPlayers: ${_gameController.participantCount()}')
+                    Text('game.matching_status'.tr(args: [_gameController.participantCount().toString()]))
                   else
                     Text('ready'.tr()),
                   if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
@@ -301,14 +301,19 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Winner: ${gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner}\nRestart: ${bigTwoState.restartRequesters.length} / ${bigTwoState.participants.length}',
+                            'game.winner_status'.tr(args: [
+                              gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner ?? "",
+                              bigTwoState.restartRequesters.length.toString(),
+                              bigTwoState.participants.length.toString()
+                            ]),
                             style: const TextStyle(color: Colors.white, fontSize: 24),
+                            textAlign: TextAlign.center,
                           ),
                           ElevatedButton(
                             onPressed: () {
                               _gameController.restart();
                             },
-                            child: const Text('Restart'),
+                            child: Text('game.restart'.tr()),
                           ),
                           _leaveButton()
                         ],

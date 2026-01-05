@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ok_multipl_poker/play_session/playing_card_image_widget.dart';
 import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
@@ -53,7 +54,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
     if (bigTwoState.lockedHandType.isNotEmpty) {
       try {
         final pattern = BigTwoCardPattern.fromJson(bigTwoState.lockedHandType);
-        lastPlayedTitle = "(${pattern.displayName})";
+        lastPlayedTitle = 'patterns.${pattern.name}'.tr();
       } catch (_) {}
     }
 
@@ -67,7 +68,9 @@ class BigTwoBoardCardArea extends StatelessWidget {
         // Left: Last Played Cards
         if (lastPlayedCards.isNotEmpty)
           CardContainer(
-            title: 'Last Played $lastPlayedTitle',
+            title: lastPlayedTitle.isNotEmpty 
+                ? 'game.last_played'.tr(args: [lastPlayedTitle])
+                : 'game.last_played_simple'.tr(),
             child: ShowOnlyCardAreaWidget(cards: lastPlayedCards),
           ),
 
@@ -91,7 +94,7 @@ class BigTwoBoardCardArea extends StatelessWidget {
               }
             },
             child: CardContainer(
-              title: 'Discard Pile',
+              title: 'game.discard_pile'.tr(),
               child: SizedBox(
                 width: PlayingCardImageWidget.smallWidth + 10,   // PlayingCardWidget.width 大約是 60 左右，可調整
                 height: PlayingCardImageWidget.smallHeight + 10, // PlayingCardWidget.height 大約是 90 左右
@@ -132,14 +135,14 @@ class BigTwoBoardCardArea extends StatelessWidget {
             //const Text('自訂 Dialog', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),),
             const SizedBox(height: 12),
             CardContainer(
-                title: 'Discard Pile',
+                title: 'game.discard_pile'.tr(),
                 child: ShowOnlyCardAreaWidget(
                     cards: bigTwoState.uselessCards.toPlayingCards())
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+              child: Text('common.close'.tr()),
             ),
           ],
         ),

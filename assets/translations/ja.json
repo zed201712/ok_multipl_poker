@@ -28,5 +28,16 @@
   "play_action": "出す",
   "welcome": "ようこそ!",
   "your_name": "あなたの名前",
-  "lets_play": "遊ぼう!"
+  "lets_play": "遊ぼう!",
+  "game": {
+    "last_played": "直前の手 ({})",
+    "last_played_simple": "直前の手",
+    "discard_pile": "捨て札",
+    "matching_status": "マッチング中...\nプレイヤー: {}",
+    "restart": "リスタート",
+    "winner_status": "勝者: {}\nリスタート: {} / {}"
+  },
+  "common": {
+    "close": "閉じる"
+  }
 }

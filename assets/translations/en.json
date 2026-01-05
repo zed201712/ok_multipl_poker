@@ -28,5 +28,16 @@
   "play_action": "Play",
   "welcome": "Welcome!",
   "your_name": "Your Name",
-  "lets_play": "Let's Play!"
+  "lets_play": "Let's Play!",
+  "game": {
+    "last_played": "Last Played ({})",
+    "last_played_simple": "Last Played",
+    "discard_pile": "Discard Pile",
+    "matching_status": "Matching...\nPlayers: {}",
+    "restart": "Restart",
+    "winner_status": "Winner: {}\nRestart: {} / {}"
+  },
+  "common": {
+    "close": "Close"
+  }
 }

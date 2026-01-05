@@ -28,5 +28,16 @@
   "play_action": "出牌",
   "welcome": "歡迎!",
   "your_name": "你的名字",
-  "lets_play": "開始玩吧!"
+  "lets_play": "開始玩吧!",
+  "game": {
+    "last_played": "上一次出牌 ({})",
+    "last_played_simple": "上一次出牌",
+    "discard_pile": "棄牌堆",
+    "matching_status": "配對中...\n玩家: {}",
+    "restart": "重新開始",
+    "winner_status": "贏家: {}\n重新開始: {} / {}"
+  },
+  "common": {
+    "close": "關閉"
+  }
 }
