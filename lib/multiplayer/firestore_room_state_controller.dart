@@ -270,6 +270,24 @@ class FirestoreRoomStateController {
     }
   }
 
+  Future<void> endRoom({required String roomId}) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User not authenticated.');
+    }
+
+    final roomDoc = await _firestore.collection(_collectionName).doc(roomId).get();
+    if (!roomDoc.exists) return;
+    final room = Room.fromFirestore(roomDoc);
+
+    final otherParticipants = room.participants.where((p) => p.id != userId).toList();
+    if (otherParticipants.isNotEmpty) {
+      await sendRequest(roomId: roomId, body: {'action': 'end_room'});
+    } else {
+      await deleteRoom(roomId: roomId);
+    }
+  }
+
   Future<void> handoverRoomManager({required String roomId}) async {
     final currentUserId = this.currentUserId;
     if (currentUserId == null) {

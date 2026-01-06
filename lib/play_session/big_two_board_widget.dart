@@ -123,8 +123,8 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsController>(); // watch for changes
 
-    return ChangeNotifierProvider<CardPlayer>(
-      create: (_) => _player,
+    return ChangeNotifierProvider<CardPlayer>.value(
+      value: _player,
       child: StreamBuilder<TurnBasedGameState<BigTwoState>?>(
         stream: _gameController.gameStateStream,
         builder: (context, snapshot) {
@@ -317,7 +317,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
                             },
                             child: Text('game.restart'.tr()),
                           ),
-                          _leaveButton()
+                          _endButton()
                         ],
                       ),
                     )
@@ -387,11 +387,20 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     return const SizedBox();
   }
 
-
   Widget _leaveButton() {
     return ElevatedButton(
       onPressed: () {
         _gameController.leaveRoom();
+        GoRouter.of(context).go('/');
+      },
+      child: Text('leave'.tr(), style: TextStyle(color: Palette().ink)),
+    );
+  }
+
+  Widget _endButton() {
+    return ElevatedButton(
+      onPressed: () {
+        _gameController.endRoom();
         GoRouter.of(context).go('/');
       },
       child: Text('leave'.tr(), style: TextStyle(color: Palette().ink)),

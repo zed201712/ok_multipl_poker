@@ -16,10 +16,16 @@ _____
 
 然後給這個spec 接下來要寫的程式碼, 1個commit message
 _____
-在 commit 5ba7ee57923c49adbc553c1d0b48802a4bf49491
-我對 @big_two_board_widget_spec_012.md 的commit做了一些手動修改
+用 @firestore_room_state_controller_spec_012.md 的風格, 寫1個spec, 建立spec檔案 firestore_room_state_controller_spec_014.md
 
-將我修改的內容整理到 big_two_board_widget_spec_012
+| **任務 ID (Task ID)** | `FEAT-ROOM-STATE-CONTROLLER-014` |
+| **創建日期 (Date)** | `2026/01/06` |
+
+分析 commit b578678adad583c6bec4ebdf68f8e6ac2f9aae78
+
+檢查有無邏輯錯誤, 並提供改善建議
+
+然後給這個commit, 1個commit message, 將commit message 加入到 firestore_room_state_controller_spec_014
 _____
 
 寫提示詞, 用來產生 @ai_dev_spec_template.md 風格的 spec

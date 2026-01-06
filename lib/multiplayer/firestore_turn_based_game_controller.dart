@@ -228,6 +228,17 @@ class FirestoreTurnBasedGameController<T> {
     }
   }
 
+  Future<void> endRoom() async {
+    final roomId = roomStateController.roomStateStream.value?.room?.roomId;
+    if (roomId != null) {
+      try {
+        await roomStateController.endRoom(roomId: roomId);
+      } catch (e) {
+        errorMessageService.showError("Failed to end room: $e");
+      }
+    }
+  }
+
   Future<void> startGame() async {
     final roomId = roomStateController.roomStateStream.value?.room?.roomId;
     if (roomId == null) {

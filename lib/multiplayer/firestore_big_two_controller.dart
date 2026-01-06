@@ -84,6 +84,10 @@ class FirestoreBigTwoController {
     await _gameController.leaveRoom();
   }
 
+  Future<void> endRoom() async {
+    await _gameController.endRoom();
+  }
+
   /// 發起重新開始遊戲的請求。
   /// 所有玩家都請求後，遊戲將會重置。
   Future<void> restart() async {
