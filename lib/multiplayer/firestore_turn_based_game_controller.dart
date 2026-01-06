@@ -120,7 +120,8 @@ class FirestoreTurnBasedGameController<T> {
           _handleGameAction(room, currentState, request);
         }
       }
-      roomStateController.deleteRequest(roomId: request.roomId, requestId: request.requestId);
+      
+      if (!request.isLocal) roomStateController.deleteRequest(roomId: request.roomId, requestId: request.requestId);
     }
   }
 
@@ -143,7 +144,7 @@ class FirestoreTurnBasedGameController<T> {
         final roomId = room.roomId;
         for (final req in pendingRequests) {
             if (req.body['action'] == 'start_game') {
-                roomStateController.deleteRequest(roomId: roomId, requestId: req.requestId);
+                if (!req.isLocal) roomStateController.deleteRequest(roomId: roomId, requestId: req.requestId);
             }
         }
     }

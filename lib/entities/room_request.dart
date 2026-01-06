@@ -22,12 +22,16 @@ class RoomRequest with JsonSerializableMixin {
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final Timestamp? createdAt;
 
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final bool isLocal;
+
   RoomRequest({
     this.requestId = '',
     this.roomId = '',
     required this.participantId,
     required this.body,
     required this.createdAt,
+    this.isLocal = false,
   });
 
   /// Creates a RoomRequest instance from a Firestore document.
@@ -44,6 +48,7 @@ class RoomRequest with JsonSerializableMixin {
     String? participantId,
     Map<String, dynamic>? body,
     Timestamp? createdAt,
+    bool? isLocal,
   }) {
     return RoomRequest(
       requestId: requestId ?? this.requestId,
@@ -51,6 +56,7 @@ class RoomRequest with JsonSerializableMixin {
       participantId: participantId ?? this.participantId,
       body: body ?? this.body,
       createdAt: createdAt ?? this.createdAt,
+      isLocal: isLocal ?? this.isLocal,
     );
   }
 

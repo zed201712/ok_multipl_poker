@@ -84,6 +84,7 @@ void main() {
             StreamPredicate(predicate: (val) => val == null, reason: 'Should be null'),
             // 成功加入房間，等待其他玩家
             StreamPredicate(predicate: (val) => val?.gameStatus == GameStatus.matching, reason: 'matching'),
+            StreamPredicate(predicate: (val) => val?.gameStatus == GameStatus.playing, reason: 'playing'),
             // 驗證玩家一的狀態更新：遊戲開始
             // StreamPredicate(
             //     predicate: (val) => val?.gameStatus == GameStatus.playing &&
@@ -119,6 +120,9 @@ void main() {
       final p2MatchFuture = gameControllerP2.matchAndJoinRoom(maxPlayers: 2);
       expect(await p2MatchFuture, roomId);
 
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => (val?.gameStatus == GameStatus.playing), reason: 'playing'),
+      );
       // 玩家一下第一步
       await gameControllerP1.sendGameAction('place_mark', payload: {'index': 0});
 
@@ -179,15 +183,36 @@ void main() {
         }
       );
 
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => (val?.gameStatus == GameStatus.playing), reason: 'playing'),
+      );
       // X O X
       // O X O
       // X
       await gameControllerP1.sendGameAction('place_mark', payload: {'index': 0}); // X
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => val?.customState.board[0] == 'X', reason: 'board[0]'),
+      );
       await gameControllerP2.sendGameAction('place_mark', payload: {'index': 1}); // O
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => val?.customState.board[1] == 'O', reason: 'board[1]'),
+      );
       await gameControllerP1.sendGameAction('place_mark', payload: {'index': 2}); // X
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => val?.customState.board[2] == 'X', reason: 'board[2]'),
+      );
       await gameControllerP2.sendGameAction('place_mark', payload: {'index': 3}); // O
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => val?.customState.board[3] == 'O', reason: 'board[3]'),
+      );
       await gameControllerP1.sendGameAction('place_mark', payload: {'index': 4}); // X
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => val?.customState.board[4] == 'X', reason: 'board[4]'),
+      );
       await gameControllerP2.sendGameAction('place_mark', payload: {'index': 5}); // O
+      await waitStreamPredicate(
+        StreamPredicate(predicate: (val) => val?.customState.board[5] == 'O', reason: 'board[1]'),
+      );
       await gameControllerP1.sendGameAction('place_mark', payload: {'index': 6}); // X wins
 
       await waitStreamPredicate(

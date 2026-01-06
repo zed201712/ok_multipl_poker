@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:uuid/uuid.dart';
 import '../entities/room.dart';
 import '../entities/room_request.dart';
 import '../entities/room_response.dart';
@@ -82,12 +83,16 @@ class FirestoreRoomStateController {
     );
 
     _roomStateSubscription = combinedStream.listen((roomState) {
-      _roomStateController.add(roomState);
-      _managerRequestHandler(roomState);
-      if (roomState.room != null) {
-        _handleManagerTakeover(roomState.room!);
-      }
+      _handleRoomStateStream(roomState);
     });
+  }
+
+  void _handleRoomStateStream(RoomState roomState) {
+    _roomStateController.add(roomState);
+    _managerRequestHandler(roomState);
+    if (roomState.room != null) {
+      _handleManagerTakeover(roomState.room!);
+    }
   }
 
   void dispose() {
@@ -311,11 +316,11 @@ class FirestoreRoomStateController {
       } else if (action == 'leave') {
         _handleLeaveRequest(request);
       } else if (action == 'alive') {
-        deleteRequest(roomId: room.roomId, requestId: request.requestId);
+        if (!request.isLocal) deleteRequest(roomId: room.roomId, requestId: request.requestId);
       } else if (action == 'end_room') {
         deleteRoom(roomId: room.roomId);
         // Also attempt to delete the request, though it might not exist if it was a local loopback.
-        deleteRequest(roomId: room.roomId, requestId: request.requestId);
+        if (!request.isLocal) deleteRequest(roomId: room.roomId, requestId: request.requestId);
         break;
       }
     }
@@ -357,6 +362,9 @@ class FirestoreRoomStateController {
         'seats': FieldValue.arrayUnion([request.participantId]),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Local requests are not persisted, so they shouldn't trigger Firestore deletions.
+      if (request.isLocal) return;
       transaction.delete(requestRef);
     });
   }
@@ -382,6 +390,9 @@ class FirestoreRoomStateController {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
+
+      // Local requests are not persisted, so they shouldn't trigger Firestore deletions.
+      if (request.isLocal) return;
       transaction.delete(requestRef);
     });
   }
@@ -485,13 +496,13 @@ class FirestoreRoomStateController {
     // Optimization: If current user is the manager, bypass Firestore write for self-requests.
     // This reduces latency and write costs.
     if (_isCurrentUserTheManager() && roomId == _roomStateController.value?.room?.roomId) {
-      final requestId = _firestore.collection(_collectionName).doc(roomId).collection('requests').doc().id;
       final request = RoomRequest(
-        requestId: requestId,
+        requestId: 'localRequest_${Uuid().v4()}',
         roomId: roomId,
         participantId: participantId,
         body: body,
         createdAt: Timestamp.now(),
+        isLocal: true, // Mark as local request
       );
 
       final currentState = _roomStateController.value;
@@ -500,9 +511,9 @@ class FirestoreRoomStateController {
         final newState = currentState.copyWith(requests: newRequests);
         
         // Trigger the handler directly with the updated state
-        _managerRequestHandler(newState);
+        _handleRoomStateStream(newState);
       }
-      return requestId;
+      return '';
     }
 
     final ref = _firestore.collection(_collectionName).doc(roomId).collection('requests').doc();
