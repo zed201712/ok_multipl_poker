@@ -43,19 +43,11 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
 
   late DateTime _startOfPlay;
 
-  late final BoardState _boardState;
-
-  FirestoreController? _firestoreController;
-
   @override
   Widget build(BuildContext context) {
     final settingsController = context.watch<SettingsController>();
 
-    return MultiProvider(
-      providers: [
-        Provider.value(value: _boardState),
-      ],
-      child: IgnorePointer(
+    return IgnorePointer(
         ignoring: _duringCelebration,
         child:
           BackgroundImageWidget(
@@ -109,14 +101,11 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                 ),
               ),
           )
-      ),
-    );
+      );
   }
 
   @override
   void dispose() {
-    _boardState.dispose();
-    _firestoreController?.dispose();
     super.dispose();
   }
 
@@ -124,21 +113,6 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
   void initState() {
     super.initState();
     _startOfPlay = DateTime.now();
-
-    _boardState = BoardState(onWin: _playerWon);
-
-    final firestore = context.read<FirebaseFirestore?>();
-    if (firestore == null) {
-      _log.warning(
-        "Firestore instance wasn't provided. "
-        'Running without _firestoreController.',
-      );
-    } else {
-      _firestoreController = FirestoreController(
-        instance: firestore,
-        boardState: _boardState,
-      );
-    }
   }
 
   Future<void> _playerWon() async {
