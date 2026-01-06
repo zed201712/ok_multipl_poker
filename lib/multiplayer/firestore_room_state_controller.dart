@@ -312,6 +312,11 @@ class FirestoreRoomStateController {
         _handleLeaveRequest(request);
       } else if (action == 'alive') {
         deleteRequest(roomId: room.roomId, requestId: request.requestId);
+      } else if (action == 'end_room') {
+        deleteRoom(roomId: room.roomId);
+        // Also attempt to delete the request, though it might not exist if it was a local loopback.
+        deleteRequest(roomId: room.roomId, requestId: request.requestId);
+        break;
       }
     }
   }
@@ -462,6 +467,12 @@ class FirestoreRoomStateController {
 
   // --- Request / Response CRUD ---
 
+  bool _isCurrentUserTheManager() {
+    final userId = currentUserId;
+    final room = _roomStateController.value?.room;
+    return userId != null && room != null && room.managerUid == userId;
+  }
+
   Future<String> sendRequest({
     required String roomId,
     required Map<String, dynamic> body,
@@ -470,6 +481,30 @@ class FirestoreRoomStateController {
     if (participantId == null) {
       throw Exception('User not authenticated.');
     }
+
+    // Optimization: If current user is the manager, bypass Firestore write for self-requests.
+    // This reduces latency and write costs.
+    if (_isCurrentUserTheManager() && roomId == _roomStateController.value?.room?.roomId) {
+      final requestId = _firestore.collection(_collectionName).doc(roomId).collection('requests').doc().id;
+      final request = RoomRequest(
+        requestId: requestId,
+        roomId: roomId,
+        participantId: participantId,
+        body: body,
+        createdAt: Timestamp.now(),
+      );
+
+      final currentState = _roomStateController.value;
+      if (currentState != null) {
+        final newRequests = List<RoomRequest>.from(currentState.requests)..insert(0, request);
+        final newState = currentState.copyWith(requests: newRequests);
+        
+        // Trigger the handler directly with the updated state
+        _managerRequestHandler(newState);
+      }
+      return requestId;
+    }
+
     final ref = _firestore.collection(_collectionName).doc(roomId).collection('requests').doc();
     await ref.set({
       'requestId': ref.id,

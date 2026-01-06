@@ -19,6 +19,18 @@ class RoomState extends Equatable {
     this.responses = const [],
   });
 
+  RoomState copyWith({
+    Room? room,
+    List<RoomRequest>? requests,
+    List<RoomResponse>? responses,
+  }) {
+    return RoomState(
+      room: room ?? this.room,
+      requests: requests ?? this.requests,
+      responses: responses ?? this.responses,
+    );
+  }
+
   @override
   List<Object?> get props => [room, requests, responses];
 
