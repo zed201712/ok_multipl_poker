@@ -10,6 +10,7 @@ RoomRequest _$RoomRequestFromJson(Map<String, dynamic> json) => RoomRequest(
   requestId: json['requestId'] as String? ?? '',
   roomId: json['roomId'] as String? ?? '',
   participantId: json['participantId'] as String,
+  managerUid: json['managerUid'] as String,
   body: json['body'] as Map<String, dynamic>,
   createdAt: _timestampFromJson(json['createdAt']),
 );
@@ -19,6 +20,7 @@ Map<String, dynamic> _$RoomRequestToJson(RoomRequest instance) =>
       'requestId': instance.requestId,
       'roomId': instance.roomId,
       'participantId': instance.participantId,
+      'managerUid': instance.managerUid,
       'body': instance.body,
       'createdAt': _timestampToJson(instance.createdAt),
     };

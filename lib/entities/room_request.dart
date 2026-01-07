@@ -17,6 +17,7 @@ class RoomRequest with JsonSerializableMixin {
   final String requestId;
   final String roomId;
   final String participantId;
+  final String managerUid;
   final Map<String, dynamic> body;
 
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -29,6 +30,7 @@ class RoomRequest with JsonSerializableMixin {
     this.requestId = '',
     this.roomId = '',
     required this.participantId,
+    required this.managerUid,
     required this.body,
     required this.createdAt,
     this.isLocal = false,
@@ -46,6 +48,7 @@ class RoomRequest with JsonSerializableMixin {
     String? requestId,
     String? roomId,
     String? participantId,
+    String? managerUid,
     Map<String, dynamic>? body,
     Timestamp? createdAt,
     bool? isLocal,
@@ -54,6 +57,7 @@ class RoomRequest with JsonSerializableMixin {
       requestId: requestId ?? this.requestId,
       roomId: roomId ?? this.roomId,
       participantId: participantId ?? this.participantId,
+      managerUid: managerUid ?? this.managerUid,
       body: body ?? this.body,
       createdAt: createdAt ?? this.createdAt,
       isLocal: isLocal ?? this.isLocal,

@@ -365,5 +365,91 @@ void main() {
       gameControllerP2.dispose();
     });
 
+    test('endRoom: single player ends room, deletes immediately', () async {
+      // Setup: Create a 1-player room
+      final roomId = await gameControllerP1.matchAndJoinRoom(maxPlayers: 2);
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.isNotEmpty && rooms.first.roomId == roomId, reason: 'Wait for room creation')
+      );
+
+      // Action: P1 ends the room
+      await gameControllerP1.endRoom();
+
+      // Verification: Room should be deleted
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.isEmpty, reason: 'Wait for room deletion')
+      );
+
+      final rooms = gameControllerP1.roomStateController.roomsStream.value;
+      expect(rooms, isEmpty);
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
+
+    test('endRoom: manager ends multiplayer room, notifies others and deletes', () async {
+      // Setup: Create and join a 2-player room, setting maxPlayers to 3 to prevent auto-start logic from firing
+      // This isolates the endRoom testing from game start logic which updates the room.
+      await gameControllerP1.matchAndJoinRoom(maxPlayers: 3);
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.first.participants.length == 1, reason: 'Wait for P1 to join')
+      );
+      await gameControllerP2.matchAndJoinRoom(maxPlayers: 3);
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.first.participants.length == 2, reason: 'Wait for P2 to join')
+      );
+
+      // Action: P1 (manager) ends the room
+      await gameControllerP1.endRoom();
+
+      // Verification: Room should be deleted for both
+      // P1 stream check
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.isEmpty, reason: 'Wait for room deletion (P1)')
+      );
+
+      final rooms = gameControllerP1.roomStateController.roomsStream.value;
+      expect(rooms, isEmpty);
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
+
+    test('endRoom: non-manager cannot end room (if we had such restriction, but current implementation allows participant to trigger end request)', () async {
+      // NOTE: Current spec implementation in FirestoreRoomStateController.endRoom allows any user to call it.
+      // It sends a request. The Manager handles the request.
+      // If P2 (non-manager) calls endRoom(), they send 'end_room'. P1 (manager) receives it and should delete the room.
+
+      // Setup: Create and join a 2-player room, maxPlayers 3 to prevent auto-start conflict
+      await gameControllerP1.matchAndJoinRoom(maxPlayers: 3);
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.first.participants.length == 1, reason: 'Wait for P1 to join')
+      );
+      await gameControllerP2.matchAndJoinRoom(maxPlayers: 3);
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.first.participants.length == 2, reason: 'Wait for P2 to join')
+      );
+
+      // Action: P2 (non-manager) calls endRoom
+      await gameControllerP2.endRoom();
+
+      // Verification: Room should be deleted because Manager (P1) processes the request
+      // await waitStreamRoomPredicate(
+      //     StreamPredicate(predicate: (rooms) => rooms!.isEmpty, reason: 'Wait for room deletion initiated by P2')
+      // );
+
+      // Note: In real scenarios, P1 deletes the room. P2's controller will eventually see it.
+      // Since we check P1's stream (Manager) for emptiness, that confirms the deletion logic.
+      await waitStreamRoomPredicate(
+          StreamPredicate(predicate: (rooms) => rooms!.isEmpty, reason: 'Wait for room deletion initiated by P2')
+      );
+
+      final rooms = gameControllerP1.roomStateController.roomsStream.value;
+      expect(rooms, isEmpty);
+
+      gameControllerP1.dispose();
+      gameControllerP2.dispose();
+    });
+
   });
 }

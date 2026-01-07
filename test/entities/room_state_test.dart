@@ -33,6 +33,7 @@ void main() {
         requestId: 'req1',
         roomId: 'room1',
         participantId: 'user1',
+        managerUid: 'user1',
         body: {'action': 'test'},
         createdAt: null,
       );
