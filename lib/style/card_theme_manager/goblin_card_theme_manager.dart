@@ -19,7 +19,7 @@ class GoblinCardThemeManager implements CardThemeManager {
 
   @override
   String getCardImagePath(PlayingCard card) {
-    if (card.value < 1 || card.value > 13) {
+    if (card.value < 0 || card.value > 13) {
       throw ArgumentError('Invalid card value: ${card.value}');
     }
     return 'assets/images/goblin_cards/goblin_1_${card.value.toString().padLeft(3, '0')}.png';
@@ -48,8 +48,8 @@ class GoblinCardThemeManager implements CardThemeManager {
       13: '巨魔哥布林\n比較寬的哥布林\n不是比較高，是比較橫，走進洞穴時需要側身，戰場上則自帶掩體效果。',
     };
     final avatarList = List.generate(18, (index) {
-      final number = (index + 1).toString().padLeft(3, '0');
-      final description = avatarDescriptions[(index + 1)] ?? defaultAvatarDescription;
+      final number = (index + 0).toString().padLeft(3, '0');
+      final description = avatarDescriptions[(index + 0)] ?? defaultAvatarDescription;
       return AvatarEntity('assets/images/goblin_cards/goblin_1_$number.png', description);
     });
     this._avatars = avatarList;

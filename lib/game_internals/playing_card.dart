@@ -60,6 +60,9 @@ class PlayingCard extends Equatable {
     return PlayingCard(suit, value);
   }
 
+  static PlayingCard joker() {
+    return PlayingCard(CardSuit.spades, 0);
+  }
 
   /// Creates a full, shuffled deck of 52 cards.
   static List<PlayingCard> createDeck() {
@@ -69,6 +72,19 @@ class PlayingCard extends Equatable {
         deck.add(PlayingCard(suit, value));
       }
     }
+    deck.shuffle();
+    return deck;
+  }
+
+  static List<PlayingCard> createDeck54() {
+    final List<PlayingCard> deck = [];
+    for (final suit in CardSuit.values) {
+      for (int value = 1; value <= 13; value++) {
+        deck.add(PlayingCard(suit, value));
+      }
+    }
+    deck.add(PlayingCard.joker());
+    deck.add(PlayingCard.joker());
     deck.shuffle();
     return deck;
   }
@@ -82,6 +98,10 @@ class PlayingCard extends Equatable {
       case CardSuit.spades: suitChar = 'S'; break;
     }
     return '$suitChar${card.value}';
+  }
+
+  bool isJoker() {
+    return value == 0;
   }
 
   @override

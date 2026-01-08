@@ -17,7 +17,7 @@ class WeaveZooCardThemeManager implements CardThemeManager {
 
   @override
   String getCardImagePath(PlayingCard card) {
-    if (card.value < 1 || card.value > 13) {
+    if (card.value < 0 || card.value > 13) {
       throw ArgumentError('Invalid card value: ${card.value}');
     }
     return 'assets/images/zoo_cards/zoo_cards_${card.value.toString().padLeft(3, '0')}.png';
@@ -29,8 +29,8 @@ class WeaveZooCardThemeManager implements CardThemeManager {
   late final List<AvatarEntity> _avatars;
 
   WeaveZooCardThemeManager() {
-    final avatarList = List.generate(13, (index) {
-      final number = (index + 1).toString().padLeft(3, '0');
+    final avatarList = List.generate(14, (index) {
+      final number = (index + 0).toString().padLeft(3, '0');
       // TODO: Add specific descriptions for weave theme avatars
       final description = '';
       return AvatarEntity('assets/images/zoo_cards/zoo_cards_$number.png', description);
