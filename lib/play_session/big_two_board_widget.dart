@@ -23,9 +23,12 @@ import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
 import 'package:ok_multipl_poker/style/my_button.dart';
 import 'package:ok_multipl_poker/play_session/selectable_player_hand_widget.dart';
 import 'package:ok_multipl_poker/play_session/debug_text_widget.dart';
+import '../audio/audio_controller.dart';
+import '../audio/sounds.dart';
 import '../entities/big_two_player.dart';
 import '../services/error_message_service.dart';
 import '../settings/settings.dart';
+import '../style/confetti.dart';
 import '../style/palette.dart';
 
 class BigTwoBoardWidget extends StatefulWidget {
@@ -51,7 +54,13 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   final _debugTextController = TextEditingController();
   final _errorMessageServices = ErrorMessageService();
 
-  bool _isMatching = false;
+  static const _celebrationDuration = Duration(milliseconds: 2000);
+  static const _preCelebrationDuration = Duration(milliseconds: 500);
+  bool _duringCelebration = false;
+  late DateTime _startOfPlay;
+  GameStatus _previousGameStatus = GameStatus.idle;
+
+  _LocalMatchStatus _localMatchStatus = _LocalMatchStatus.idle;
 
   @override
   void initState() {
@@ -81,6 +90,19 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
     _gameStateStreamSubscription = _gameController.gameStateStream.listen((gameState) {
       final bigTwoState = gameState?.customState;
       if (bigTwoState == null) return;
+      if (mounted && _localMatchStatus == _LocalMatchStatus.waiting) {
+        setState(() {
+          _localMatchStatus = _LocalMatchStatus.inRoom;
+        });
+      }
+      else if (_isGameReadyState(gameState)) {
+        _localMatchStatus = _LocalMatchStatus.idle;
+      }
+
+      if (_previousGameStatus == GameStatus.playing && gameState?.gameStatus == GameStatus.finished) {
+        _playerWon();
+      }
+      if (gameState?.gameStatus != null) _previousGameStatus = gameState!.gameStatus;
 
       // 更新本地玩家 狀態
       final myPlayerState = _bigTwoManager.myPlayer(_userId, bigTwoState);
@@ -104,15 +126,10 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   
   Future<void> _onMatchRoom() async {
     setState(() {
-      _isMatching = true;
+      _localMatchStatus = _LocalMatchStatus.waiting;
     });
     await _gameController.matchRoom();
     // matchRoom 完成後，Stream 應會更新狀態
-    if (mounted) {
-      setState(() {
-        _isMatching = false;
-      });
-    }
   }
 
   Future<void> _onStartGame() async {
@@ -131,33 +148,17 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
           final gameState = snapshot.data;
 
           // 若無狀態或不在遊戲中，顯示配對介面
-          if (gameState == null || gameState.gameStatus == GameStatus.matching) {
+          if (gameState == null || !_isGameReadyState(gameState)) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
-                    Text('game.matching_status'.tr(args: [_gameController.participantCount().toString()]))
-                  else
-                    Text('ready'.tr()),
-                  if (_isMatching || (gameState?.gameStatus == GameStatus.matching))
-                    ElevatedButton(
-                      onPressed: _onStartGame,
-                      child: Text('start'.tr()),
-                    ),
-                  const SizedBox(height: 20),
-                  if (!_isMatching && gameState == null)
-                    ElevatedButton(
-                      onPressed: _onMatchRoom,
-                      child: Text('match_room'.tr()),
-                    ),
-
-                  const SizedBox(height: 20),
-                  _leaveButton(),
-                  const SizedBox(height: 20),
-
-                  if (gameState != null && gameState.gameStatus == GameStatus.matching)
-                    const CircularProgressIndicator(),
+                  if (_localMatchStatus == _LocalMatchStatus.idle)
+                    _buildMatchStatusIdleUI(),
+                  if (_localMatchStatus == _LocalMatchStatus.waiting)
+                    _buildMatchStatusWaitingUI(),
+                  if (_localMatchStatus == _LocalMatchStatus.inRoom)
+                    _buildRoomMatchingUI(),
                 ],
               ),
             );
@@ -194,133 +195,123 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
             value: bigTwoState,
             child: Scaffold(
               backgroundColor: Colors.transparent,
-              body: Center(
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: SizedBox(
-                    width: BigTwoBoardWidget.designSize.width,
-                    height: BigTwoBoardWidget.designSize.height,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Center(
-                            child: Row(
-                              spacing: 30,
-                              children: [
-                                const Expanded(child: SizedBox.shrink()),
-
-                                _buildLeftOpponent(otherPlayers, bigTwoState),
-                                _buildTopOpponent(otherPlayers, bigTwoState),
-                                _buildRightOpponent(otherPlayers, bigTwoState),
-
-                                const Expanded(child: SizedBox.shrink()),
-                              ],
-                            )
-                          ),
-                        ),
-
-                        Expanded(
-                          flex: 7,
-                          child: Row(
+              body:
+              Stack(
+                  children: [
+                    Center(
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: SizedBox(
+                          width: BigTwoBoardWidget.designSize.width,
+                          height: BigTwoBoardWidget.designSize.height,
+                          child: Column(
                             children: [
-                              // Left Opponent (20%)
-                              SizedBox(width: BigTwoBoardWidget.designSize.width * 0.1,),
-
-                              // Table Card Area (Center)
                               Expanded(
+                                flex: 2,
                                 child: Center(
-                                  child: BigTwoBoardCardArea(),
+                                    child: Row(
+                                      spacing: 30,
+                                      children: [
+                                        const Expanded(child: SizedBox.shrink()),
+
+                                        _buildLeftOpponent(otherPlayers, bigTwoState),
+                                        _buildTopOpponent(otherPlayers, bigTwoState),
+                                        _buildRightOpponent(otherPlayers, bigTwoState),
+
+                                        const Expanded(child: SizedBox.shrink()),
+                                      ],
+                                    )
                                 ),
                               ),
 
-                              // Right Opponent (20%)
-                              SizedBox(width: BigTwoBoardWidget.designSize.width * 0.1,),
-                            ],
-                          ),
-                        ),
+                              Expanded(
+                                flex: 7,
+                                child: Row(
+                                  children: [
+                                    // Left Opponent (20%)
+                                    SizedBox(width: BigTwoBoardWidget.designSize.width * 0.1,),
 
-                        Expanded(
-                          flex: 20,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // 標示自己是否為 Current Player
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  PlayerAvatarWidget(
-                                    avatarNumber: settings.playerAvatarNumber.value,
-                                    size: 30, // Adjust size as needed
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 2),
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    decoration: BoxDecoration(
-                                      color: isMyTurn ? Colors.amber : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      "your_turn".tr(),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: isMyTurn ? Colors.black : Colors.transparent,
-                                        fontSize: 16,
+                                    // Table Card Area (Center)
+                                    Expanded(
+                                      child: Center(
+                                        child: BigTwoBoardCardArea(),
                                       ),
                                     ),
-                                  ),
 
-                                  const SizedBox(width: 20),
-                                  // --- 操作按鈕區域 (Play / Pass) ---
-                                  _functionButtons(bigTwoState),
-                                ],
-                              ),
-
-                              ChangeNotifierProvider.value(
-                                value: _player,
-                                child: SelectablePlayerHandWidget(
-                                  buttonWidgets: handTypeButtons,
+                                    // Right Opponent (20%)
+                                    SizedBox(width: BigTwoBoardWidget.designSize.width * 0.1,),
+                                  ],
                                 ),
                               ),
-                              Expanded(child: SizedBox.shrink()),
+
+                              Expanded(
+                                flex: 20,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    // 標示自己是否為 Current Player
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        PlayerAvatarWidget(
+                                          avatarNumber: settings.playerAvatarNumber.value,
+                                          size: 30, // Adjust size as needed
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 2),
+                                          margin: const EdgeInsets.only(bottom: 8),
+                                          decoration: BoxDecoration(
+                                            color: isMyTurn ? Colors.amber : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            "your_turn".tr(),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: isMyTurn ? Colors.black : Colors.transparent,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 20),
+                                        // --- 操作按鈕區域 (Play / Pass) ---
+                                        _functionButtons(bigTwoState),
+                                      ],
+                                    ),
+
+                                    ChangeNotifierProvider.value(
+                                      value: _player,
+                                      child: SelectablePlayerHandWidget(
+                                        buttonWidgets: handTypeButtons,
+                                      ),
+                                    ),
+                                    Expanded(child: SizedBox.shrink()),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+
+                    SizedBox.expand(
+                      child: Visibility(
+                        visible: _duringCelebration,
+                        child: IgnorePointer(
+                          child: Confetti(isStopped: !_duringCelebration),
+                        ),
+                      ),
+                    ),
+                  ]
               ),
               // Use Overlay or a separate top-level Stack for overlays like "Winner" or Debug tools
               // For now, simple overlays can be added here if needed, but keeping the main game logic inside the Grid.
               floatingActionButton: gameState.gameStatus == GameStatus.finished
-                  ? Container(
-                      color: Colors.black54,
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'game.winner_status'.tr(args: [
-                              gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner ?? "",
-                              bigTwoState.restartRequesters.length.toString(),
-                              bigTwoState.participants.length.toString()
-                            ]),
-                            style: const TextStyle(color: Colors.white, fontSize: 24),
-                            textAlign: TextAlign.center,
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              _gameController.restart();
-                            },
-                            child: Text('game.restart'.tr()),
-                          ),
-                          _endButton()
-                        ],
-                      ),
-                    )
+                  ? _gameOverUI(gameState, bigTwoState)
                   : null,
             ),
           );
@@ -361,6 +352,98 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
      return otherPlayers;
   }
 
+  Future<void> _playerWon() async {
+    await Future<void>.delayed(_preCelebrationDuration);
+    if (!mounted) return;
+
+    setState(() {
+      _duringCelebration = true;
+    });
+
+    final audioController = context.read<AudioController>();
+    audioController.playSfx(SfxType.congrats);
+
+    await Future<void>.delayed(_celebrationDuration);
+    if (!mounted) return;
+
+    setState(() {
+      _duringCelebration = false;
+    });
+  }
+
+  bool _isGameReadyState(TurnBasedGameState<BigTwoState>? bigTwoState) {
+    return !(bigTwoState == null || bigTwoState.gameStatus == GameStatus.matching);
+  }
+
+  Widget _gameOverUI(TurnBasedGameState<BigTwoState> gameState, BigTwoState bigTwoState) {
+    return
+      Container(
+        color: Colors.black54,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'game.winner_status'.tr(args: [
+                gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner ?? "",
+                bigTwoState.restartRequesters.length.toString(),
+                bigTwoState.participants.length.toString()
+              ]),
+              style: const TextStyle(color: Colors.white, fontSize: 24),
+              textAlign: TextAlign.center,
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _gameController.restart();
+              },
+              child: Text('game.restart'.tr()),
+            ),
+            SizedBox(height: 20),
+            _endButton()
+          ],
+        ),
+      );
+  }
+
+  Widget _buildMatchStatusIdleUI() {
+    return Column(
+      children: [
+        Text('ready'.tr()),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _onMatchRoom,
+          child: Text('match_room'.tr()),
+        ),
+        const SizedBox(height: 20),
+        _leaveButton(),
+      ],
+    );
+  }
+
+  Widget _buildMatchStatusWaitingUI() {
+    return Column(
+        children: [
+          Text('game.matching_status'.tr(args: [_gameController.participantCount().toString()])),
+          const CircularProgressIndicator(),
+        ],
+    );
+  }
+
+  Widget _buildRoomMatchingUI() {
+    return Column(
+      children: [
+        Text('game.matching_status'.tr(args: [_gameController.participantCount().toString()])),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _onStartGame,
+          child: Text('start'.tr()),
+        ),
+        const SizedBox(height: 20),
+        _leaveButton(),
+      ],
+    );
+  }
+
   Widget _buildTopOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
     final ordered = _getOrderedOpponents(otherPlayers);
     if (ordered.isNotEmpty) {
@@ -390,6 +473,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   Widget _leaveButton() {
     return ElevatedButton(
       onPressed: () {
+        _localMatchStatus = _LocalMatchStatus.idle;
         _gameController.leaveRoom();
         GoRouter.of(context).go('/');
       },
@@ -400,6 +484,7 @@ class _BigTwoBoardWidgetState extends State<BigTwoBoardWidget> {
   Widget _endButton() {
     return ElevatedButton(
       onPressed: () {
+        _localMatchStatus = _LocalMatchStatus.idle;
         _gameController.endRoom();
         GoRouter.of(context).go('/');
       },
@@ -601,4 +686,10 @@ class _OpponentHand extends StatelessWidget {
       ),
     );
   }
+}
+
+enum _LocalMatchStatus {
+  idle,        // 尚未按配對
+  waiting,    // 已送出配對請求，等待 Firestore
+  inRoom,      // 已有 BigTwoState
 }
