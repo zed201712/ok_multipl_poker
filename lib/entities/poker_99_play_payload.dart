@@ -6,9 +6,16 @@ part 'poker_99_play_payload.g.dart';
 @JsonSerializable()
 class Poker99PlayPayload {
   final List<String> cards;
+
+  @JsonKey(
+    fromJson: Poker99Action.fromJson,
+    toJson: _poker99ActionToJson,
+  )
   final Poker99Action action;
   final int value;
   final String targetPlayerId;
+
+  static String _poker99ActionToJson(Poker99Action action) => action.toJson();
 
   Poker99PlayPayload({
     required this.cards,

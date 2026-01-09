@@ -7,6 +7,7 @@ import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_action.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'package:ok_multipl_poker/services/error_message_service.dart';
+import '../entities/poker_player.dart';
 import 'big_two_deck_utils_mixin.dart';
 import 'package:collection/collection.dart';
 
@@ -19,7 +20,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
   @override
   Poker99State initializeGame(Room room) {
     final deck = PlayingCard.createDeck54();
-    final players = <BigTwoPlayer>[];
+    final players = <PokerPlayer>[];
     var seats = List<String>.from(room.seats);
     seats = room.randomizeSeats ? (seats..shuffle()) : seats;
 
@@ -50,12 +51,10 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
         avatarNumber = participant.avatarNumber;
       }
 
-      players.add(BigTwoPlayer(
+      players.add(PokerPlayer(
         uid: uid,
-        name: name,
         cards: hand.map(PlayingCard.cardToString).toList(),
-        hasPassed: false,
-        isVirtualPlayer: isVirtual,
+        name: name,
         avatarNumber: avatarNumber,
       ));
     }
@@ -74,10 +73,10 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
     );
   }
 
-  BigTwoPlayer? myPlayer(String myUserId, Poker99State state) =>
+  PokerPlayer? myPlayer(String myUserId, Poker99State state) =>
       state.participants.firstWhereOrNull((p) => p.uid == myUserId);
 
-  List<BigTwoPlayer> otherPlayers(String myUserId, Poker99State state) {
+  List<PokerPlayer> otherPlayers(String myUserId, Poker99State state) {
     final seatedPlayers = state.seatedPlayersList();
     final currentIndex = state.indexOfPlayerInSeats(myUserId, seatedPlayers: seatedPlayers);
     if (currentIndex == null) return [];
@@ -120,11 +119,10 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
       newRequesters.add(participantId);
     }
 
-    final realPlayersCount =
-        currentState.participants.where((p) => !p.isVirtualPlayer).length;
+    final playersCount = currentState.participants.length;
 
     if (currentState.seats.isNotEmpty &&
-        newRequesters.length >= realPlayersCount) {
+        newRequesters.length >= playersCount) {
       return initializeGame(room);
     }
 
@@ -198,7 +196,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
 
     // 更新玩家手牌
     final newPlayer = player.copyWith(cards: tempHand);
-    final newParticipants = List<BigTwoPlayer>.from(state.participants);
+    final newParticipants = List<PokerPlayer>.from(state.participants);
     newParticipants[playerIndex] = newPlayer;
 
     // 3. 計算下一位玩家
@@ -272,7 +270,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
     // 處理指定 (Assign)
     if (targetId != null && seats.contains(targetId)) {
       final target = state.participants.firstWhereOrNull((p) => p.uid == targetId);
-      if (target != null && !target.hasPassed) return targetId;
+      if (target != null && target.cards.isNotEmpty) return targetId;
     }
 
     int step = state.isReverse ? -1 : 1;
@@ -284,7 +282,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
     // 尋找下一個未淘汰玩家
     while (state.participants
         .firstWhere((p) => p.uid == seats[nextIdx])
-        .hasPassed) {
+        .cards.isEmpty) {
       nextIdx = (nextIdx + (state.isReverse ? -1 : 1)) % seats.length;
       if (nextIdx < 0) nextIdx += seats.length;
       if (nextIdx == currentIndex) break;
@@ -300,7 +298,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
     while (true) {
       final currentPlayer = currentState.participants
           .firstWhere((p) => p.uid == currentState.currentPlayerId);
-      if (currentPlayer.hasPassed) {
+      if (currentPlayer.cards.isEmpty) {
         // 已淘汰，跳到下一個 (理論上不會走到這)
         currentState = currentState.copyWith(
           currentPlayerId: _calculateNextPlayerId(currentState),
@@ -312,21 +310,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
           getPlayableCards(currentState, currentPlayer.cards.toPlayingCards());
       if (playable.isEmpty) {
         // 淘汰該玩家
-        final pIdx = currentState.participants
-            .indexWhere((p) => p.uid == currentState.currentPlayerId);
-        final updatedParticipants =
-            List<BigTwoPlayer>.from(currentState.participants);
-        updatedParticipants[pIdx] = currentPlayer.copyWith(hasPassed: true);
-
-        currentState = currentState.copyWith(participants: updatedParticipants);
-
-        // 檢查是否只剩一人
-        final activePlayers =
-            updatedParticipants.where((p) => !p.hasPassed).toList();
-        if (activePlayers.length == 1) {
-          return currentState.copyWith(winner: activePlayers.first.uid);
-        }
-
+        //TODO
         // 切換到下一個未淘汰的人
         currentState = currentState.copyWith(
           currentPlayerId: _calculateNextPlayerId(currentState),

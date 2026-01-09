@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:ok_multipl_poker/entities/poker_player.dart';
 import 'big_two_player.dart';
 
 part 'poker_99_state.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class Poker99State {
-  final List<BigTwoPlayer> participants;
+  final List<PokerPlayer> participants;
   final List<String> seats;
   final String currentPlayerId;
   final List<String> lastPlayedHand;
@@ -55,17 +56,17 @@ class Poker99State {
     return jsonEncode(toJson());
   }
 
-  List<BigTwoPlayer> seatedPlayersList() {
+  List<PokerPlayer> seatedPlayersList() {
     return seats
         .map((e) => participants.firstWhere((p) => p.uid == e))
         .toList();
   }
 
-  BigTwoPlayer? getParticipantByID(String playerID) {
+  PokerPlayer? getParticipantByID(String playerID) {
     return participants.firstWhereOrNull((p) => p.uid == playerID);
   }
 
-  int? indexOfPlayerInSeats(String playerID, {List<BigTwoPlayer>? seatedPlayers}) {
+  int? indexOfPlayerInSeats(String playerID, {List<PokerPlayer>? seatedPlayers}) {
     final participants = seatedPlayers ?? seatedPlayersList();
 
     final total = participants.length;
@@ -91,14 +92,14 @@ class Poker99State {
     final next1Index = currentIndex + 1;
     final range = Iterable.generate(total - 1, (i) => (i + next1Index) % total);
     final nextPlayerIndex = range.firstWhereOrNull((
-        offset) => (currentSeats[offset].hasPassed == false));
+        offset) => (currentSeats[offset].cards.isNotEmpty));
 
     if (nextPlayerIndex == null) return null;
     return currentSeats[nextPlayerIndex].uid;
   }
 
   Poker99State copyWith({
-    List<BigTwoPlayer>? participants,
+    List<PokerPlayer>? participants,
     List<String>? seats,
     String? currentPlayerId,
     List<String>? lastPlayedHand,

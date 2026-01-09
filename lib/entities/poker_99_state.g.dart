@@ -8,7 +8,7 @@ part of 'poker_99_state.dart';
 
 Poker99State _$Poker99StateFromJson(Map<String, dynamic> json) => Poker99State(
   participants: (json['participants'] as List<dynamic>)
-      .map((e) => BigTwoPlayer.fromJson(e as Map<String, dynamic>))
+      .map((e) => PokerPlayer.fromJson(e as Map<String, dynamic>))
       .toList(),
   seats: (json['seats'] as List<dynamic>).map((e) => e as String).toList(),
   currentPlayerId: json['currentPlayerId'] as String,
