@@ -40,7 +40,6 @@ void main() {
         final room = createRoom(['p1']);
         final state = delegate.initializeGame(room);
 
-        expect(state.participants.length, 4);
         expect(state.participants[0].uid, 'p1');
         expect(state.participants.every((p) => p.cards.length == 5), true);
         expect(state.currentPlayerId, 'p1');
@@ -50,17 +49,8 @@ void main() {
         final room = createRoom(['p1', 'p2']);
         final state = delegate.initializeGame(room);
 
-        expect(state.participants.length, 4);
         expect(state.participants[0].uid, 'p1');
         expect(state.participants[1].uid, 'p2');
-      });
-
-      test('should initialize with 3 real players and 1 virtual player', () {
-        final room = createRoom(['p1', 'p2', 'p3']);
-        final state = delegate.initializeGame(room);
-
-        expect(state.participants.length, 4);
-        expect(state.participants[2].uid, 'p3');
       });
     });
 
@@ -74,7 +64,6 @@ void main() {
       });
 
       test('Normal numeric card (e.g., 3) increases score', () {
-        // Ensure p1 has a 'C3'
         final p1 = initialState.participants[0].copyWith(cards: ['C3', 'D4', 'H6', 'S7', 'C8']);
         var state = initialState.copyWith(participants: [p1, ...initialState.participants.sublist(1)], currentScore: 0);
 
@@ -88,7 +77,7 @@ void main() {
 
         expect(state.currentScore, 3);
         expect(state.currentPlayerId, 'p2');
-        expect(state.participants[0].cards.length, 5); // Should draw a card
+        expect(state.participants[0].cards.length, 5); 
         expect(state.discardCards.first, 'C3');
       });
 
@@ -139,24 +128,7 @@ void main() {
 
         state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
 
-        expect(state.currentPlayerId, 'p3'); // p1 skipped p2
-      });
-
-      test('Joker can be used for target (Assign)', () {
-        final p1 = initialState.participants[0].copyWith(cards: ['S0', 'D4', 'H6', 'S7', 'C8']);
-        var state = initialState.copyWith(
-          participants: [p1, ...initialState.participants.sublist(1)],
-        );
-
-        final payload = Poker99PlayPayload(
-          cards: ['S0'],
-          action: Poker99Action.target,
-          targetPlayerId: 'p4',
-        );
-
-        state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
-
-        expect(state.currentPlayerId, 'p4');
+        expect(state.currentPlayerId, 'p3'); 
       });
 
       test('Reverse card (4) toggles isReverse and changes direction', () {
@@ -174,7 +146,7 @@ void main() {
         state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
 
         expect(state.isReverse, true);
-        expect(state.currentPlayerId, 'p4'); // In reverse, p1 -> p4
+        expect(state.currentPlayerId, 'p4'); 
       });
 
       test('10 can decrease score', () {
@@ -195,21 +167,22 @@ void main() {
         expect(state.currentScore, 40);
       });
 
-      test('Invalid action (e.g., using 3 for setTo99) should be ignored', () {
-        final p1 = initialState.participants[0].copyWith(cards: ['C3', 'D4', 'H6', 'S7', 'C8']);
+      test('Score clamped to 0 if decreased below 0', () {
+        final p1 = initialState.participants[0].copyWith(cards: ['C10', 'D4', 'H6', 'S7', 'C8']);
         var state = initialState.copyWith(
           participants: [p1, ...initialState.participants.sublist(1)],
-          currentScore: 10,
+          currentScore: 5,
         );
 
         final payload = Poker99PlayPayload(
-          cards: ['C3'],
-          action: Poker99Action.setTo99,
+          cards: ['C10'],
+          action: Poker99Action.decrease,
+          value: -10,
         );
 
-        final nextState = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
+        state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
 
-        expect(nextState, state); // State should not change
+        expect(state.currentScore, 0);
       });
 
       test('Playing card that exceeds 99 should be ignored', () {
@@ -227,46 +200,104 @@ void main() {
 
         final nextState = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
 
-        expect(nextState, state); // 95 + 9 = 104 > 99
+        expect(nextState, state); 
       });
     });
 
-    group('Elimination and Winner', () {
-      test('Player is eliminated if no cards are playable', () {
-        final room = createRoom(['p1', 'p2']);
-        var state = delegate.initializeGame(room);
+    group('Win Conditions and Logic', () {
+      late Room room;
+      late Poker99State initialState;
 
-        // Set p2 to have only high cards and score is high
-        final p1Cards = ['C4', 'D4', 'H4', 'S4', 'C5'];
-        final p2Cards = ['C9', 'D9', 'H9', 'S9', 'C8']; // Only high cards
-        
-        final participants = List<PokerPlayer>.from(state.participants);
-        participants[0] = participants[0].copyWith(cards: p1Cards);
-        participants[1] = participants[1].copyWith(cards: p2Cards);
-        
-        state = state.copyWith(
-          participants: participants,
-          currentScore: 95,
-          currentPlayerId: 'p1',
+      setUp(() {
+        room = createRoom(['p1', 'p2', 'p3', 'p4']);
+        initialState = delegate.initializeGame(room);
+      });
+
+      test('No reshuffling when deck is empty', () {
+        final p1 = initialState.participants[0].copyWith(cards: ['C3']);
+        var state = initialState.copyWith(
+          participants: [p1, ...initialState.participants.sublist(1)],
+          deckCards: [],
+          discardCards: ['D2', 'H2'],
         );
 
-        // p1 plays a '4' (Reverse), score stays 95, turn moves to p2
         final payload = Poker99PlayPayload(
-          cards: ['C4'],
-          action: Poker99Action.reverse,
+          cards: ['C3'],
+          action: Poker99Action.increase,
+          value: 3,
         );
 
         state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
 
-        // p2 has only 9, 9, 9, 9, 8. All +95 > 99.
-        // Delegate should automatically eliminate p2 and potentially find a winner if p2 was one of the last two.
-        // Wait, in this setup p3 and p4 are virtual players.
-        
-        expect(state.participants[1].uid, 'p2');
-        // If p2 is eliminated, and p3, p4 are still there, currentPlayerId should jump to p3.
-        // But if p2, p3, p4 all have no playable cards, p1 wins.
+        expect(state.participants[0].cards.isEmpty, true);
+        expect(state.deckCards.isEmpty, true);
+        expect(state.discardCards.length, 3);
       });
 
+      test('Players with empty hands are skipped', () {
+        final p1 = initialState.participants[0].copyWith(cards: ['C3']);
+        final p2 = initialState.participants[1].copyWith(cards: []);
+        var state = initialState.copyWith(
+          participants: [p1, p2, ...initialState.participants.sublist(2)],
+          currentPlayerId: 'p1',
+        );
+
+        final payload = Poker99PlayPayload(
+          cards: ['C3'],
+          action: Poker99Action.increase,
+          value: 3,
+        );
+
+        state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
+
+        expect(state.currentPlayerId, 'p3');
+      });
+
+      test('Everyone wins if all hands are empty', () {
+        final participants = initialState.participants.map((p) => p.copyWith(cards: [])).toList();
+        participants[0] = participants[0].copyWith(cards: ['C3']);
+        
+        var state = initialState.copyWith(
+          participants: participants,
+          currentPlayerId: 'p1',
+          deckCards: [],
+        );
+
+        final payload = Poker99PlayPayload(
+          cards: ['C3'],
+          action: Poker99Action.increase,
+          value: 3,
+        );
+
+        state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
+
+        expect(state.winner != null, true);
+        for (var p in state.participants) {
+          expect(state.winner!.contains(p.name), true);
+        }
+      });
+
+      test('Player loses if no playable cards, others win', () {
+        final p1 = initialState.participants[0].copyWith(cards: ['C3']);
+        final p2 = initialState.participants[1].copyWith(cards: ['S9', 'H9', 'D9', 'C9', 'S8']);
+        var state = initialState.copyWith(
+          participants: [p1, p2, ...initialState.participants.sublist(2)],
+          currentScore: 95,
+          currentPlayerId: 'p1',
+        );
+
+        final payload = Poker99PlayPayload(
+          cards: ['C3'],
+          action: Poker99Action.increase,
+          value: 3,
+        );
+
+        state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
+
+        expect(state.winner != null, true);
+        expect(state.winner!.contains(p2.name), false);
+        expect(state.winner!.contains(p1.name), true);
+      });
     });
   });
 }

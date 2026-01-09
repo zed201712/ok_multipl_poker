@@ -13,8 +13,7 @@ import 'package:collection/collection.dart';
 
 /// Poker 99 遊戲邏輯代理
 /// 負責處理遊戲規則、狀態轉移與合法性檢查
-class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
-    with BigTwoDeckUtilsMixin {
+class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
   ErrorMessageService? _errorMessageService;
 
   @override
@@ -24,32 +23,18 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
     var seats = List<String>.from(room.seats);
     seats = room.randomizeSeats ? (seats..shuffle()) : seats;
 
-    // Poker 99 通常為 4 人局，不足則補虛擬玩家
-    if (seats.length < 4) {
-      final virtualPlayerCount = 4 - seats.length;
-      final virtualPlayers = Iterable.generate(virtualPlayerCount, (i) => i + 1)
-          .map((i) => "virtual_player$i");
-      seats.addAll(virtualPlayers);
-    }
-
     // 初始手牌每人 5 張
     const cardsPerPlayer = 5;
 
     for (int i = 0; i < seats.length; i++) {
       final uid = seats[i];
-      final isVirtual = uid.startsWith('virtual_player');
       final hand = deck.sublist(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
 
       String name;
       int avatarNumber;
-      if (isVirtual) {
-        name = 'AI $uid';
-        avatarNumber = 0; // Default AI avatar
-      } else {
-        final participant = room.participants.firstWhere((p) => p.id == seats[i]);
-        name = participant.name;
-        avatarNumber = participant.avatarNumber;
-      }
+      final participant = room.participants.firstWhere((p) => p.id == seats[i]);
+      name = participant.name;
+      avatarNumber = participant.avatarNumber;
 
       players.add(PokerPlayer(
         uid: uid,
@@ -175,20 +160,16 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
         break;
     }
 
-    // 驗證：如果超過 99 或小於 0
-    if (newScore > 99 || newScore < 0) return state;
+    // 驗證：如果超過 99
+    if (newScore > 99) return state;
+    // 如果低於 0，將 score 設為 0
+    if (newScore < 0) newScore = 0;
 
     // 2. 抽牌邏輯
     final deck = List<String>.from(state.deckCards);
     final discard = List<String>.from(state.discardCards);
 
-    if (deck.isEmpty && discard.isNotEmpty) {
-      // 洗牌將棄牌堆補回牌堆
-      final newDeck = List<String>.from(discard)..shuffle();
-      deck.addAll(newDeck);
-      discard.clear();
-    }
-
+    // 牌堆不會重洗，如果牌堆沒牌，則不用抽牌
     if (deck.isNotEmpty) {
       final drawnCard = deck.removeAt(0);
       tempHand.add(drawnCard);
@@ -292,36 +273,31 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State>
   }
 
   Poker99State _checkEliminationAndWinner(Poker99State state) {
-    var currentState = state;
+    // 當所有人都出完手牌，則所有人獲勝
+    final allPlayersOut = state.participants.every((p) => p.cards.isEmpty);
+    if (allPlayersOut) {
+      final winners = state.participants.map((p) => p.name).join(', ');
+      return state.copyWith(winner: winners);
+    }
 
-    // 檢查當前玩家 (剛輪到的人) 是否還有牌可出
-    while (true) {
-      final currentPlayer = currentState.participants
-          .firstWhere((p) => p.uid == currentState.currentPlayerId);
-      if (currentPlayer.cards.isEmpty) {
-        // 已淘汰，跳到下一個 (理論上不會走到這)
-        currentState = currentState.copyWith(
-          currentPlayerId: _calculateNextPlayerId(currentState),
-        );
-        continue;
-      }
+    final currentPlayer = state.participants
+        .firstWhereOrNull((p) => p.uid == state.currentPlayerId);
 
+    // 如果輪到下個必須出牌的玩家，但他出的所有牌都會超過 99，則此人為輸家
+    if (currentPlayer != null && currentPlayer.cards.isNotEmpty) {
       final playable =
-          getPlayableCards(currentState, currentPlayer.cards.toPlayingCards());
+          getPlayableCards(state, currentPlayer.cards.toPlayingCards());
       if (playable.isEmpty) {
-        // 淘汰該玩家
-        //TODO
-        // 切換到下一個未淘汰的人
-        currentState = currentState.copyWith(
-          currentPlayerId: _calculateNextPlayerId(currentState),
-        );
-      } else {
-        // 有牌可出，停止檢查
-        break;
+        // 此人為輸家，將所有其他玩家的名字設定到 winner
+        final winners = state.participants
+            .where((p) => p.uid != state.currentPlayerId)
+            .map((p) => p.name)
+            .join(', ');
+        return state.copyWith(winner: winners);
       }
     }
 
-    return currentState;
+    return state;
   }
 
   /// 獲取玩家手牌中目前可出的卡片 (不會導致總分超過 99)

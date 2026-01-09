@@ -3,7 +3,7 @@ _____
 
 用 @big_two_delegate_spec_012.md 的風格, 寫1個spec, 建立spec檔案
 | **任務 ID (Task ID)** | `FEAT-BIG-TWO-Board-Card_Area-001` |
-| **創建日期 (Date)** | `2025/12/25` |
+| **創建日期 (Date)** | `2026/01/09` |
 
 狀態管理, 使用Provider
 遵循 `effective_dart` 程式碼風格
@@ -12,6 +12,7 @@ _____
 參考 @demo_room_widget.dart
 製作一個demo_room_state_widget
 
+不要製造多餘的git diff, 非必要不要刪除註解, 不要調整文字排版
 檢查有無邏輯錯誤, 並提供改善建議
 
 然後給這個spec 接下來要寫的程式碼, 1個commit message
