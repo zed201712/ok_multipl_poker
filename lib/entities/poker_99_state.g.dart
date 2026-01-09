@@ -18,6 +18,7 @@ Poker99State _$Poker99StateFromJson(Map<String, dynamic> json) => Poker99State(
           .toList() ??
       const [],
   lastPlayedById: json['lastPlayedById'] as String? ?? '',
+  lastAction: json['lastAction'] as String? ?? '',
   winner: json['winner'] as String?,
   currentScore: (json['currentScore'] as num?)?.toInt() ?? 0,
   restartRequesters:
@@ -33,8 +34,9 @@ Poker99State _$Poker99StateFromJson(Map<String, dynamic> json) => Poker99State(
           ?.map((e) => e as String)
           .toList() ??
       const [],
-  lastAction: json['lastAction'] as String? ?? '',
   isReverse: json['isReverse'] as bool? ?? false,
+  targetPlayerId: json['targetPlayerId'] as String? ?? '',
+  thinkingTimeLimit: (json['thinkingTimeLimit'] as num?)?.toInt() ?? 5,
 );
 
 Map<String, dynamic> _$Poker99StateToJson(Poker99State instance) =>
@@ -44,11 +46,13 @@ Map<String, dynamic> _$Poker99StateToJson(Poker99State instance) =>
       'currentPlayerId': instance.currentPlayerId,
       'lastPlayedHand': instance.lastPlayedHand,
       'lastPlayedById': instance.lastPlayedById,
+      'lastAction': instance.lastAction,
       'winner': instance.winner,
       'currentScore': instance.currentScore,
       'restartRequesters': instance.restartRequesters,
       'deckCards': instance.deckCards,
       'discardCards': instance.discardCards,
-      'lastAction': instance.lastAction,
       'isReverse': instance.isReverse,
+      'targetPlayerId': instance.targetPlayerId,
+      'thinkingTimeLimit': instance.thinkingTimeLimit,
     };

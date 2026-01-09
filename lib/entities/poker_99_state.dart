@@ -12,13 +12,15 @@ class Poker99State {
   final String currentPlayerId;
   final List<String> lastPlayedHand;
   final String lastPlayedById;
+  final String lastAction;
   final String? winner;
   final int currentScore;
   final List<String> restartRequesters;
   final List<String> deckCards;
   final List<String> discardCards;
-  final String lastAction;
   final bool isReverse;
+  final String targetPlayerId;
+  final int thinkingTimeLimit;
 
   bool get isFirstTurn => discardCards.isEmpty && lastPlayedHand.isEmpty && deckCards.isEmpty;
   List<String> get uselessCards => deckCards + discardCards;
@@ -29,13 +31,15 @@ class Poker99State {
     required this.currentPlayerId,
     this.lastPlayedHand = const [],
     this.lastPlayedById = '',
+    this.lastAction = '',
     this.winner,
     this.currentScore = 0,
     this.restartRequesters = const [],
     this.deckCards = const [],
     this.discardCards = const [],
-    this.lastAction = '',
     this.isReverse = false,
+    this.targetPlayerId = '',
+    this.thinkingTimeLimit = 5,
   });
 
   factory Poker99State.fromJson(Map<String, dynamic> json) =>
@@ -99,13 +103,15 @@ class Poker99State {
     String? currentPlayerId,
     List<String>? lastPlayedHand,
     String? lastPlayedById,
+    String? lastAction,
     String? winner,
     int? currentScore,
     List<String>? restartRequesters,
     List<String>? deckCards,
     List<String>? discardCards,
-    String? lastAction,
     bool? isReverse,
+    String? targetPlayerId,
+    int? thinkingTimeLimit,
   }) {
     return Poker99State(
       participants: participants ?? this.participants,
@@ -113,13 +119,15 @@ class Poker99State {
       currentPlayerId: currentPlayerId ?? this.currentPlayerId,
       lastPlayedHand: lastPlayedHand ?? this.lastPlayedHand,
       lastPlayedById: lastPlayedById ?? this.lastPlayedById,
+      lastAction: lastAction ?? this.lastAction,
       winner: winner ?? this.winner,
       currentScore: currentScore ?? this.currentScore,
       restartRequesters: restartRequesters ?? this.restartRequesters,
       deckCards: deckCards ?? this.deckCards,
       discardCards: discardCards ?? this.discardCards,
-      lastAction: lastAction ?? this.lastAction,
       isReverse: isReverse ?? this.isReverse,
+      targetPlayerId: targetPlayerId ?? this.targetPlayerId,
+      thinkingTimeLimit: thinkingTimeLimit ?? this.thinkingTimeLimit,
     );
   }
 
