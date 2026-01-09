@@ -39,5 +39,13 @@
   },
   "common": {
     "close": "Close"
+  },
+  "poker_99": {
+    "target": "Target",
+    "target_player": "Target {}",
+    "reverse": "Reverse",
+    "skip": "Skip",
+    "next_turn": "Next Turn",
+    "current_score": "Score"
   }
 }

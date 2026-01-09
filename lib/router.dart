@@ -4,6 +4,8 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ok_multipl_poker/play_session/poker_99_board_widget.dart';
+import 'package:ok_multipl_poker/play_session/poker_99_play_session_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'game_internals/score.dart';
@@ -58,6 +60,11 @@ final router = GoRouter(
               },
             ),
           ],
+        ),
+        GoRoute(
+          path: 'poker99',
+          builder: (context, state) =>
+          const Poker99PlaySessionScreen(key: Key('poker99widget')),
         ),
         GoRoute(
           path: 'settings',

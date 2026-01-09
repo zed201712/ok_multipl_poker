@@ -39,5 +39,13 @@
   },
   "common": {
     "close": "閉じる"
+  },
+  "poker_99": {
+    "target": "指定",
+    "target_player": "{} を指定",
+    "reverse": "反転",
+    "skip": "スキップ",
+    "next_turn": "次の番",
+    "current_score": "現在のスコア"
   }
 }

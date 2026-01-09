@@ -193,7 +193,7 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
 
                               // 第二列: 中央牌區 (顯示分數)
                               Expanded(
-                                flex: 7,
+                                flex: 12,
                                 child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -220,7 +220,7 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
 
                               // 第三列: 玩家手牌與操作
                               Expanded(
-                                flex: 20,
+                                flex: 15,
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
@@ -299,19 +299,31 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
   }
 
   List<Widget> _buildActionButtons(Poker99State state, bool isMyTurn) {
-    if (!isMyTurn) return [];
-    if (_player.selectedCards.isEmpty) return [];
+    if (!isMyTurn || _player.selectedCards.isEmpty) {
+      return [const SizedBox(height: 22)];
+    }
 
     final card = _player.selectedCards.first;
     final List<Widget> buttons = [];
 
-    void addActionButton(String label, Poker99Action action, {int value = 0}) {
+    void addActionButton(String label, Poker99Action action, {int value = 0, String targetId = ''}) {
+      // 檢查此行動是否會導致超過 99 分
+      int nextScore = state.currentScore;
+      if (action == Poker99Action.increase || action == Poker99Action.decrease) {
+        nextScore += value;
+      } else if (action == Poker99Action.setTo99) {
+        nextScore = 99;
+      } else if (action == Poker99Action.setToZero) {
+        nextScore = 0;
+      }
+      
+      final bool isEnabled = nextScore <= 99;
+
       buttons.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4.0),
           child: MyButton(
-            onPressed: () {
-              final targetId = action == Poker99Action.target ? (state.nextPlayerId() ?? '') : '';
+            onPressed: isEnabled ? () {
               _gameController.playCards(Poker99PlayPayload(
                 cards: [PlayingCard.cardToString(card)],
                 action: action,
@@ -319,17 +331,26 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
                 targetPlayerId: targetId,
               ));
               _player.setCardSelection([]);
-            },
+            } : null,
             child: Text(label),
           ),
         )
       );
     }
 
+    void addTargetButtons() {
+      final otherPlayers = _poker99Manager.otherPlayers(_userId, state);
+      for (final p in otherPlayers) {
+        if (p.cards.isNotEmpty) {
+          addActionButton('poker_99.target_player'.tr(args: [p.name]), Poker99Action.target, targetId: p.uid);
+        }
+      }
+    }
+
     if (card.isJoker()) {
       addActionButton('99', Poker99Action.setTo99);
       addActionButton('0', Poker99Action.setToZero);
-      addActionButton('poker_99.target'.tr(), Poker99Action.target);
+      addTargetButtons();
       addActionButton('poker_99.reverse'.tr(), Poker99Action.reverse);
       addActionButton('poker_99.skip'.tr(), Poker99Action.skip);
     } else {
@@ -349,7 +370,7 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
           addActionButton('-10', Poker99Action.decrease, value: -10);
           break;
         case 5:
-          addActionButton('poker_99.target'.tr(), Poker99Action.target);
+          addTargetButtons();
           break;
         case 4:
           addActionButton('poker_99.reverse'.tr(), Poker99Action.reverse);
@@ -358,15 +379,20 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
           if (card.suit == CardSuit.spades) {
             addActionButton('0', Poker99Action.setToZero);
           } else {
-            addActionButton('poker_99.play'.tr(), Poker99Action.increase, value: 1);
+            addActionButton('play_action'.tr(), Poker99Action.increase, value: 1);
           }
           break;
         default:
-          addActionButton('poker_99.play'.tr(), Poker99Action.increase, value: card.value);
+          addActionButton('play_action'.tr(), Poker99Action.increase, value: card.value);
       }
     }
 
-    return buttons;
+    return [
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: buttons),
+      )
+    ];
   }
 
   Future<void> _playerWon() async {

@@ -39,5 +39,13 @@
   },
   "common": {
     "close": "關閉"
+  },
+  "poker_99": {
+    "target": "指定",
+    "target_player": "指定 {}",
+    "reverse": "反轉",
+    "skip": "跳過",
+    "next_turn": "下個出牌",
+    "current_score": "目前分數"
   }
 }
