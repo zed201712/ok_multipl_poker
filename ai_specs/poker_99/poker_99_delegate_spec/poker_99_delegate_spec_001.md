@@ -75,3 +75,16 @@
 #### **4.1 潛在影響分析**
 *   **Payload 結構**: `play_cards` 行動的 `payload` 需要擴展以支援 10, Q 的正負選擇以及 5 的目標指定。
 *   **與 Big Two 差異**: Poker 99 是「先出牌後補牌」，這與 Big Two 「打完為止」的邏輯不同，需確保 `deckCards` 管理正確。
+
+---
+
+### **Section 5: 產出 Commit Message**
+
+```text
+feat: implement Poker 99 core rules, card effects, and elimination logic
+
+- Implement card functions for Poker 99 (1, 4, 5, 10, J, Q, K)
+- Add draw and reshuffle mechanism for deck and discard piles
+- Implement player elimination logic based on playable cards
+- Include Task Specification: FEAT-POKER-99-DELEGATE-001
+```
