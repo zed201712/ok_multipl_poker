@@ -5,25 +5,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ok_multipl_poker/play_session/big_two_board_card_area.dart';
+import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
+import 'package:ok_multipl_poker/game_internals/poker_99_action.dart';
+import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
+import 'package:ok_multipl_poker/multiplayer/firestore_poker_99_controller.dart';
 import 'package:ok_multipl_poker/widgets/card_container.dart';
 import 'package:ok_multipl_poker/widgets/player_avatar_widget.dart';
 import 'package:provider/provider.dart';
 
-import 'package:ok_multipl_poker/entities/big_two_state.dart';
-import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
+import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/game_internals/card_player.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
-import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
-import 'package:ok_multipl_poker/multiplayer/firestore_big_two_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/style/my_button.dart';
 import 'package:ok_multipl_poker/play_session/selectable_player_hand_widget.dart';
-import 'package:ok_multipl_poker/play_session/debug_text_widget.dart';
 import '../audio/audio_controller.dart';
 import '../audio/sounds.dart';
-import '../entities/big_two_player.dart';
+import '../entities/poker_player.dart';
+import '../game_internals/card_suit.dart';
 import '../services/error_message_service.dart';
 import '../settings/settings.dart';
 import '../style/confetti.dart';
@@ -31,7 +31,6 @@ import '../style/palette.dart';
 
 class Poker99BoardWidget extends StatefulWidget {
   // 定義設計解析度 (Design Resolution)
-  // 選擇一個較為修長的比例以適應現代手機，例如 iPhone 11 Pro Max / Pixel 的邏輯解析度範圍
   static const Size designSize = Size(896, 414);
   const Poker99BoardWidget({super.key});
 
@@ -40,13 +39,13 @@ class Poker99BoardWidget extends StatefulWidget {
 }
 
 class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
-  // 使用 FirestoreBigTwoController
-  late final FirestoreBigTwoController _gameController;
+  // 使用 FirestorePoker99Controller
+  late final FirestorePoker99Controller _gameController;
   late final StreamSubscription _gameStateStreamSubscription;
 
   final CardPlayer _player = CardPlayer();
   // 保留本地 Delegate 用於 UI 解析 (myPlayer, otherPlayers)
-  final _bigTwoManager = BigTwoDelegate();
+  final _poker99Manager = Poker99Delegate();
   late final String _userId;
 
   final _debugTextController = TextEditingController();
@@ -55,7 +54,6 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
   static const _celebrationDuration = Duration(milliseconds: 2000);
   static const _preCelebrationDuration = Duration(milliseconds: 500);
   bool _duringCelebration = false;
-  late DateTime _startOfPlay;
   GameStatus _previousGameStatus = GameStatus.idle;
 
   _LocalMatchStatus _localMatchStatus = _LocalMatchStatus.idle;
@@ -69,7 +67,7 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
     final settings = context.read<SettingsController>();
 
     if (settings.testModeOn.value) {
-      _bigTwoManager.setErrorMessageService(_errorMessageServices);
+      _poker99Manager.setErrorMessageService(_errorMessageServices);
       _errorMessageServices.errorStream.listen((errorMessage) {
         _debugTextController.text = errorMessage;
       });
@@ -77,17 +75,17 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
 
     _userId = auth.currentUser!.uid;
 
-    // 初始化 FirestoreBigTwoController
-    _gameController = FirestoreBigTwoController(
+    // 初始化 FirestorePoker99Controller
+    _gameController = FirestorePoker99Controller(
         firestore: store,
         auth: auth,
         settingsController: settings,
-        delegate: _bigTwoManager
+        delegate: _poker99Manager
     );
 
     _gameStateStreamSubscription = _gameController.gameStateStream.listen((gameState) {
-      final bigTwoState = gameState?.customState;
-      if (bigTwoState == null) return;
+      final poker99State = gameState?.customState;
+      if (poker99State == null) return;
       if (mounted && _localMatchStatus == _LocalMatchStatus.waiting) {
         setState(() {
           _localMatchStatus = _LocalMatchStatus.inRoom;
@@ -103,13 +101,13 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
       if (gameState?.gameStatus != null) _previousGameStatus = gameState!.gameStatus;
 
       // 更新本地玩家 狀態
-      final myPlayerState = _bigTwoManager.myPlayer(_userId, bigTwoState);
+      final myPlayerState = _poker99Manager.myPlayer(_userId, poker99State);
       if (myPlayerState == null) return;
 
       _player.name = myPlayerState.name;
       // 將 String 轉回 PlayingCard 供 CardPlayer 使用
-      final sortedCards = _bigTwoManager.sortCardsByRank(myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList());;
-      _player.replaceWith(sortedCards);
+      final cards = myPlayerState.cards.map((c) => PlayingCard.fromString(c)).toList();
+      _player.replaceWith(cards);
     });
   }
 
@@ -127,7 +125,6 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
       _localMatchStatus = _LocalMatchStatus.waiting;
     });
     await _gameController.matchRoom();
-    // matchRoom 完成後，Stream 應會更新狀態
   }
 
   Future<void> _onStartGame() async {
@@ -136,16 +133,15 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsController>(); // watch for changes
+    final settings = context.watch<SettingsController>();
 
     return ChangeNotifierProvider<CardPlayer>.value(
       value: _player,
-      child: StreamBuilder<TurnBasedGameState<BigTwoState>?>(
+      child: StreamBuilder<TurnBasedGameState<Poker99State>?>(
         stream: _gameController.gameStateStream,
         builder: (context, snapshot) {
           final gameState = snapshot.data;
 
-          // 若無狀態或不在遊戲中，顯示配對介面
           if (gameState == null || !_isGameReadyState(gameState)) {
             return Center(
               child: Column(
@@ -162,39 +158,15 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
             );
           }
 
-          // 遊戲進行中 (Playing) 或 結束 (Finished)
-          final bigTwoState = gameState.customState;
-
-          // 1. 判斷是否輪到我
+          final poker99State = gameState.customState;
           final isMyTurn = gameState.currentPlayerId == _userId;
+          final otherPlayers = _poker99Manager.otherPlayers(_userId, poker99State);
 
-          // 2. 按鈕生成
-          // 使用 BigTwoCardPattern Enum 替代硬編碼
-          final handTypeButtons = BigTwoCardPattern.values.map((pattern) {
-            final isEnable = isMyTurn && _selectNextPattern(bigTwoState, pattern).isNotEmpty;;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: MyButton(
-                // 若不持有該牌型，禁用按鈕
-                onPressed: isEnable ? () {
-                  final nextSelection = _selectNextPattern(bigTwoState, pattern);
-                  if (nextSelection.isNotEmpty) {
-                    _player.setCardSelection(nextSelection);
-                  }
-                } : null,
-                child: Text('patterns.${pattern.name}'.tr()),
-              ),
-            );
-          }).toList();
-
-          final otherPlayers = _bigTwoManager.otherPlayers(_userId, bigTwoState);
-
-          return Provider<BigTwoState>.value(
-            value: bigTwoState,
+          return Provider<Poker99State>.value(
+            value: poker99State,
             child: Scaffold(
               backgroundColor: Colors.transparent,
-              body:
-              Stack(
+              body: Stack(
                   children: [
                     Center(
                       child: FittedBox(
@@ -204,6 +176,7 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
                           height: Poker99BoardWidget.designSize.height,
                           child: Column(
                             children: [
+                              // 第一列: 對手
                               Expanded(
                                 flex: 2,
                                 child: Center(
@@ -211,49 +184,52 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
                                       spacing: 30,
                                       children: [
                                         const Expanded(child: SizedBox.shrink()),
-
-                                        _buildLeftOpponent(otherPlayers, bigTwoState),
-                                        _buildTopOpponent(otherPlayers, bigTwoState),
-                                        _buildRightOpponent(otherPlayers, bigTwoState),
-
+                                        ..._buildOpponents(otherPlayers, poker99State),
                                         const Expanded(child: SizedBox.shrink()),
                                       ],
                                     )
                                 ),
                               ),
 
+                              // 第二列: 中央牌區 (顯示分數)
                               Expanded(
                                 flex: 7,
-                                child: Row(
-                                  children: [
-                                    // Left Opponent (20%)
-                                    SizedBox(width: Poker99BoardWidget.designSize.width * 0.1,),
-
-                                    // Table Card Area (Center)
-                                    Expanded(
-                                      child: Center(
-                                        child: BigTwoBoardCardArea(),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'poker_99.current_score'.tr(),
+                                        style: const TextStyle(fontSize: 18, color: Colors.white70),
                                       ),
-                                    ),
-
-                                    // Right Opponent (20%)
-                                    SizedBox(width: Poker99BoardWidget.designSize.width * 0.1,),
-                                  ],
+                                      Text(
+                                        '${poker99State.currentScore}',
+                                        style: TextStyle(
+                                          fontSize: 64,
+                                          fontWeight: FontWeight.bold,
+                                          color: poker99State.currentScore > 90 ? Colors.redAccent : Colors.white,
+                                          shadows: [
+                                            Shadow(blurRadius: 10, color: Colors.black45, offset: Offset(2, 2))
+                                          ]
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
 
+                              // 第三列: 玩家手牌與操作
                               Expanded(
                                 flex: 20,
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
-                                    // 標示自己是否為 Current Player
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         PlayerAvatarWidget(
                                           avatarNumber: settings.playerAvatarNumber.value,
-                                          size: 30, // Adjust size as needed
+                                          size: 30,
                                         ),
                                         const SizedBox(width: 8),
                                         Container(
@@ -273,20 +249,26 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
                                             ),
                                           ),
                                         ),
-
-                                        const SizedBox(width: 20),
-                                        // --- 操作按鈕區域 (Play / Pass) ---
-                                        _functionButtons(bigTwoState),
                                       ],
                                     ),
 
-                                    ChangeNotifierProvider.value(
-                                      value: _player,
-                                      child: SelectablePlayerHandWidget(
-                                        buttonWidgets: handTypeButtons,
-                                      ),
+                                    // 單選邏輯與動態按鈕
+                                    Consumer<CardPlayer>(
+                                      builder: (context, player, _) {
+                                        // 強制單選
+                                        if (player.selectedCards.length > 1) {
+                                          final last = player.selectedCards.last;
+                                          Future.microtask(() => player.setCardSelection([last]));
+                                        }
+
+                                        final actionButtons = _buildActionButtons(poker99State, isMyTurn);
+
+                                        return SelectablePlayerHandWidget(
+                                          buttonWidgets: actionButtons,
+                                        );
+                                      },
                                     ),
-                                    Expanded(child: SizedBox.shrink()),
+                                    const Expanded(child: SizedBox.shrink()),
                                   ],
                                 ),
                               ),
@@ -306,10 +288,8 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
                     ),
                   ]
               ),
-              // Use Overlay or a separate top-level Stack for overlays like "Winner" or Debug tools
-              // For now, simple overlays can be added here if needed, but keeping the main game logic inside the Grid.
               floatingActionButton: gameState.gameStatus == GameStatus.finished
-                  ? _gameOverUI(gameState, bigTwoState)
+                  ? _gameOverUI(gameState, poker99State)
                   : null,
             ),
           );
@@ -318,36 +298,75 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
     );
   }
 
-  // --- Helper Methods to map opponents to positions ---
+  List<Widget> _buildActionButtons(Poker99State state, bool isMyTurn) {
+    if (!isMyTurn) return [];
+    if (_player.selectedCards.isEmpty) return [];
 
-  // Note: The logic for mapping otherPlayers list to specific positions depends on
-  // how _bigTwoManager.otherPlayers returns the list (ordered by turn order or seat).
-  // Assuming otherPlayers[0] is Top, [1] is Left, [2] is Right is NOT always correct
-  // without consistent rotation logic.
-  // Below we use the same index logic as previous Stack implementation for consistency.
-  // previous logic:
-  // 1 player -> Top
-  // 2 players -> Top, Left
-  // 3 players -> Top, Left, Right
-  // (Based on:
-  //   List<int> fourPlayerSeatOrder = [1, 2, 0];
-  //   playersBySeatOrder[0] -> Top
-  //   playersBySeatOrder[1] -> Left
-  //   playersBySeatOrder[2] -> Right
-  // )
+    final card = _player.selectedCards.first;
+    final List<Widget> buttons = [];
 
-  List<BigTwoPlayer> _getOrderedOpponents(List<BigTwoPlayer> otherPlayers) {
-    if (otherPlayers.isEmpty) return [];
-
-    // Reuse the logic from previous _otherPlayerWidgets to maintain consistency
-    // The previous code had a specific mapping for 3 opponents.
-    // If fewer, it just took them in order.
-
-    List<int> fourPlayerSeatOrder = [1, 2, 0];
-    if (otherPlayers.length == 3) {
-      return fourPlayerSeatOrder.map((i) => otherPlayers[i]).toList();
+    void addActionButton(String label, Poker99Action action, {int value = 0}) {
+      buttons.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: MyButton(
+            onPressed: () {
+              final targetId = action == Poker99Action.target ? (state.nextPlayerId() ?? '') : '';
+              _gameController.playCards(Poker99PlayPayload(
+                cards: [PlayingCard.cardToString(card)],
+                action: action,
+                value: value,
+                targetPlayerId: targetId,
+              ));
+              _player.setCardSelection([]);
+            },
+            child: Text(label),
+          ),
+        )
+      );
     }
-    return otherPlayers;
+
+    if (card.isJoker()) {
+      addActionButton('99', Poker99Action.setTo99);
+      addActionButton('0', Poker99Action.setToZero);
+      addActionButton('poker_99.target'.tr(), Poker99Action.target);
+      addActionButton('poker_99.reverse'.tr(), Poker99Action.reverse);
+      addActionButton('poker_99.skip'.tr(), Poker99Action.skip);
+    } else {
+      switch (card.value) {
+        case 13:
+          addActionButton('99', Poker99Action.setTo99);
+          break;
+        case 12:
+          addActionButton('+20', Poker99Action.increase, value: 20);
+          addActionButton('-20', Poker99Action.decrease, value: -20);
+          break;
+        case 11:
+          addActionButton('poker_99.skip'.tr(), Poker99Action.skip);
+          break;
+        case 10:
+          addActionButton('+10', Poker99Action.increase, value: 10);
+          addActionButton('-10', Poker99Action.decrease, value: -10);
+          break;
+        case 5:
+          addActionButton('poker_99.target'.tr(), Poker99Action.target);
+          break;
+        case 4:
+          addActionButton('poker_99.reverse'.tr(), Poker99Action.reverse);
+          break;
+        case 1:
+          if (card.suit == CardSuit.spades) {
+            addActionButton('0', Poker99Action.setToZero);
+          } else {
+            addActionButton('poker_99.play'.tr(), Poker99Action.increase, value: 1);
+          }
+          break;
+        default:
+          addActionButton('poker_99.play'.tr(), Poker99Action.increase, value: card.value);
+      }
+    }
+
+    return buttons;
   }
 
   Future<void> _playerWon() async {
@@ -369,13 +388,12 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
     });
   }
 
-  bool _isGameReadyState(TurnBasedGameState<BigTwoState>? bigTwoState) {
-    return !(bigTwoState == null || bigTwoState.gameStatus == GameStatus.matching);
+  bool _isGameReadyState(TurnBasedGameState<Poker99State>? state) {
+    return !(state == null || state.gameStatus == GameStatus.matching);
   }
 
-  Widget _gameOverUI(TurnBasedGameState<BigTwoState> gameState, BigTwoState bigTwoState) {
-    return
-      Container(
+  Widget _gameOverUI(TurnBasedGameState<Poker99State> gameState, Poker99State poker99State) {
+    return Container(
         color: Colors.black54,
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -384,8 +402,8 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
             Text(
               'game.winner_status'.tr(args: [
                 gameState.customState.getParticipantByID(gameState.winner ?? "")?.name ?? gameState.winner ?? "",
-                bigTwoState.restartRequesters.length.toString(),
-                bigTwoState.participants.length.toString()
+                poker99State.restartRequesters.length.toString(),
+                poker99State.participants.length.toString()
               ]),
               style: const TextStyle(color: Colors.white, fontSize: 24),
               textAlign: TextAlign.center,
@@ -442,30 +460,8 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
     );
   }
 
-  Widget _buildTopOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
-    final ordered = _getOrderedOpponents(otherPlayers);
-    if (ordered.isNotEmpty) {
-      return _OpponentHand(bigTwoState: bigTwoState, player: ordered[0]);
-    }
-    return const SizedBox();
-  }
-
-  Widget _buildLeftOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
-    final ordered = _getOrderedOpponents(otherPlayers);
-    if (ordered.length > 1) {
-      // Left player was rotated in Stack layout. In Grid, we can keep it vertical or standard.
-      // Let's keep the rotation for visual consistency with "sides".
-      return _OpponentHand(bigTwoState: bigTwoState, player: ordered[1]);
-    }
-    return const SizedBox();
-  }
-
-  Widget _buildRightOpponent(List<BigTwoPlayer> otherPlayers, BigTwoState bigTwoState) {
-    final ordered = _getOrderedOpponents(otherPlayers);
-    if (ordered.length > 2) {
-      return _OpponentHand(bigTwoState: bigTwoState, player: ordered[2]);
-    }
-    return const SizedBox();
+  List<Widget> _buildOpponents(List<PokerPlayer> otherPlayers, Poker99State poker99State) {
+    return otherPlayers.map((e)=>_OpponentHand(poker99State: poker99State, player: e)).toList();
   }
 
   Widget _leaveButton() {
@@ -489,122 +485,14 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
       child: Text('leave'.tr(), style: TextStyle(color: Palette().ink)),
     );
   }
-
-  List<PlayingCard> _selectNextPattern(
-      BigTwoState bigTwoState,
-      BigTwoCardPattern pattern,
-      ) {
-    return _bigTwoManager.selectNextPattern(
-      bigTwoState: bigTwoState,
-      hand: _player.hand,
-      currentSelection: _player.selectedCards,
-      pattern: pattern,
-    );
-  }
-
-  List<Widget> _debugWidgets(BigTwoState bigTwoState) {
-    final settings = context.watch<SettingsController>(); // watch for changes
-    return [
-      if (settings.testModeOn.value)
-        Positioned(
-          top: 40,
-          left: 20,
-          right: 20,
-          child: Material(
-            type: MaterialType.transparency,
-            child: DebugTextWidget(
-              controller: _debugTextController,
-              onGet: () {
-                _debugTextController.text = bigTwoState.toJsonString();
-              },
-              onSet: (jsonString) {
-                try {
-                  BigTwoState? currentState = _gameController.getCustomGameState();
-                  if (currentState == null) return;
-                  final inputState = BigTwoState.fromJsonString(jsonString);
-                  final newState = currentState.copyWith(
-                    lastPlayedHand: inputState.lastPlayedHand,
-                    deckCards: inputState.deckCards,
-                    lockedHandType: inputState.lockedHandType,
-                  );
-                  _gameController.debugSetState(newState);
-                } catch (e) {
-                  // 顯示錯誤提示
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error parsing state: $e')),
-                  );
-                }
-              },
-            ),
-          ),
-        ),
-    ];
-  }
-  Widget _functionButtons(BigTwoState bigTwoState) {
-    final isMyTurn = bigTwoState.currentPlayerId == _userId;
-
-    return Consumer<CardPlayer>(
-      builder: (context, player, _) {
-        final selectedCards = player.selectedCards;
-
-        final playButtonEnable =
-            isMyTurn &&
-                _bigTwoManager.checkPlayValidity(
-                  bigTwoState,
-                  selectedCards,
-                );
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Pass
-            MyButton(
-              onPressed: isMyTurn && !bigTwoState.isFirstTurn
-                  ? () {
-                _gameController.passTurn();
-              }
-                  : null,
-              child: Text('pass'.tr()),
-            ),
-
-            const SizedBox(width: 40),
-
-            // Cancel
-            MyButton(
-              onPressed: selectedCards.isNotEmpty
-                  ? () {
-                player.setCardSelection([]);
-              }
-                  : null,
-              child: Text('cancel'.tr()),
-            ),
-
-            const SizedBox(width: 20),
-
-            // Play
-            MyButton(
-              onPressed: playButtonEnable
-                  ? () {
-                if (selectedCards.isNotEmpty) {
-                  _gameController.playCards(selectedCards);
-                  player.setCardSelection([]);
-                }
-              }
-                  : null,
-              child: Text('play_action'.tr()),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
+
 class _OpponentHand extends StatelessWidget {
-  final BigTwoState bigTwoState;
-  final BigTwoPlayer player;
+  final Poker99State poker99State;
+  final PokerPlayer player;
 
   const _OpponentHand({
-    required this.bigTwoState,
+    required this.poker99State,
     required this.player,
   });
 
@@ -614,80 +502,80 @@ class _OpponentHand extends StatelessWidget {
 
     final cardCount = player.cards.length;
     final playerName = player.name;
-    final isCurrentTurn = player.uid == bigTwoState.currentPlayerId;
-    final hasPassed = player.hasPassed;
+    final isCurrentTurn = player.uid == poker99State.currentPlayerId;
+    final isNextTurn = player.uid == poker99State.nextPlayerId();
 
-    final Color backgroundColor = hasPassed
-        ? Colors.black.withValues(alpha: 0.35)
-        : Colors.black.withValues(alpha: 0.55);
-
-    final Color nameColor = hasPassed
-        ? Colors.grey.shade400
-        : (isCurrentTurn ? Colors.amberAccent : Colors.white);
-
-    final Color countColor = hasPassed
-        ? Colors.grey.shade300
-        : Colors.white;
-
-    final Color iconColor = hasPassed
-        ? Colors.grey.shade500
-        : Colors.blueGrey.shade200;
+    final Color backgroundColor = Colors.black.withValues(alpha: 0.55);
+    final Color nameColor = isCurrentTurn ? Colors.amberAccent : Colors.white;
 
     return FittedBox(
       fit: BoxFit.scaleDown,
-      child: CardContainer(
-        color: backgroundColor,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Avatar
-            PlayerAvatarWidget(
-              avatarNumber: player.avatarNumber,
-              size: 30,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CardContainer(
+            color: backgroundColor,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                PlayerAvatarWidget(
+                  avatarNumber: player.avatarNumber,
+                  size: 30,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  playerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: nameColor,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Icon(
+                  Icons.style,
+                  color: Colors.white70,
+                  size: 22,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$cardCount',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
-
-            const SizedBox(width: 8),
-
-            // Player name
-            Text(
-              playerName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: nameColor,
-                fontWeight:
-                hasPassed ? FontWeight.w500 : FontWeight.w600,
-                letterSpacing: 0.3,
+          ),
+          if (isNextTurn)
+            Positioned(
+              top: -15,
+              right: -5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'poker_99.next_turn'.tr(),
+                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-
-            const SizedBox(height: 10),
-
-            // Card count
-            Icon(
-              Icons.style,
-              color: iconColor,
-              size: 22,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '$cardCount',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: countColor,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
 enum _LocalMatchStatus {
-  idle,        // 尚未按配對
-  waiting,    // 已送出配對請求，等待 Firestore
-  inRoom,      // 已有 BigTwoState
+  idle,
+  waiting,
+  inRoom,
 }
