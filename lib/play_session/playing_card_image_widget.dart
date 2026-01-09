@@ -60,7 +60,7 @@ class PlayingCardImageWidget extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(1, 0, 0, 0),
               child: Text(
-                '$card',
+                card.isJoker() ? 'Joker ' : '$card',
                 textAlign: TextAlign.center,
               ),
             ),

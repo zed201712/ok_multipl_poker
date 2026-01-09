@@ -300,7 +300,7 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
 
   List<Widget> _buildActionButtons(Poker99State state, bool isMyTurn) {
     if (!isMyTurn || _player.selectedCards.isEmpty) {
-      return [const SizedBox(height: 22)];
+      return [const SizedBox(height: 32)];
     }
 
     final card = _player.selectedCards.first;

@@ -55,7 +55,7 @@ class MainMenuScreen extends StatelessWidget {
                         child: Transform.rotate(
                           angle: -0.1,
                           child: const Text(
-                            'BigTwo!',
+                            'Welcome!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'Permanent Marker',
@@ -73,7 +73,7 @@ class MainMenuScreen extends StatelessWidget {
                               audioController.playSfx(SfxType.buttonTap);
                               GoRouter.of(context).go('/play');
                             },
-                            child: Text('play'.tr()),
+                            child: Text('bigtwo'.tr()),
                           ),
                           _gap,
                           MyButton(

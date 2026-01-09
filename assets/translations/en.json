@@ -29,6 +29,7 @@
   "welcome": "Welcome!",
   "your_name": "Your Name",
   "lets_play": "Let's Play!",
+  "bigtwo": "Big Two",
   "game": {
     "last_played": "Last Played ({})",
     "last_played_simple": "Last Played",

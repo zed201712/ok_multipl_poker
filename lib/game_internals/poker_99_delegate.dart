@@ -134,7 +134,6 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
     int newScore = state.currentScore;
     bool newIsReverse = state.isReverse;
     String? nextTargetId;
-    bool skipNext = false;
 
     switch (payload.action) {
       case Poker99Action.increase:
@@ -142,7 +141,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
         newScore += payload.value;
         break;
       case Poker99Action.skip:
-        skipNext = true;
+        // 在此規則中，Skip 只是不加分，直接輪到下一家
         break;
       case Poker99Action.reverse:
         newIsReverse = !newIsReverse;
@@ -184,7 +183,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
       isReverse: newIsReverse,
       currentPlayerId: playerId,
     );
-    final nextId = _calculateNextPlayerId(tempStateForNext, skip: skipNext, targetId: nextTargetId);
+    final nextId = _calculateNextPlayerId(tempStateForNext, targetId: nextTargetId);
 
     final newState = state.copyWith(
       participants: newParticipants,
@@ -229,7 +228,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
       case 10: // +/- 10
         return action == Poker99Action.increase ||
             action == Poker99Action.decrease;
-      case 11: // Jack (Skip)
+      case 11: // Jack (Skip/Pass)
         return action == Poker99Action.skip;
       case 12: // Queen (+/- 20)
         return action == Poker99Action.increase ||
@@ -241,8 +240,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
     }
   }
 
-  String _calculateNextPlayerId(Poker99State state,
-      {bool skip = false, String? targetId}) {
+  String _calculateNextPlayerId(Poker99State state, {String? targetId}) {
     final seats = state.seats;
     final currentIndex = seats.indexOf(state.currentPlayerId);
 
@@ -253,7 +251,6 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
     }
 
     int step = state.isReverse ? -1 : 1;
-    if (skip) step *= 2;
 
     int nextIdx = (currentIndex + step) % seats.length;
     if (nextIdx < 0) nextIdx += seats.length;

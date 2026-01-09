@@ -29,6 +29,7 @@
   "welcome": "歡迎!",
   "your_name": "你的名字",
   "lets_play": "開始玩吧!",
+  "bigtwo": "大老二",
   "game": {
     "last_played": "上一次出牌 ({})",
     "last_played_simple": "上一次出牌",

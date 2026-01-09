@@ -128,7 +128,7 @@ void main() {
 
         state = delegate.processAction(room, state, 'play_cards', 'p1', payload.toJson());
 
-        expect(state.currentPlayerId, 'p3'); 
+        expect(state.currentPlayerId, 'p2');
       });
 
       test('Reverse card (4) toggles isReverse and changes direction', () {
