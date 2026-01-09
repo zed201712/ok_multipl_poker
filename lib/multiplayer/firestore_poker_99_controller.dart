@@ -2,16 +2,13 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
-import 'package:ok_multipl_poker/game_internals/playing_card.dart';
-import 'package:ok_multipl_poker/multiplayer/poker_99_ai/poker_99_ai.dart';
+import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
+import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
+import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_ai.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
-import 'package:flutter/foundation.dart';
-
-import '../game_internals/poker_99_delegate.dart';
 
 class FirestorePoker99Controller {
   /// 遊戲狀態的響應式數據流。
@@ -21,7 +18,8 @@ class FirestorePoker99Controller {
   late final FirestoreTurnBasedGameController<Poker99State> _gameController;
   
   /// 測試模式下的 AI 玩家列表
-  final List<Poker99AI> _testModeAIs = [];
+  /// TODO: 建立 Poker99AI 並替換 BigTwoAI
+  final List<BigTwoAI> _testModeAIs = [];
   final Poker99Delegate _delegate;
 
   /// 建構子，要求傳入 Firestore 和 Auth 實例。
@@ -47,29 +45,29 @@ class FirestorePoker99Controller {
   }
 
   void _initTestModeAIs(FirebaseFirestore firestore, SettingsController settingsController) {
-    for (int i = 1; i <= 3; i++) { // Poker 99 通常更多人
+    // TODO: 實作 Poker 99 專用的 AI
+    // 目前暫時標記為 TODO，並參考 BigTwo 的初始化邏輯
+    /*
+    for (int i = 1; i <= 2; i++) {
       final mockAuth = MockFirebaseAuth(
         signedIn: true, 
         mockUser: MockUser(
-          uid: 'ai_bot_$i', 
-          displayName: 'Bot $i',
+          uid: 'ai_bot_p99_$i', 
+          displayName: 'P99 Bot $i',
         ),
       );
       
-      _testModeAIs.add(Poker99AI(
-        firestore: firestore,
-        auth: mockAuth, // 每個 AI 使用獨立的 Mock Auth
-        settingsController: settingsController,
-        delegate: _delegate,
-      ));
+      // 暫時無法直接使用 BigTwoPlayCardsAI，因為它綁定了 BigTwoDelegate/State
+      // 需待 Poker99PlayCardsAI 實作後補上
     }
+    */
   }
 
-  /// 匹配並加入一個最多4人的遊戲房間。
+  /// 匹配並加入一個最多 6 人的遊戲房間。
   /// 成功時返回房間 ID。
   Future<String?> matchRoom() async {
     try {
-      final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 4);
+      final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 6);
       return roomId;
     } catch (e) {
       return null;
@@ -92,19 +90,13 @@ class FirestorePoker99Controller {
   }
 
   Future<void> startGame() async {
-    _gameController.startGame();
+    await _gameController.startGame();
   }
 
   /// 玩家出牌。
-  /// [cards] 是一個代表玩家要出的牌的列表。
-  Future<void> playCards(List<PlayingCard> cards) async {
-    final cardStrings = cards.map((c) => PlayingCard.cardToString(c)).toList();
-    _gameController.sendGameAction('play_cards', payload: {'cards': cardStrings});
-  }
-
-  /// 玩家選擇 pass。
-  Future<void> passTurn() async {
-    _gameController.sendGameAction('pass_turn');
+  /// [payload] 包含出牌內容與對應的行動 (Poker99Action)。
+  Future<void> playCards(Poker99PlayPayload payload) async {
+    _gameController.sendGameAction('play_cards', payload: payload.toJson());
   }
 
   Poker99State? getCustomGameState() {

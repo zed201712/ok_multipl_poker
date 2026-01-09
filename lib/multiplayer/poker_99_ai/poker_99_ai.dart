@@ -6,42 +6,10 @@ import 'package:ok_multipl_poker/settings/settings.dart';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
-import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 
 import '../../game_internals/poker_99_delegate.dart';
-
-// 自定義簡易 Delegate
-class Poker99AIDelegate implements TurnBasedGameDelegate<Poker99State> {
-  @override
-  Poker99State initializeGame(Room room) {
-    return Poker99State(
-      participants: [], 
-      seats: room.seats, 
-      currentPlayerId: '',
-      lastPlayedHand: [],
-      lastPlayedById: '',
-    );
-  }
-
-  @override
-  Poker99State processAction(Room room, Poker99State currentState, String actionName, String participantId, Map<String, dynamic> payload) {
-    return currentState; 
-  }
-
-  @override
-  String? getCurrentPlayer(Poker99State state) => state.currentPlayerId;
-
-  @override
-  String? getWinner(Poker99State state) => state.winner;
-
-  @override
-  Poker99State stateFromJson(Map<String, dynamic> json) => Poker99State.fromJson(json);
-
-  @override
-  Map<String, dynamic> stateToJson(Poker99State state) => state.toJson();
-}
 
 class Poker99AI {
   static final _log = Logger('Poker99AI');
