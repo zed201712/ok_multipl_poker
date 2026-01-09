@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
-import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_ai.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
+import 'package:ok_multipl_poker/multiplayer/poker_99_ai/poker_99_ai.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
 
@@ -16,10 +17,9 @@ class FirestorePoker99Controller {
 
   /// 底層的回合制遊戲控制器。
   late final FirestoreTurnBasedGameController<Poker99State> _gameController;
-  
+
   /// 測試模式下的 AI 玩家列表
-  /// TODO: 建立 Poker99AI 並替換 BigTwoAI
-  final List<BigTwoAI> _testModeAIs = [];
+  final List<Poker99AI> _testModeAIs = [];
   final Poker99Delegate _delegate;
 
   /// 建構子，要求傳入 Firestore 和 Auth 實例。
@@ -44,23 +44,25 @@ class FirestorePoker99Controller {
     }
   }
 
-  void _initTestModeAIs(FirebaseFirestore firestore, SettingsController settingsController) {
-    // TODO: 實作 Poker 99 專用的 AI
-    // 目前暫時標記為 TODO，並參考 BigTwo 的初始化邏輯
-    /*
+  void _initTestModeAIs(
+      FirebaseFirestore firestore, SettingsController settingsController) {
     for (int i = 1; i <= 2; i++) {
       final mockAuth = MockFirebaseAuth(
-        signedIn: true, 
+        signedIn: true,
         mockUser: MockUser(
-          uid: 'ai_bot_p99_$i', 
+          uid: 'ai_bot_p99_$i',
           displayName: 'P99 Bot $i',
         ),
       );
-      
-      // 暫時無法直接使用 BigTwoPlayCardsAI，因為它綁定了 BigTwoDelegate/State
-      // 需待 Poker99PlayCardsAI 實作後補上
+
+      final ai = Poker99AI(
+        firestore: firestore,
+        auth: mockAuth,
+        settingsController: settingsController,
+        delegate: _delegate,
+      );
+      _testModeAIs.add(ai);
     }
-    */
   }
 
   /// 匹配並加入一個最多 6 人的遊戲房間。
