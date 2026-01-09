@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +18,6 @@ import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_big_two_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
-import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
 import 'package:ok_multipl_poker/style/my_button.dart';
 import 'package:ok_multipl_poker/play_session/selectable_player_hand_widget.dart';
 import 'package:ok_multipl_poker/play_session/debug_text_widget.dart';
