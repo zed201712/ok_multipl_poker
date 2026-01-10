@@ -1,0 +1,52 @@
+{
+  "play": "開始遊戲",
+  "settings": "設定",
+  "music": "音樂",
+  "sound": "音效",
+  "matching": "配對中...",
+  "ready": "準備開始",
+  "theme": "主題",
+  "language": "語言",
+  "reset_progress": "重置進度",
+  "progress_reset_message": "玩家進度已重置。",
+  "tap_to_change_avatar": "點擊更換頭像",
+  "back": "返回",
+  "start": "開始",
+  "match_room": "配對房間",
+  "your_turn": "輪到你了",
+  "patterns": {
+    "single": "單張",
+    "pair": "對子",
+    "straight": "順子",
+    "fullHouse": "葫蘆",
+    "fourOfAKind": "鐵支",
+    "straightFlush": "同花順"
+  },
+  "leave": "離開",
+  "pass": "跳過",
+  "cancel": "取消",
+  "play_action": "出牌",
+  "welcome": "歡迎!",
+  "your_name": "你的名字",
+  "lets_play": "開始玩吧!",
+  "bigtwo": "大老二",
+  "game": {
+    "last_played": "上一次出牌 ({})",
+    "last_played_simple": "上一次出牌",
+    "discard_pile": "棄牌堆",
+    "matching_status": "配對中...\n玩家: {}",
+    "restart": "重新開始",
+    "winner_status": "贏家: {}\n重新開始: {} / {}"
+  },
+  "common": {
+    "close": "關閉"
+  },
+  "poker_99": {
+    "target": "指定",
+    "target_player": "指定 {}",
+    "reverse": "反轉",
+    "skip": "跳過",
+    "next_turn": "下個出牌",
+    "current_score": "目前分數"
+  }
+}

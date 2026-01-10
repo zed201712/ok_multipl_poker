@@ -1,0 +1,52 @@
+{
+  "play": "プレイ",
+  "settings": "設定",
+  "music": "音楽",
+  "sound": "効果音",
+  "matching": "マッチング中...",
+  "ready": "準備完了",
+  "theme": "テーマ",
+  "language": "言語",
+  "reset_progress": "進行状況をリセット",
+  "progress_reset_message": "プレイヤーの進行状況がリセットされました。",
+  "tap_to_change_avatar": "タップしてアバターを変更",
+  "back": "戻る",
+  "start": "開始",
+  "match_room": "マッチルーム",
+  "your_turn": "あなたの番",
+  "patterns": {
+    "single": "シングル",
+    "pair": "ペア",
+    "straight": "ストレート",
+    "fullHouse": "フルハウス",
+    "fourOfAKind": "フォーカード",
+    "straightFlush": "ストレートフラッシュ"
+  },
+  "leave": "退出",
+  "pass": "パス",
+  "cancel": "キャンセル",
+  "play_action": "出す",
+  "welcome": "ようこそ!",
+  "your_name": "あなたの名前",
+  "lets_play": "遊ぼう!",
+  "bigtwo": "大富豪",
+  "game": {
+    "last_played": "直前の手 ({})",
+    "last_played_simple": "直前の手",
+    "discard_pile": "捨て札",
+    "matching_status": "マッチング中...\nプレイヤー: {}",
+    "restart": "リスタート",
+    "winner_status": "勝者: {}\nリスタート: {} / {}"
+  },
+  "common": {
+    "close": "閉じる"
+  },
+  "poker_99": {
+    "target": "指定",
+    "target_player": "{} を指定",
+    "reverse": "反転",
+    "skip": "スキップ",
+    "next_turn": "次の番",
+    "current_score": "現在のスコア"
+  }
+}
