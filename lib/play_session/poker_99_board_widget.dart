@@ -160,6 +160,7 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
 
           final poker99State = gameState.customState;
           final isMyTurn = gameState.currentPlayerId == _userId;
+          final isNextTurn = poker99State.nextPlayerId() == _userId;
           final otherPlayers = _poker99Manager.otherPlayers(_userId, poker99State);
 
           return Provider<Poker99State>.value(
@@ -241,10 +242,10 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
                                             borderRadius: BorderRadius.circular(20),
                                           ),
                                           child: Text(
-                                            "your_turn".tr(),
+                                            isMyTurn ? "your_turn".tr() : (isNextTurn ? 'poker_99.next_turn'.tr() : "your_turn".tr()),
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: isMyTurn ? Colors.black : Colors.transparent,
+                                              color: isMyTurn ? Colors.black : (isNextTurn ? Colors.lightBlueAccent : Colors.transparent),
                                               fontSize: 16,
                                             ),
                                           ),
@@ -532,7 +533,9 @@ class _OpponentHand extends StatelessWidget {
     final isNextTurn = player.uid == poker99State.nextPlayerId();
 
     final Color backgroundColor = Colors.black.withValues(alpha: 0.55);
-    final Color nameColor = isCurrentTurn ? Colors.amberAccent : Colors.white;
+    final Color nameColor = isCurrentTurn
+        ? Colors.amberAccent
+        : (isNextTurn ? Colors.lightBlueAccent : Colors.white);
 
     return FittedBox(
       fit: BoxFit.scaleDown,
@@ -578,22 +581,6 @@ class _OpponentHand extends StatelessWidget {
               ],
             ),
           ),
-          if (isNextTurn)
-            Positioned(
-              top: -15,
-              right: -5,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  'poker_99.next_turn'.tr(),
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
         ],
       ),
     );
