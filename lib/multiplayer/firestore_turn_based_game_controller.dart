@@ -54,6 +54,10 @@ class FirestoreTurnBasedGameController<T> {
     return _gameStateController.value?.customState;
   }
 
+  void debugLocalAddStream(TurnBasedGameState<T> customGameState) {
+    _gameStateController.add(customGameState);
+  }
+
   Future<bool> updateCustomGameState(T customGameState) async {
     final room = roomStateController.roomStateStream.value?.room;
     if (room == null) return false;

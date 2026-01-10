@@ -1,126 +1,73 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
+import 'package:ok_multipl_poker/entities/room_state.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_action.dart';
-import 'package:ok_multipl_poker/settings/settings.dart';
-import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
-import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
+import 'package:rxdart/subjects.dart';
 
+import '../../entities/room.dart';
 import '../../game_internals/card_suit.dart';
 import '../../game_internals/poker_99_delegate.dart';
 
 class Poker99AI {
   static final _log = Logger('Poker99AI');
 
-  late final FirestoreTurnBasedGameController<Poker99State> _gameController;
-  late final StreamSubscription _gameStateSubscription;
-  late final StreamSubscription _roomsSubscription;
-
   final Poker99Delegate _delegate;
-  final String _aiUserId;
-  final FirebaseFirestore _firestore;
+  final String aiUserId;
+  final void Function(Poker99State state) onAction;
 
   bool _isDisposed = false;
-  bool _isRoomJoined = false;
-
-  // 新增狀態變數
   bool _isProcessingTurn = false;
+  StreamSubscription? _stateSubscription;
 
   Poker99AI({
-    required FirebaseFirestore firestore,
-    required FirebaseAuth auth,
-    required SettingsController settingsController,
+    required this.aiUserId,
     required Poker99Delegate delegate,
-  })  : _aiUserId = auth.currentUser?.uid ?? '',
-        _firestore = firestore,
-        _delegate = delegate {
-    _gameController = FirestoreTurnBasedGameController<Poker99State>(
-      auth: auth,
-      store: firestore,
-      delegate: delegate, // 使用自定義 Delegate
-      collectionName: 'poker_99_rooms',
-      settingsController: settingsController,
-    );
+    required this.onAction,
+  })  : _delegate = delegate;
 
-    _init();
+  /// 供外部 (Controller) 或本地修改狀態。
+  /// 呼叫後會觸發 _stateSubject 的發送，進而執行 AI 邏輯。
+  void updateState(TurnBasedGameState<Poker99State> gameState, RoomState roomState) {
+    //print('updateState $aiUserId: ');//TODO
+    if (_isDisposed) return;
+    _onGameStateUpdate(gameState, roomState.room!);
   }
 
-  void _init() {
-    _gameStateSubscription =
-        _gameController.gameStateStream.listen(_onGameStateUpdate);
-    _roomsSubscription = _firestore
-        .collection('poker_99_rooms')
-        .snapshots()
-        .listen(_onRoomsSnapshot);
-  }
-
-  void _onRoomsSnapshot(QuerySnapshot snapshot) {
-    if (_isRoomJoined || _isDisposed) return;
-
-    for (final doc in snapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      try {
-        final room = Room.fromJson(data);
-        // 檢查條件: 有空位且自己不在裡面
-        if (room.participants.length < room.maxPlayers &&
-            !room.participants.any((p) => p.id == _aiUserId)) {
-          _matchRoom();
-          break;
-        }
-      } catch (e) {
-        _log.warning('Error parsing room data for AI check', e);
-      }
-    }
-  }
-
-  Future<void> _matchRoom() async {
-    try {
-      if (_isDisposed) return;
-      _log.info('AI $_aiUserId attempting to match room...');
-      // 直接使用 _gameController
-      final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 4);
-      if (roomId.isNotEmpty) {
-        _isRoomJoined = true;
-      }
-    } catch (e) {
-      _log.severe('AI failed to match room', e);
-    }
-  }
-
-  void _onGameStateUpdate(TurnBasedGameState<Poker99State>? gameState) async {
-    if (_isDisposed || gameState == null) return;
+  void _onGameStateUpdate(TurnBasedGameState<Poker99State> gameState, Room room) async {
+    if (_isDisposed) return;
 
     // 1. 處理出牌
+    print('_onGameStateUpdate 1. 處理出牌 $aiUserId == ${gameState.currentPlayerId}, myTurn: ${gameState.currentPlayerId == aiUserId}');//TODO
     if (gameState.gameStatus == GameStatus.playing &&
-        gameState.currentPlayerId == _aiUserId) {
+        gameState.currentPlayerId == aiUserId) {
       // 如果正在處理回合，則跳過，避免重複發送
       if (_isProcessingTurn) return;
 
-      _performTurnAction(gameState.customState);
+      _performTurnAction(gameState.customState, room);
     }
 
     // 2. 處理遊戲結束 -> 請求重開
     if (gameState.gameStatus == GameStatus.finished) {
       final alreadyRequested =
-          gameState.customState.restartRequesters.contains(_aiUserId);
+          gameState.customState.restartRequesters.contains(aiUserId);
       if (!alreadyRequested) {
         await Future.delayed(const Duration(milliseconds: 500), () {
           if (!_isDisposed) {
-            _gameController.sendGameAction('request_restart');
+            final newState = _delegate.processAction(room, gameState.customState, 'request_restart', aiUserId, {});
+            onAction(newState);
           }
         });
       }
     }
   }
 
-  Future<void> _performTurnAction(Poker99State state) async {
+  Future<void> _performTurnAction(Poker99State state, Room room) async {
     if (_isProcessingTurn) return;
     _isProcessingTurn = true;
 
@@ -129,15 +76,14 @@ class Poker99AI {
       await Future.delayed(const Duration(milliseconds: 300));
       if (_isDisposed) return;
 
-      // 再次檢查是否仍輪到自己
-      final currentGameState = _gameController.gameStateStream.valueOrNull;
-      if (currentGameState?.currentPlayerId != _aiUserId) {
-        _log.info('AI $_aiUserId turn cancelled (state changed during think time)');
+      // 再次檢查是否仍輪到自己 (使用快照中的狀態判斷，或由外部 updateState 控制)
+      if (state.currentPlayerId != aiUserId) {
+        _log.info('AI $aiUserId turn cancelled (state changed during think time)');
         return;
       }
 
       // 找出 AI 自己
-      final player = state.participants.firstWhereOrNull((p) => p.uid == _aiUserId);
+      final player = state.participants.firstWhereOrNull((p) => p.uid == aiUserId);
       if (player == null || player.cards.isEmpty) return;
 
       // 找出可出的牌
@@ -145,7 +91,7 @@ class Poker99AI {
       final playableCards = _delegate.getPlayableCards(state, handCards);
 
       if (playableCards.isEmpty) {
-        _log.info('AI $_aiUserId has no playable cards.');
+        _log.info('AI $aiUserId has no playable cards.');
         return;
       }
 
@@ -217,9 +163,9 @@ class Poker99AI {
         value: value,
         targetPlayerId: targetPlayerId,
       );
-
-      await _gameController.sendGameAction('play_cards',
-          payload: payload.toJson());
+      final newState = _delegate.processAction(room, state, 'play_cards', aiUserId, payload.toJson());
+      print('play_cards $aiUserId $action $value, ${state.currentPlayerId} -> ${newState.currentPlayerId}');//TODO
+      onAction(newState);
     } catch (e) {
       _log.warning('AI failed to perform action', e);
     } finally {
@@ -230,7 +176,7 @@ class Poker99AI {
 
   String _calculateTargetPlayerId(Poker99State state) {
     final seats = state.seats;
-    final myIndex = seats.indexOf(_aiUserId);
+    final myIndex = seats.indexOf(aiUserId);
     if (myIndex == -1) return '';
 
     // 邏輯: 根據 state.isReverse 選擇「上一個玩家」
@@ -257,8 +203,6 @@ class Poker99AI {
 
   void dispose() {
     _isDisposed = true;
-    _gameStateSubscription.cancel();
-    _roomsSubscription.cancel();
-    _gameController.dispose();
+    _stateSubscription?.cancel();
   }
 }
