@@ -9,6 +9,7 @@ import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_action.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_poker_99_controller.dart';
+import 'package:ok_multipl_poker/play_session/show_only_card_area_widget.dart';
 import 'package:ok_multipl_poker/widgets/card_container.dart';
 import 'package:ok_multipl_poker/widgets/player_avatar_widget.dart';
 import 'package:provider/provider.dart';
@@ -196,24 +197,32 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
                               Expanded(
                                 flex: 12,
                                 child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        'poker_99.current_score'.tr(),
-                                        style: const TextStyle(fontSize: 18, color: Colors.white70),
+                                      const Expanded(child: SizedBox.shrink()),
+                                      ShowOnlyCardAreaWidget(cards: poker99State.lastPlayedHand.toPlayingCards()),
+                                      const SizedBox(width: 20),
+                                      Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'poker_99.current_score'.tr(),
+                                            style: const TextStyle(fontSize: 18, color: Colors.white70),
+                                          ),
+                                          Text(
+                                            '${poker99State.currentScore}',
+                                            style: TextStyle(
+                                                fontSize: 64,
+                                                fontWeight: FontWeight.bold,
+                                                color: poker99State.currentScore > 90 ? Colors.redAccent : Colors.white,
+                                                shadows: [
+                                                  Shadow(blurRadius: 10, color: Colors.black45, offset: Offset(2, 2))
+                                                ]
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      Text(
-                                        '${poker99State.currentScore}',
-                                        style: TextStyle(
-                                          fontSize: 64,
-                                          fontWeight: FontWeight.bold,
-                                          color: poker99State.currentScore > 90 ? Colors.redAccent : Colors.white,
-                                          shadows: [
-                                            Shadow(blurRadius: 10, color: Colors.black45, offset: Offset(2, 2))
-                                          ]
-                                        ),
-                                      ),
+                                      const Expanded(child: SizedBox.shrink()),
                                     ],
                                   ),
                                 ),

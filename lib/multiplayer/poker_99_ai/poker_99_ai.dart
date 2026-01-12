@@ -8,7 +8,6 @@ import 'package:ok_multipl_poker/game_internals/poker_99_action.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
-import 'package:rxdart/subjects.dart';
 
 import '../../entities/room.dart';
 import '../../game_internals/card_suit.dart';
@@ -34,7 +33,6 @@ class Poker99AI {
   /// 供外部 (Controller) 或本地修改狀態。
   /// 呼叫後會觸發 _stateSubject 的發送，進而執行 AI 邏輯。
   void updateState(TurnBasedGameState<Poker99State> gameState, RoomState roomState) {
-    //print('updateState $aiUserId: ');//TODO
     if (_isDisposed) return;
     _onGameStateUpdate(gameState, roomState.room!);
   }
@@ -43,7 +41,6 @@ class Poker99AI {
     if (_isDisposed) return;
 
     // 1. 處理出牌
-    print('_onGameStateUpdate 1. 處理出牌 $aiUserId == ${gameState.currentPlayerId}, myTurn: ${gameState.currentPlayerId == aiUserId}');//TODO
     if (gameState.gameStatus == GameStatus.playing &&
         gameState.currentPlayerId == aiUserId) {
       // 如果正在處理回合，則跳過，避免重複發送
@@ -164,7 +161,6 @@ class Poker99AI {
         targetPlayerId: targetPlayerId,
       );
       final newState = _delegate.processAction(room, state, 'play_cards', aiUserId, payload.toJson());
-      print('play_cards $aiUserId $action $value, ${state.currentPlayerId} -> ${newState.currentPlayerId}');//TODO
       onAction(newState);
     } catch (e) {
       _log.warning('AI failed to perform action', e);

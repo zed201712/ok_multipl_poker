@@ -133,7 +133,7 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
     // 1. 規則邏輯：計算分數與特殊功能
     int newScore = state.currentScore;
     bool newIsReverse = state.isReverse;
-    String? nextTargetId;
+    String nextTargetId = '';
 
     switch (payload.action) {
       case Poker99Action.increase:
@@ -182,8 +182,9 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
       participants: newParticipants,
       isReverse: newIsReverse,
       currentPlayerId: playerId,
+      targetPlayerId: nextTargetId
     );
-    final nextId = _calculateNextPlayerId(tempStateForNext, targetId: nextTargetId);
+    final nextId = tempStateForNext.nextPlayerId();
 
     final newState = state.copyWith(
       participants: newParticipants,
@@ -238,33 +239,6 @@ class Poker99Delegate extends TurnBasedGameDelegate<Poker99State> {
       default: // 一般牌
         return action == Poker99Action.increase;
     }
-  }
-
-  String _calculateNextPlayerId(Poker99State state, {String? targetId}) {
-    final seats = state.seats;
-    final currentIndex = seats.indexOf(state.currentPlayerId);
-
-    // 處理指定 (Assign)
-    if (targetId != null && seats.contains(targetId)) {
-      final target = state.participants.firstWhereOrNull((p) => p.uid == targetId);
-      if (target != null && target.cards.isNotEmpty) return targetId;
-    }
-
-    int step = state.isReverse ? -1 : 1;
-
-    int nextIdx = (currentIndex + step) % seats.length;
-    if (nextIdx < 0) nextIdx += seats.length;
-
-    // 尋找下一個未淘汰玩家
-    while (state.participants
-        .firstWhere((p) => p.uid == seats[nextIdx])
-        .cards.isEmpty) {
-      nextIdx = (nextIdx + (state.isReverse ? -1 : 1)) % seats.length;
-      if (nextIdx < 0) nextIdx += seats.length;
-      if (nextIdx == currentIndex) break;
-    }
-
-    return seats[nextIdx];
   }
 
   Poker99State _checkEliminationAndWinner(Poker99State state) {

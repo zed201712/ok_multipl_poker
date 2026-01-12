@@ -60,8 +60,12 @@ class PlayingCard extends Equatable {
     return PlayingCard(suit, value);
   }
 
-  static PlayingCard joker() {
+  static PlayingCard joker1() {
     return PlayingCard(CardSuit.spades, 0);
+  }
+
+  static PlayingCard joker2() {
+    return PlayingCard(CardSuit.hearts, 0);
   }
 
   /// Creates a full, shuffled deck of 52 cards.
@@ -83,8 +87,8 @@ class PlayingCard extends Equatable {
         deck.add(PlayingCard(suit, value));
       }
     }
-    deck.add(PlayingCard.joker());
-    deck.add(PlayingCard.joker());
+    deck.add(PlayingCard.joker1());
+    deck.add(PlayingCard.joker2());
     deck.shuffle();
     return deck;
   }

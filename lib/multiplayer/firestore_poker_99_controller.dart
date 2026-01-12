@@ -6,8 +6,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
+import 'package:ok_multipl_poker/entities/poker_player.dart';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/entities/room_state.dart';
+import 'package:ok_multipl_poker/game_internals/card_suit.dart';
+import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/poker_99_ai/poker_99_ai.dart';
@@ -22,6 +25,7 @@ class _BotContext {
   final Poker99Delegate _delegate;
   /// 用於管理與反應遊戲狀態變化的 Subject
   final FirestoreTurnBasedGameController<Poker99State> controller;
+  StreamSubscription? _streamSubscription;
   final ParticipantInfo userInfo;
   bool _isRoomCreated = false;
   bool _isGameStarted = false;
@@ -42,16 +46,11 @@ class _BotContext {
         aiUserId: aiUserId,
         delegate: _delegate,
         onAction: (newState) {
-          print('onAction $aiUserId: newState ${newState.currentPlayerId}');//TODO
-          _updateState(newState);
+          _updateStateAndAddStream(newState);
         },
       );
       _bots.add(ai);
     }
-
-    controller.gameStateStream.listen((gameState) {
-      _botsAction();
-    });
   }
 
   void dispose() {
@@ -98,7 +97,6 @@ class _BotContext {
 
   void _botsAction() {
     if (!_isRoomCreated || !_isGameStarted) return;
-    print('_botsAction currentPlayerId ${_turnBasedGameState.customState.currentPlayerId}');//TODO
     for (final bot in _bots) {
       if (_turnBasedGameState.customState.currentPlayerId != bot.aiUserId) continue;
       bot.updateState(_turnBasedGameState, _roomState);
@@ -106,11 +104,8 @@ class _BotContext {
   }
 
   void sendAction(String action, {Map<String, dynamic>? payload}) {
-    print('sendAction currentPlayerId ${_turnBasedGameState.customState.currentPlayerId}');//TODO
     final newState = _delegate.processAction(_roomState.room!, _turnBasedGameState.customState, action, userInfo.id, payload ?? {});
-    _turnBasedGameState = _turnBasedGameState.copyWith(customState: newState);
-
-    _botsAction();
+    _updateStateAndAddStream(newState);
   }
 
   void startGame() {
@@ -123,12 +118,31 @@ class _BotContext {
     );
 
     _isGameStarted = true;
+    _streamSubscription?.cancel();
+    _streamSubscription = controller.gameStateStream.listen((gameState) {
+      _botsAction();
+    });
     _updateState(initialCustomState);
   }
 
   void _updateState(Poker99State gameState) {
-    _turnBasedGameState = _turnBasedGameState.copyWith(customState: gameState);
-    print('_turnBasedGameState ${_turnBasedGameState.currentPlayerId}');//TODO
+    _turnBasedGameState = _turnBasedGameState.copyWith(
+      customState: gameState,
+      currentPlayerId: gameState.currentPlayerId,
+      winner: gameState.winner,
+      gameStatus: gameState.winner != null ? GameStatus.finished : GameStatus.playing,
+    );
+    if (gameState.winner != null) {
+      _turnBasedGameState = _turnBasedGameState.copyWith(
+        customState: _turnBasedGameState.customState.copyWith(restartRequesters: _bots.map((e)=>e.aiUserId).toList()),
+        winner: gameState.winner,
+      );
+
+      _streamSubscription?.cancel();
+    }
+  }
+  void _updateStateAndAddStream(Poker99State gameState) {
+    _updateState(gameState);
     controller.debugLocalAddStream(_turnBasedGameState);
   }
 }
@@ -139,12 +153,12 @@ class FirestorePoker99Controller {
 
   /// 底層的回合制遊戲控制器。
   late final FirestoreTurnBasedGameController<Poker99State> _gameController;
-  final SettingsController _settingsController;
 
   /// 測試模式下的 AI 玩家列表 (封裝了 AI 邏輯與其通訊控制器)
   final Poker99Delegate _delegate;
   late final _BotContext _botContext;
   StreamSubscription? _gameStateSubscription;
+  bool _isBotPlaying = false;
 
   /// 建構子，要求傳入 Firestore 和 Auth 實例。
   FirestorePoker99Controller({
@@ -152,8 +166,7 @@ class FirestorePoker99Controller {
     required FirebaseAuth auth,
     required SettingsController settingsController,
     required Poker99Delegate delegate,
-  }) : _settingsController = settingsController,
-        _delegate = delegate {
+  }) : _delegate = delegate {
     _gameController = FirestoreTurnBasedGameController<Poker99State>(
       store: firestore,
       auth: auth,
@@ -166,24 +179,17 @@ class FirestorePoker99Controller {
     _botContext = _BotContext(
       userInfo: ParticipantInfo(
         id: auth.currentUser!.uid,
-        name: auth.currentUser!.displayName ?? '',
+        name: settingsController.playerName.value,
         avatarNumber: settingsController.playerAvatarNumber.value,
       ),
       controller: _gameController,
       delegate: _delegate,
     );
-    if (settingsController.testModeOn.value) {
-      _botContext.createRoom();
-    }
   }
 
   /// 匹配並加入一個最多 6 人的遊戲房間。
   /// 成功時返回房間 ID。
   Future<String?> matchRoom() async {
-    if (_settingsController.testModeOn.value) {
-      _botContext.startGame();
-      return null;
-    }
     try {
       final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 6);
       return roomId;
@@ -204,25 +210,30 @@ class FirestorePoker99Controller {
   /// 發起重新開始遊戲的請求。
   /// 所有玩家都請求後，遊戲將會重置。
   Future<void> restart() async {
-    if (_settingsController.testModeOn.value) {
-      _botContext.sendAction('request_restart');
+    if (_isBotPlaying) {
+      _botContext.createRoom();
+      _botContext.startGame();
       return;
     }
     _gameController.sendGameAction('request_restart');
   }
 
   Future<void> startGame() async {
-    if (_settingsController.testModeOn.value) {
+    if ((_gameController.roomStateController.roomStateStream.value?.room?.participants.length ?? 0) <= 1) {
+      await leaveRoom();
+      _isBotPlaying = true;
+      _botContext.createRoom();
       _botContext.startGame();
       return;
     }
+
     await _gameController.startGame();
   }
 
   /// 玩家出牌。
   /// [payload] 包含出牌內容與對應的行動 (Poker99Action)。
   Future<void> playCards(Poker99PlayPayload payload) async {
-    if (_settingsController.testModeOn.value) {
+    if (_isBotPlaying) {
       _botContext.sendAction('play_cards', payload: payload.toJson());
       return;
     }

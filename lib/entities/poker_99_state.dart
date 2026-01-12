@@ -82,20 +82,32 @@ class Poker99State {
   }
 
   String? nextPlayerId() {
-    final currentSeats = seatedPlayersList();
-    if (currentSeats.isEmpty) return null;
-    final total = currentSeats.length;
+    final state = this;
+    final seats = state.seats;
+    final currentIndex = seats.indexOf(state.currentPlayerId);
 
-    final currentIndex = Iterable.generate(total, (i) => i)
-        .firstWhere((i) => currentSeats[i].uid == currentPlayerId);
+    // 處理指定 (Assign)
+    final targetId = state.targetPlayerId;
+    if (targetId.isNotEmpty && seats.contains(targetId)) {
+      final target = state.participants.firstWhereOrNull((p) => p.uid == targetId);
+      if (target != null && target.cards.isNotEmpty) return targetId;
+    }
 
-    final next1Index = currentIndex + 1;
-    final range = Iterable.generate(total - 1, (i) => (i + next1Index) % total);
-    final nextPlayerIndex = range.firstWhereOrNull((
-        offset) => (currentSeats[offset].cards.isNotEmpty));
+    int step = state.isReverse ? -1 : 1;
 
-    if (nextPlayerIndex == null) return null;
-    return currentSeats[nextPlayerIndex].uid;
+    int nextIdx = (currentIndex + step) % seats.length;
+    if (nextIdx < 0) nextIdx += seats.length;
+
+    // 尋找下一個未淘汰玩家
+    while (state.participants
+        .firstWhere((p) => p.uid == seats[nextIdx])
+        .cards.isEmpty) {
+      nextIdx = (nextIdx + (state.isReverse ? -1 : 1)) % seats.length;
+      if (nextIdx < 0) nextIdx += seats.length;
+      if (nextIdx == currentIndex) break;
+    }
+
+    return seats[nextIdx];
   }
 
   Poker99State copyWith({
