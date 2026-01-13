@@ -89,7 +89,7 @@ class SettingsController {
     playerAvatarNumber.value = globalIndex;
     
     // 計算主題與相對索引
-    final (theme, relativeIndex) = _getThemeAndRelativeIndex(globalIndex);
+    final (theme, relativeIndex) = getThemeAndRelativeIndex(globalIndex);
     
     // 持久化儲存
     _store.savePlayerAvatarNumber(relativeIndex); // 存入相對索引以維持相容性
@@ -183,14 +183,14 @@ class SettingsController {
         
         if (avatarTheme != null) {
           // 新版邏輯：avatarVal 是相對索引
-          playerAvatarNumber.value = _getGlobalIndex(avatarTheme, avatarVal);
+          playerAvatarNumber.value = getGlobalIndex(avatarTheme, avatarVal);
         } else {
           // 舊版邏輯：avatarVal 是全域索引，進行遷移
           final globalIndex = avatarVal;
           playerAvatarNumber.value = globalIndex;
           
           // 執行遷移儲存
-          final (theme, relativeIndex) = _getThemeAndRelativeIndex(globalIndex);
+          final (theme, relativeIndex) = getThemeAndRelativeIndex(globalIndex);
           await _store.savePlayerAvatarCardTheme(theme.name);
           // 為了徹底符合遷移邏輯，將原本的全域索引轉為相對索引儲存
           await _store.savePlayerAvatarNumber(relativeIndex);
@@ -228,7 +228,7 @@ class SettingsController {
   }
 
   /// 根據主題名稱與主題內相對索引，計算全域索引
-  int _getGlobalIndex(String themeName, int relativeIndex) {
+  int getGlobalIndex(String themeName, int relativeIndex) {
     int globalIndex = 0;
     bool found = false;
     for (var theme in BigTwoCardTheme.values) {
@@ -250,7 +250,7 @@ class SettingsController {
   }
 
   /// 根據全域索引，計算所屬主題與相對索引
-  (BigTwoCardTheme, int) _getThemeAndRelativeIndex(int globalIndex) {
+  (BigTwoCardTheme, int) getThemeAndRelativeIndex(int globalIndex) {
     if (globalIndex < 0 || globalIndex >= avatarList.length) {
       return (BigTwoCardTheme.values.first, 0);
     }
