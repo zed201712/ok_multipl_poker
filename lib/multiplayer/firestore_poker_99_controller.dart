@@ -3,75 +3,48 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
-import 'package:ok_multipl_poker/entities/poker_player.dart';
 import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/entities/room_state.dart';
-import 'package:ok_multipl_poker/game_internals/card_suit.dart';
-import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/poker_99_ai/poker_99_ai.dart';
+import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
 
 import '../entities/participant_info.dart';
 import 'game_status.dart';
 
-class _BotContext {
-  final List<Poker99AI> _bots = [];
-  final Poker99Delegate _delegate;
+class _BotContext<T extends TurnBasedCustomState> {
+  final TurnBasedGameDelegate<T> _delegate;
   /// 用於管理與反應遊戲狀態變化的 Subject
-  final FirestoreTurnBasedGameController<Poker99State> controller;
+  final FirestoreTurnBasedGameController<T> controller;
   StreamSubscription? _streamSubscription;
   final ParticipantInfo userInfo;
+  final List<ParticipantInfo> botsInfo;
+  final void Function(TurnBasedGameState<T> gameState, RoomState roomState) onBotsAction;
+
   bool _isRoomCreated = false;
   bool _isGameStarted = false;
   RoomState _roomState = RoomState();
-  TurnBasedGameState<Poker99State> _turnBasedGameState = TurnBasedGameState<Poker99State>(
-    customState: Poker99State(participants: [], seats: [], currentPlayerId: '')
-  );
+  TurnBasedGameState<T> _turnBasedGameState;
 
   _BotContext({
     required this.userInfo,
+    required this.botsInfo,
     required this.controller,
-    required Poker99Delegate delegate,
-  }) : _delegate = delegate {
-    for (int i = 1; i <= 2; i++) {
-      final aiUserId = 'bot_$i';
-
-      final ai = Poker99AI(
-        aiUserId: aiUserId,
-        delegate: _delegate,
-        onAction: (newState) {
-          _updateStateAndAddStream(newState);
-        },
-      );
-      _bots.add(ai);
-    }
-  }
-
-  void dispose() {
-    for (final bot in _bots) {
-      bot.dispose();
-    }
-  }
+    required TurnBasedGameDelegate<T> delegate,
+    required T initialCustomState,
+    required this.onBotsAction,
+  })  : _delegate = delegate,
+        _turnBasedGameState = TurnBasedGameState<T>(customState: initialCustomState);
 
   void createRoom() {
-    List<ParticipantInfo> infoList = [];
-    for (int i = 0; i < _bots.length; i++) {
-      infoList.add(
-          ParticipantInfo(
-              id: _bots[i].aiUserId,
-              name: _bots[i].aiUserId,
-              avatarNumber: i,
-          )
-      );
-    }
+    List<ParticipantInfo> infoList = List.from(botsInfo);
     infoList.insert(
-        Random().nextInt(infoList.length),
+        Random().nextInt(infoList.length + 1),
         userInfo
     );
 
@@ -79,8 +52,8 @@ class _BotContext {
       room: Room(
           creatorUid: userInfo.id,
           managerUid: userInfo.id,
-          title: 'title',
-          maxPlayers: 6,
+          title: 'Bot Game',
+          maxPlayers: botsInfo.length + 1,
           state: '',
           body: '',
           matchMode: '',
@@ -95,12 +68,9 @@ class _BotContext {
     _isRoomCreated = true;
   }
 
-  void _botsAction() {
+  void _notifyBots() {
     if (!_isRoomCreated || !_isGameStarted) return;
-    for (final bot in _bots) {
-      if (_turnBasedGameState.customState.currentPlayerId != bot.aiUserId) continue;
-      bot.updateState(_turnBasedGameState, _roomState);
-    }
+    onBotsAction(_turnBasedGameState, _roomState);
   }
 
   void sendAction(String action, {Map<String, dynamic>? payload}) {
@@ -120,29 +90,24 @@ class _BotContext {
     _isGameStarted = true;
     _streamSubscription?.cancel();
     _streamSubscription = controller.gameStateStream.listen((gameState) {
-      _botsAction();
+      _notifyBots();
     });
     _updateState(initialCustomState);
   }
 
-  void _updateState(Poker99State gameState) {
+  void _updateState(T customState) {
     _turnBasedGameState = _turnBasedGameState.copyWith(
-      customState: gameState,
-      currentPlayerId: gameState.currentPlayerId,
-      winner: gameState.winner,
-      gameStatus: gameState.winner != null ? GameStatus.finished : GameStatus.playing,
+      customState: customState,
+      currentPlayerId: customState.currentPlayerId,
+      winner: customState.winner,
+      gameStatus: customState.winner != null ? GameStatus.finished : GameStatus.playing,
     );
-    if (gameState.winner != null) {
-      _turnBasedGameState = _turnBasedGameState.copyWith(
-        customState: _turnBasedGameState.customState.copyWith(restartRequesters: _bots.map((e)=>e.aiUserId).toList()),
-        winner: gameState.winner,
-      );
-
+    if (customState.winner != null) {
       _streamSubscription?.cancel();
     }
   }
-  void _updateStateAndAddStream(Poker99State gameState) {
-    _updateState(gameState);
+  void _updateStateAndAddStream(T customState) {
+    _updateState(customState);
     controller.debugLocalAddStream(_turnBasedGameState);
   }
 }
@@ -154,9 +119,10 @@ class FirestorePoker99Controller {
   /// 底層的回合制遊戲控制器。
   late final FirestoreTurnBasedGameController<Poker99State> _gameController;
 
-  /// 測試模式下的 AI 玩家列表 (封裝了 AI 邏輯與其通訊控制器)
+  /// 測試模式下的 AI 玩家列表
+  final List<Poker99AI> _bots = [];
   final Poker99Delegate _delegate;
-  late final _BotContext _botContext;
+  late final _BotContext<Poker99State> _botContext;
   StreamSubscription? _gameStateSubscription;
   bool _isBotPlaying = false;
 
@@ -176,14 +142,43 @@ class FirestorePoker99Controller {
     );
     gameStateStream = _gameController.gameStateStream;
 
-    _botContext = _BotContext(
+    final botsInfo = <ParticipantInfo>[];
+    for (int i = 1; i <= 2; i++) {
+      final aiUserId = 'bot_$i';
+      botsInfo.add(ParticipantInfo(
+        id: aiUserId,
+        name: aiUserId,
+        avatarNumber: i,
+      ));
+
+      final ai = Poker99AI(
+        aiUserId: aiUserId,
+        delegate: _delegate,
+        onAction: (newState) {
+          _botContext._updateStateAndAddStream(newState);
+        },
+      );
+      _bots.add(ai);
+    }
+
+    _botContext = _BotContext<Poker99State>(
       userInfo: ParticipantInfo(
         id: auth.currentUser!.uid,
         name: settingsController.playerName.value,
         avatarNumber: settingsController.playerAvatarNumber.value,
       ),
+      botsInfo: botsInfo,
       controller: _gameController,
       delegate: _delegate,
+      initialCustomState: Poker99State(participants: [], seats: [], currentPlayerId: ''),
+      onBotsAction: (gameState, roomState) {
+        for (final bot in _bots) {
+          if (gameState.customState.currentPlayerId == bot.aiUserId || 
+              gameState.gameStatus == GameStatus.finished) {
+            bot.updateState(gameState, roomState);
+          }
+        }
+      },
     );
   }
 
@@ -258,6 +253,8 @@ class FirestorePoker99Controller {
     _gameStateSubscription?.cancel();
     _gameController.dispose();
     // 釋放 AI 資源
-    _botContext.dispose();
+    for (final bot in _bots) {
+      bot.dispose();
+    }
   }
 }

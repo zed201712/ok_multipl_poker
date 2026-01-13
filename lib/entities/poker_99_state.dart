@@ -2,18 +2,21 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:ok_multipl_poker/entities/poker_player.dart';
+import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'big_two_player.dart';
 
 part 'poker_99_state.g.dart';
 
 @JsonSerializable(explicitToJson: true)
-class Poker99State {
+class Poker99State implements TurnBasedCustomState {
   final List<PokerPlayer> participants;
   final List<String> seats;
+  @override
   final String currentPlayerId;
   final List<String> lastPlayedHand;
   final String lastPlayedById;
   final String lastAction;
+  @override
   final String? winner;
   final int currentScore;
   final List<String> restartRequesters;

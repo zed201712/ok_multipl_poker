@@ -15,7 +15,7 @@ import 'firestore_room_state_controller.dart';
 import 'turn_based_game_delegate.dart';
 import 'turn_based_game_state.dart';
 
-class FirestoreTurnBasedGameController<T> {
+class FirestoreTurnBasedGameController<T extends TurnBasedCustomState> {
   final TurnBasedGameDelegate<T> _delegate;
 
   late final FirestoreRoomStateController roomStateController;

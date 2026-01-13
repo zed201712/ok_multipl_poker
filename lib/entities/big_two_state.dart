@@ -1,18 +1,20 @@
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
+import '../multiplayer/turn_based_game_state.dart';
 import 'big_two_player.dart';
-import 'participant_info.dart';
 
 part 'big_two_state.g.dart';
 
 @JsonSerializable(explicitToJson: true)
-class BigTwoState {
+class BigTwoState implements TurnBasedCustomState {
   final List<BigTwoPlayer> participants;
   final List<String> seats;
+  @override
   final String currentPlayerId;
   final List<String> lastPlayedHand;
   final String lastPlayedById;
+  @override
   final String? winner;
   final int passCount;
   final List<String> restartRequesters;

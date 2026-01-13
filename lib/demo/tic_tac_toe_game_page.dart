@@ -92,14 +92,17 @@ class TicTacToeGameAI {
 }
 
 // 1. 定義遊戲狀態物件
-class TicTacToeState {
+class TicTacToeState implements TurnBasedCustomState {
   // 3x3 的遊戲板，'X', 'O', 或 '' (空)
   final List<String> board;
+  @override
   final String? winner;
+  @override
+  final String currentPlayerId;
   final List<String> restartRequesters;
   final List<String> playerIds;
 
-  TicTacToeState({required this.board, this.winner, this.restartRequesters = const [], this.playerIds = const []});
+  TicTacToeState({required this.board, this.winner, this.restartRequesters = const [], this.playerIds = const [], this.currentPlayerId = ''});
 
   // 工廠建構子，用於從 JSON 建立物件
   factory TicTacToeState.fromJson(Map<String, dynamic> json) {

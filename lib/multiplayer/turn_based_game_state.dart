@@ -2,10 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'dart:convert';
+
+/// Interface for custom game states that can be managed by TurnBasedGameState.
+abstract interface class TurnBasedCustomState {
+  String get currentPlayerId;
+  String? get winner;
+}
+
 /// Represents the generic state of a turn-based game.
 ///
 /// @param T The type of the custom game state object, managed by a delegate.
-class TurnBasedGameState<T> {
+class TurnBasedGameState<T extends TurnBasedCustomState> {
   final GameStatus gameStatus; // e.g., 'waiting', 'playing', 'finished'
   final String? currentPlayerId;
   final String? winner;
