@@ -125,7 +125,7 @@ class PlayingCard extends Equatable {
   @override
   String toString() {
     // A simple string representation, e.g., '♠10' for the 10 of spades.
-    return '$suit${_valueToString()}';
+    return isJoker() ? 'Joker' : '$suit${_valueToString()}';
   }
 
   String _valueToString() {

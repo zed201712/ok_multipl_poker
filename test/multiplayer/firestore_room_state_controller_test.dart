@@ -4,11 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ok_multipl_poker/entities/room.dart';
-import 'package:ok_multipl_poker/entities/room_request.dart';
 import 'package:ok_multipl_poker/entities/room_state.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_room_state_controller.dart';
-import 'package:ok_multipl_poker/settings/fake_settings_controller.dart';
+import 'package:ok_multipl_poker/settings/persistence/memory_settings_persistence.dart';
+import 'package:ok_multipl_poker/settings/settings.dart';
 import 'package:ok_multipl_poker/test/stream_asserter.dart';
 
 void main() {
@@ -18,16 +17,16 @@ void main() {
     late MockFirebaseAuth authP2;
     late FirestoreRoomStateController controllerP1;
     late FirestoreRoomStateController controllerP2;
-    late FakeSettingsController settingsP1;
-    late FakeSettingsController settingsP2;
+    late SettingsController settingsP1;
+    late SettingsController settingsP2;
     const collectionName = 'rooms';
 
     setUp(() {
       firestore = FakeFirebaseFirestore();
       authP1 = MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'user1'));
       authP2 = MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'user2'));
-      settingsP1 = FakeSettingsController()..setPlayerName('Player1');
-      settingsP2 = FakeSettingsController()..setPlayerName('Player2');
+      settingsP1 = SettingsController(store: MemoryOnlySettingsPersistence())..setPlayerName('Player1');
+      settingsP2 = SettingsController(store: MemoryOnlySettingsPersistence())..setPlayerName('Player2');
 
       controllerP1 = FirestoreRoomStateController(firestore, authP1, collectionName, settingsP1);
       controllerP2 = FirestoreRoomStateController(firestore, authP2, collectionName, settingsP2);

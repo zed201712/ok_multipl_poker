@@ -49,7 +49,7 @@ class FirestoreBigTwoController {
     gameStateStream = _gameController.gameStateStream;
 
     final botsInfo = <ParticipantInfo>[];
-    for (int i = 1; i <= 2; i++) {
+    for (int i = 1; i <= 3; i++) {
       final aiUserId = 'bot_$i';
       botsInfo.add(ParticipantInfo(
         id: aiUserId,

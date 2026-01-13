@@ -51,7 +51,7 @@ class BigTwoPlayCardsAI implements BigTwoAI {
     if (gameState.gameStatus == GameStatus.finished) {
       final alreadyRequested = gameState.customState.restartRequesters.contains(aiUserId);
       if (!alreadyRequested) {
-        Future.delayed(const Duration(milliseconds: 1500), () {
+        Future.delayed(const Duration(milliseconds: 100), () {
           if (!_isDisposed) {
              final newState = _delegate.processAction(room, gameState.customState, 'request_restart', aiUserId, {});
              onAction(newState);

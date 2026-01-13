@@ -1,34 +1,20 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ok_multipl_poker/entities/big_two_state.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_card_pattern.dart';
 import 'package:ok_multipl_poker/game_internals/big_two_delegate.dart';
 import 'package:ok_multipl_poker/game_internals/playing_card.dart';
 import 'package:ok_multipl_poker/multiplayer/big_two_ai/big_two_play_cards_ai.dart';
+import 'package:ok_multipl_poker/settings/persistence/memory_settings_persistence.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
-
-class FakeSettingsController extends Fake implements SettingsController {
-  @override
-  ValueNotifier<String> get playerName => ValueNotifier('AI Player');
-  
-  @override
-  ValueNotifier<bool> get muted => ValueNotifier(false);
-  
-  @override
-  ValueNotifier<bool> get soundsOn => ValueNotifier(true);
-  
-  @override
-  ValueNotifier<bool> get musicOn => ValueNotifier(true);
-}
 
 void main() {
   group('BigTwoPlayCardsAI Strategy (with Real Delegate)', () {
     late BigTwoDelegate realDelegate;
     late FakeFirebaseFirestore fakeFirestore;
     late MockFirebaseAuth fakeAuth;
-    late FakeSettingsController fakeSettings;
+    late SettingsController fakeSettings;
     
     late BigTwoPlayCardsAI ai;
     const aiUserId = 'ai_user_id';
@@ -37,7 +23,7 @@ void main() {
       realDelegate = BigTwoDelegate();
       fakeFirestore = FakeFirebaseFirestore();
       fakeAuth = MockFirebaseAuth();
-      fakeSettings = FakeSettingsController();
+      fakeSettings = SettingsController(store: MemoryOnlySettingsPersistence());
 
       ai = BigTwoPlayCardsAI(
         aiUserId: aiUserId,

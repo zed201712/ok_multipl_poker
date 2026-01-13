@@ -389,11 +389,11 @@ class _Poker99BoardWidgetState extends State<Poker99BoardWidget> {
           if (card.suit == CardSuit.spades) {
             addActionButton('0', Poker99Action.setToZero);
           } else {
-            addActionButton('play_action'.tr(), Poker99Action.increase, value: 1);
+            addActionButton('+${card.value}', Poker99Action.increase, value: 1);
           }
           break;
         default:
-          addActionButton('play_action'.tr(), Poker99Action.increase, value: card.value);
+          addActionButton('+${card.value}', Poker99Action.increase, value: card.value);
       }
     }
 

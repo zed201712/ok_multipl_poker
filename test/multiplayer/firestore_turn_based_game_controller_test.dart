@@ -9,7 +9,8 @@ import 'package:ok_multipl_poker/entities/room.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/game_status.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
-import 'package:ok_multipl_poker/settings/fake_settings_controller.dart';
+import 'package:ok_multipl_poker/settings/persistence/memory_settings_persistence.dart';
+import 'package:ok_multipl_poker/settings/settings.dart';
 import 'package:ok_multipl_poker/test/stream_asserter.dart';
 
 void main() {
@@ -20,6 +21,8 @@ void main() {
     late MockFirebaseAuth authP2;
     late FirestoreTurnBasedGameController<TicTacToeState> gameControllerP1;
     late FirestoreTurnBasedGameController<TicTacToeState> gameControllerP2;
+    late SettingsController p1Settings;
+    late SettingsController p2Settings;
 
     final p1Name = 'PlayerOne';
     final p2Name = 'PlayerTwo';
@@ -30,10 +33,8 @@ void main() {
       authP1 = MockFirebaseAuth();
       authP2 = MockFirebaseAuth();
 
-      final p1Settings = FakeSettingsController();
-      p1Settings.setPlayerName(p1Name);
-      final p2Settings = FakeSettingsController();
-      p2Settings.setPlayerName(p2Name);
+      p1Settings = SettingsController(store: MemoryOnlySettingsPersistence());
+      p2Settings = SettingsController(store: MemoryOnlySettingsPersistence());
       gameControllerP1 = FirestoreTurnBasedGameController<TicTacToeState>(
         store: store,
         auth: authP1,
@@ -239,6 +240,10 @@ void main() {
     });
 
     test('matchAndJoinRoom: creates new room for first player and joins for second', () async {
+      await p1Settings.initializationFinished;
+      await p2Settings.initializationFinished;
+      p1Settings.setPlayerName(p1Name);
+      p2Settings.setPlayerName(p2Name);
       // 1. Player 1 matches and should create a new room.
       final roomId = await gameControllerP1.matchAndJoinRoom(maxPlayers: 2);
       expect(roomId, isNotEmpty);

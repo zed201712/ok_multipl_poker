@@ -18,6 +18,8 @@ import 'persistence/settings_persistence.dart';
 class SettingsController {
   static final _log = Logger('SettingsController');
 
+  late Future<void> initializationFinished;
+
   /// 用於儲存設定的持久化儲存區。
   final SettingsPersistence _store;
 
@@ -71,7 +73,7 @@ class SettingsController {
   ///（即 iOS 上的 NSUserDefaults，Android 上的 SharedPreferences，或網頁上的 local storage）。
   SettingsController({SettingsPersistence? store})
       : _store = store ?? LocalStorageSettingsPersistence() {
-    _loadStateFromPersistence();
+    initializationFinished = _loadStateFromPersistence();
 
     avatarList = BigTwoCardTheme.values
         .expand((e)=>e.cardManager.avatars)
@@ -80,6 +82,7 @@ class SettingsController {
 
   void setPlayerName(String name) {
     playerName.value = name;
+    print('setPlayerName : $name');//TODO
     _store.savePlayerName(playerName.value);
   }
 
