@@ -7,6 +7,9 @@ import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/poker_99_ai/poker_99_ai.dart';
+import 'package:ok_multipl_poker/multiplayer/strategy/bot_game_strategy.dart';
+import 'package:ok_multipl_poker/multiplayer/strategy/game_play_strategy.dart';
+import 'package:ok_multipl_poker/multiplayer/strategy/online_multiplayer_strategy.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
 
@@ -26,7 +29,8 @@ class FirestorePoker99Controller {
   final Poker99Delegate _delegate;
   late final BotContext<Poker99State> _botContext;
   StreamSubscription? _gameStateSubscription;
-  bool _isBotPlaying = false;
+
+  late GamePlayStrategy _gamePlayStrategy;
 
   /// 建構子，要求傳入 Firestore 和 Auth 實例。
   FirestorePoker99Controller({
@@ -82,59 +86,45 @@ class FirestorePoker99Controller {
         }
       },
     );
+
+    _gamePlayStrategy = OnlineMultiplayerStrategy<Poker99State>(_gameController);
   }
 
   /// 匹配並加入一個最多 6 人的遊戲房間。
   /// 成功時返回房間 ID。
   Future<String?> matchRoom() async {
-    try {
-      final roomId = await _gameController.matchAndJoinRoom(maxPlayers: 6);
-      return roomId;
-    } catch (e) {
-      return null;
-    }
+    return _gamePlayStrategy.matchRoom();
   }
 
   /// 離開當前所在的房間。
   Future<void> leaveRoom() async {
-    await _gameController.leaveRoom();
+    await _gamePlayStrategy.leaveRoom();
   }
 
   Future<void> endRoom() async {
-    await _gameController.endRoom();
+    await _gamePlayStrategy.endRoom();
   }
 
   /// 發起重新開始遊戲的請求。
   /// 所有玩家都請求後，遊戲將會重置。
   Future<void> restart() async {
-    if (_isBotPlaying) {
-      _botContext.createRoom();
-      _botContext.startGame();
-      return;
-    }
-    _gameController.sendGameAction('request_restart');
+    await _gamePlayStrategy.restart();
   }
 
   Future<void> startGame() async {
     if ((_gameController.roomStateController.roomStateStream.value?.room?.participants.length ?? 0) <= 1) {
-      await leaveRoom();
-      _isBotPlaying = true;
-      _botContext.createRoom();
-      _botContext.startGame();
-      return;
+      await _gameController.leaveRoom();
+      _gamePlayStrategy = BotGameStrategy<Poker99State>(_botContext);
+      await _gamePlayStrategy.matchRoom(); // 初始化 Bot 房間
     }
 
-    await _gameController.startGame();
+    await _gamePlayStrategy.startGame();
   }
 
   /// 玩家出牌。
   /// [payload] 包含出牌內容與對應的行動 (Poker99Action)。
   Future<void> playCards(Poker99PlayPayload payload) async {
-    if (_isBotPlaying) {
-      _botContext.sendAction('play_cards', payload: payload.toJson());
-      return;
-    }
-    _gameController.sendGameAction('play_cards', payload: payload.toJson());
+    await _gamePlayStrategy.sendGameAction('play_cards', payload: payload.toJson());
   }
 
   Poker99State? getCustomGameState() {
