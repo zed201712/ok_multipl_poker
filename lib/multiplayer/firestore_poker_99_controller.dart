@@ -1,116 +1,18 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ok_multipl_poker/entities/poker_99_state.dart';
 import 'package:ok_multipl_poker/entities/poker_99_play_payload.dart';
-import 'package:ok_multipl_poker/entities/room.dart';
-import 'package:ok_multipl_poker/entities/room_state.dart';
 import 'package:ok_multipl_poker/game_internals/poker_99_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/firestore_turn_based_game_controller.dart';
 import 'package:ok_multipl_poker/multiplayer/poker_99_ai/poker_99_ai.dart';
-import 'package:ok_multipl_poker/multiplayer/turn_based_game_delegate.dart';
 import 'package:ok_multipl_poker/multiplayer/turn_based_game_state.dart';
 import 'package:ok_multipl_poker/settings/settings.dart';
 
 import '../entities/participant_info.dart';
+import 'BotContext.dart';
 import 'game_status.dart';
-
-class _BotContext<T extends TurnBasedCustomState> {
-  final TurnBasedGameDelegate<T> _delegate;
-  /// 用於管理與反應遊戲狀態變化的 Subject
-  final FirestoreTurnBasedGameController<T> controller;
-  StreamSubscription? _streamSubscription;
-  final ParticipantInfo userInfo;
-  final List<ParticipantInfo> botsInfo;
-  final void Function(TurnBasedGameState<T> gameState, RoomState roomState) onBotsAction;
-
-  bool _isRoomCreated = false;
-  bool _isGameStarted = false;
-  RoomState _roomState = RoomState();
-  TurnBasedGameState<T> _turnBasedGameState;
-
-  _BotContext({
-    required this.userInfo,
-    required this.botsInfo,
-    required this.controller,
-    required TurnBasedGameDelegate<T> delegate,
-    required T initialCustomState,
-    required this.onBotsAction,
-  })  : _delegate = delegate,
-        _turnBasedGameState = TurnBasedGameState<T>(customState: initialCustomState);
-
-  void createRoom() {
-    List<ParticipantInfo> infoList = List.from(botsInfo);
-    infoList.insert(
-        Random().nextInt(infoList.length + 1),
-        userInfo
-    );
-
-    _roomState = RoomState(
-      room: Room(
-          creatorUid: userInfo.id,
-          managerUid: userInfo.id,
-          title: 'Bot Game',
-          maxPlayers: botsInfo.length + 1,
-          state: '',
-          body: '',
-          matchMode: '',
-          visibility: '',
-          randomizeSeats: false,
-          participants: infoList,
-      ),
-      requests: [],
-      responses: [],
-    );
-
-    _isRoomCreated = true;
-  }
-
-  void _notifyBots() {
-    if (!_isRoomCreated || !_isGameStarted) return;
-    onBotsAction(_turnBasedGameState, _roomState);
-  }
-
-  void sendAction(String action, {Map<String, dynamic>? payload}) {
-    final newState = _delegate.processAction(_roomState.room!, _turnBasedGameState.customState, action, userInfo.id, payload ?? {});
-    _updateStateAndAddStream(newState);
-  }
-
-  void startGame() {
-    final initialCustomState = _delegate.initializeGame(_roomState.room!);
-    _turnBasedGameState = _turnBasedGameState.copyWith(
-      gameStatus: GameStatus.playing,
-      currentPlayerId: _delegate.getCurrentPlayer(initialCustomState),
-      winner: null,
-      customState: initialCustomState,
-    );
-
-    _isGameStarted = true;
-    _streamSubscription?.cancel();
-    _streamSubscription = controller.gameStateStream.listen((gameState) {
-      _notifyBots();
-    });
-    _updateState(initialCustomState);
-  }
-
-  void _updateState(T customState) {
-    _turnBasedGameState = _turnBasedGameState.copyWith(
-      customState: customState,
-      currentPlayerId: customState.currentPlayerId,
-      winner: customState.winner,
-      gameStatus: customState.winner != null ? GameStatus.finished : GameStatus.playing,
-    );
-    if (customState.winner != null) {
-      _streamSubscription?.cancel();
-    }
-  }
-  void _updateStateAndAddStream(T customState) {
-    _updateState(customState);
-    controller.debugLocalAddStream(_turnBasedGameState);
-  }
-}
 
 class FirestorePoker99Controller {
   /// 遊戲狀態的響應式數據流。
@@ -122,7 +24,7 @@ class FirestorePoker99Controller {
   /// 測試模式下的 AI 玩家列表
   final List<Poker99AI> _bots = [];
   final Poker99Delegate _delegate;
-  late final _BotContext<Poker99State> _botContext;
+  late final BotContext<Poker99State> _botContext;
   StreamSubscription? _gameStateSubscription;
   bool _isBotPlaying = false;
 
@@ -155,13 +57,13 @@ class FirestorePoker99Controller {
         aiUserId: aiUserId,
         delegate: _delegate,
         onAction: (newState) {
-          _botContext._updateStateAndAddStream(newState);
+          _botContext.updateStateAndAddStream(newState);
         },
       );
       _bots.add(ai);
     }
 
-    _botContext = _BotContext<Poker99State>(
+    _botContext = BotContext<Poker99State>(
       userInfo: ParticipantInfo(
         id: auth.currentUser!.uid,
         name: settingsController.playerName.value,
