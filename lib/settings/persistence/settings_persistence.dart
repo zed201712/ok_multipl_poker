@@ -14,6 +14,8 @@ abstract class SettingsPersistence {
   Future<String> getPlayerName();
 
   Future<int> getPlayerAvatarNumber();
+
+  Future<String?> getPlayerAvatarCardTheme();
   
   Future<String> getCardTheme();
   
@@ -30,6 +32,8 @@ abstract class SettingsPersistence {
   Future<void> savePlayerName(String value);
 
   Future<void> savePlayerAvatarNumber(int value);
+
+  Future<void> savePlayerAvatarCardTheme(String value);
   
   Future<void> saveCardTheme(String value);
 

@@ -27,7 +27,7 @@ class SettingsController {
   ///
   /// 這是一個特別重要的功能，尤其是在手機上，玩家希望能快速將所有音訊靜音。
   /// 將其作為一個獨立的旗標（而不是像 {關閉, 音效, 全部} 這樣的列舉），
-  /// 意味著玩家在暫時將遊戲靜音時，不會失去他們原有的 [soundsOn] 和
+  /// 意指著玩家在暫時將遊戲靜音時，不會失去他們原有的 [soundsOn] 和
   /// [musicOn] 偏好設定。
   ValueNotifier<bool> audioOn = ValueNotifier(true);
 
@@ -73,22 +73,27 @@ class SettingsController {
   ///（即 iOS 上的 NSUserDefaults，Android 上的 SharedPreferences，或網頁上的 local storage）。
   SettingsController({SettingsPersistence? store})
       : _store = store ?? LocalStorageSettingsPersistence() {
-    initializationFinished = _loadStateFromPersistence();
-
     avatarList = BigTwoCardTheme.values
         .expand((e)=>e.cardManager.avatars)
         .toList();
+
+    initializationFinished = _loadStateFromPersistence();
   }
 
   void setPlayerName(String name) {
     playerName.value = name;
-    print('setPlayerName : $name');//TODO
     _store.savePlayerName(playerName.value);
   }
 
-  void setPlayerAvatarNumber(int number) {
-    playerAvatarNumber.value = number;
-    _store.savePlayerAvatarNumber(playerAvatarNumber.value);
+  void setPlayerAvatarNumber(int globalIndex) {
+    playerAvatarNumber.value = globalIndex;
+    
+    // 計算主題與相對索引
+    final (theme, relativeIndex) = _getThemeAndRelativeIndex(globalIndex);
+    
+    // 持久化儲存
+    _store.savePlayerAvatarNumber(relativeIndex); // 存入相對索引以維持相容性
+    _store.savePlayerAvatarCardTheme(theme.name);
   }
 
   void setCardTheme(BigTwoCardTheme theme) {
@@ -170,7 +175,28 @@ class SettingsController {
           .getMusicOn(defaultValue: true)
           .then((value) => musicOn.value = value),
       _store.getPlayerName().then((value) => playerName.value = value),
-      _store.getPlayerAvatarNumber().then((value) => playerAvatarNumber.value = value),
+      
+      // 頭像載入與遷移邏輯
+      Future(() async {
+        final avatarVal = await _store.getPlayerAvatarNumber();
+        final avatarTheme = await _store.getPlayerAvatarCardTheme();
+        
+        if (avatarTheme != null) {
+          // 新版邏輯：avatarVal 是相對索引
+          playerAvatarNumber.value = _getGlobalIndex(avatarTheme, avatarVal);
+        } else {
+          // 舊版邏輯：avatarVal 是全域索引，進行遷移
+          final globalIndex = avatarVal;
+          playerAvatarNumber.value = globalIndex;
+          
+          // 執行遷移儲存
+          final (theme, relativeIndex) = _getThemeAndRelativeIndex(globalIndex);
+          await _store.savePlayerAvatarCardTheme(theme.name);
+          // 為了徹底符合遷移邏輯，將原本的全域索引轉為相對索引儲存
+          await _store.savePlayerAvatarNumber(relativeIndex);
+        }
+      }),
+
       _store.getHasCompletedOnboarding().then((value) => hasCompletedOnboarding.value = value),
       _store.getCardTheme().then((value) {
         final theme = BigTwoCardTheme.values.firstWhere(
@@ -199,5 +225,45 @@ class SettingsController {
     ]);
 
     _log.fine(() => 'Loaded settings: $loadedValues');
+  }
+
+  /// 根據主題名稱與主題內相對索引，計算全域索引
+  int _getGlobalIndex(String themeName, int relativeIndex) {
+    int globalIndex = 0;
+    bool found = false;
+    for (var theme in BigTwoCardTheme.values) {
+      if (theme.name == themeName) {
+        globalIndex += relativeIndex;
+        found = true;
+        break;
+      }
+      globalIndex += theme.cardManager.avatars.length;
+    }
+    
+    // 如果找不到主題（可能被刪除），回退到 0
+    if (!found) return 0;
+    
+    // 邊界檢查
+    if (globalIndex >= avatarList.length || globalIndex < 0) return 0;
+    
+    return globalIndex;
+  }
+
+  /// 根據全域索引，計算所屬主題與相對索引
+  (BigTwoCardTheme, int) _getThemeAndRelativeIndex(int globalIndex) {
+    if (globalIndex < 0 || globalIndex >= avatarList.length) {
+      return (BigTwoCardTheme.values.first, 0);
+    }
+
+    int accumulated = 0;
+    for (var theme in BigTwoCardTheme.values) {
+      final avatarCount = theme.cardManager.avatars.length;
+      if (globalIndex < accumulated + avatarCount) {
+        return (theme, globalIndex - accumulated);
+      }
+      accumulated += avatarCount;
+    }
+    
+    return (BigTwoCardTheme.values.first, 0);
   }
 }

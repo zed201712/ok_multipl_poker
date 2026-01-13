@@ -20,6 +20,8 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   /// 玩家的頭像編號。
   int playerAvatarNumber = 0;
 
+  String? playerAvatarCardTheme;
+
   /// 是否已完成初次使用者引導 (Onboarding)。
   bool hasCompletedOnboarding = false;
 
@@ -43,6 +45,9 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
   Future<int> getPlayerAvatarNumber() async => playerAvatarNumber;
 
   @override
+  Future<String?> getPlayerAvatarCardTheme() async => playerAvatarCardTheme;
+
+  @override
   Future<bool> getHasCompletedOnboarding() async => hasCompletedOnboarding;
 
   @override
@@ -59,6 +64,9 @@ class MemoryOnlySettingsPersistence implements SettingsPersistence {
 
   @override
   Future<void> savePlayerAvatarNumber(int value) async => playerAvatarNumber = value;
+
+  @override
+  Future<void> savePlayerAvatarCardTheme(String value) async => playerAvatarCardTheme = value;
 
   @override
   Future<void> saveHasCompletedOnboarding(bool value) async => hasCompletedOnboarding = value;

@@ -39,6 +39,12 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   }
 
   @override
+  Future<String?> getPlayerAvatarCardTheme() async {
+    final prefs = await instanceFuture;
+    return prefs.getString('playerAvatarCardTheme');
+  }
+
+  @override
   Future<String> getCardTheme() async {
     final prefs = await instanceFuture;
     try {
@@ -90,6 +96,12 @@ class LocalStorageSettingsPersistence extends SettingsPersistence {
   Future<void> savePlayerAvatarNumber(int value) async {
     final prefs = await instanceFuture;
     await prefs.setInt('playerAvatarNumber', value);
+  }
+
+  @override
+  Future<void> savePlayerAvatarCardTheme(String value) async {
+    final prefs = await instanceFuture;
+    await prefs.setString('playerAvatarCardTheme', value);
   }
 
   @override
