@@ -40,10 +40,9 @@ void main() {
       fakeSettings = FakeSettingsController();
 
       ai = BigTwoPlayCardsAI(
-        firestore: fakeFirestore,
-        auth: fakeAuth,
-        settingsController: fakeSettings,
+        aiUserId: aiUserId,
         delegate: realDelegate,
+        onAction: (state) {}
       );
     });
 

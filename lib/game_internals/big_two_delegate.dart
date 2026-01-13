@@ -131,7 +131,7 @@ class BigTwoDelegate extends TurnBasedGameDelegate<BigTwoState> with BigTwoDeckU
       "$debugMessage\nlastPlayedHand: ${currentState.lastPlayedHand}";
       debugMessage = "$debugMessage\npassCount: ${currentState
           .passCount}, passed: [${seatedPlayers.map((p) => p.hasPassed)}]";
-      print("_____\n$debugMessage");
+      //print("_____\n$debugMessage");
       _errorMessageService?.showError(debugMessage);
     }
 
