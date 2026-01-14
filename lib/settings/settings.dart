@@ -145,15 +145,23 @@ class SettingsController {
 
     int nextIndex = (currentIndex + 1) % supportedLocales.length;
     final nextLocale = supportedLocales[nextIndex];
-    
+    setLanguage(context, nextLocale);
+  }
+
+  bool setLanguage(BuildContext context, Locale locale) {
+    int currentIndex = supportedLocales.indexWhere(
+            (element) => element.languageCode == locale.languageCode);
+    if (currentIndex == -1) return false;
+
     // 更新 ValueNotifier
-    currentLocale.value = nextLocale;
-    
+    currentLocale.value = locale;
+
     // 更新 Context (EasyLocalization)
-    context.setLocale(nextLocale);
-    
+    context.setLocale(locale);
+
     // 儲存到 Persistence
-    _store.saveLocale(nextLocale.toString());
+    _store.saveLocale(locale.toString());
+    return true;
   }
 
   /// 從注入的持久化儲存中非同步載入數值。
@@ -205,14 +213,21 @@ class SettingsController {
         );
         currentCardTheme.value = theme;
       }),
-      _store.getLocale(defaultValue: 'en').then((value) {
+      _store.getLocale(defaultValue: 'none').then((value) {
         // 解析 locale string, 簡單實作: 若包含 '_' 則拆分，否則視為 languageCode
         Locale locale;
-        if (value.contains('_')) {
-           final parts = value.split('_');
+        String languageCode = value;
+
+        if (languageCode == 'none') {
+          locale = PlatformDispatcher.instance.locale;
+          languageCode = locale.toString();
+        }
+
+        if (languageCode.contains('_')) {
+           final parts = languageCode.split('_');
            locale = Locale(parts[0], parts[1]);
         } else {
-           locale = Locale(value);
+           locale = Locale(languageCode);
         }
         
         // 檢查是否為支援的語言，若否則退回預設

@@ -17,27 +17,57 @@ import '../style/palette.dart';
 import '../style/responsive_screen.dart';
 import '../widgets/background_image_widget.dart';
 
-class MainMenuScreen extends StatelessWidget {
+class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
+
+  @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen> {
+  bool _onboardingShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupLanguage();
+  }
+
+  void _setupLanguage() async {
+    final settingsController = context.read<SettingsController>();
+    await settingsController.initializationFinished;
+    if (!mounted) return;
+    settingsController.setLanguage(context, settingsController.currentLocale.value);
+  }
+
+  void _checkOnboarding() {
+    final settingsController = context.read<SettingsController>();
+    if (!settingsController.hasCompletedOnboarding.value && !_onboardingShowing) {
+      _onboardingShowing = true;
+      showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        isScrollControlled: true,
+        builder: (context) => const OnboardingSheet(),
+      ).then((_) {
+        if (mounted) {
+          setState(() {
+            _onboardingShowing = false;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.watch<Palette>();
     final settingsController = context.watch<SettingsController>();
     final audioController = context.watch<AudioController>();
-    
+
     // Check onboarding on build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-       if (!settingsController.hasCompletedOnboarding.value) {
-          showModalBottomSheet(
-             context: context, 
-             isDismissible: false,
-             enableDrag: false,
-             isScrollControlled: true,
-             builder: (context) => const OnboardingSheet()
-          );
-       }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkOnboarding());
 
     return ValueListenableBuilder<Locale>(
       valueListenable: settingsController.currentLocale,
@@ -47,8 +77,7 @@ class MainMenuScreen extends StatelessWidget {
             builder: (context, themeManager, child) {
               return BackgroundImageWidget(
                   imagePath: themeManager.cardManager.mainBackgroundImagePath,
-                  child:
-                  Scaffold(
+                  child: Scaffold(
                     backgroundColor: Colors.transparent,
                     body: ResponsiveScreen(
                       squarishMainArea: Center(
@@ -85,8 +114,7 @@ class MainMenuScreen extends StatelessWidget {
                           ),
                           _gap,
                           MyButton(
-                            onPressed: () =>
-                                GoRouter.of(context).push('/settings'),
+                            onPressed: () => GoRouter.of(context).push('/settings'),
                             child: Text('settings'.tr()),
                           ),
                           _gap,
@@ -96,11 +124,8 @@ class MainMenuScreen extends StatelessWidget {
                               valueListenable: settingsController.audioOn,
                               builder: (context, audioOn, child) {
                                 return IconButton(
-                                  onPressed: () =>
-                                      settingsController.toggleAudioOn(),
-                                  icon: Icon(
-                                      audioOn ? Icons.volume_up : Icons
-                                          .volume_off),
+                                  onPressed: () => settingsController.toggleAudioOn(),
+                                  icon: Icon(audioOn ? Icons.volume_up : Icons.volume_off),
                                 );
                               },
                             ),
@@ -111,10 +136,8 @@ class MainMenuScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                  )
-              );
-            }
-        );
+                  ));
+            });
       },
     );
   }
