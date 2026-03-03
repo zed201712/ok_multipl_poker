@@ -12,11 +12,10 @@ linux/
 macos/
 pubspec.lock
 README.md
-#web/
 windows/
-#*firebase_options.dart
-
-
+*CLAUDE.md
+**claude/
+ignore_docs/
 
 # Miscellaneous
 *.class
@@ -113,6 +112,7 @@ unlinked_spec.ds
 **/macos/Flutter/GeneratedPluginRegistrant.swift
 **/macos/Flutter/ephemeral
 **/xcuserdata/
+.DS_Store
 
 # Windows
 **/windows/flutter/generated_plugin_registrant.cc
