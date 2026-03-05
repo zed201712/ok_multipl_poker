@@ -59,6 +59,7 @@ void main() async {
       ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
+      useOnlyLangCode: true,
       child:
       Provider<FirebaseFirestore>.value(value: FirebaseFirestore.instance, child: const MyApp()),
       //Provider<FirebaseFirestore>.value(value: FakeFirebaseFirestore(), child: const MyApp()), //TODO
