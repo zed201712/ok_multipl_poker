@@ -57,7 +57,7 @@ class SettingsController {
   /// 支援的語言列表 (對應 main.dart 中的設定)
   static const List<Locale> supportedLocales = [
     Locale('en'),
-    Locale('zh', 'TW'),
+    Locale('zh'),
     Locale('ja'),
   ];
 

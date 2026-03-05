@@ -54,7 +54,7 @@ void main() async {
     EasyLocalization(
       supportedLocales: const [
         Locale('en'),
-        Locale('zh', 'TW'),
+        Locale('zh'),
         Locale('ja'),
       ],
       path: 'assets/translations',
