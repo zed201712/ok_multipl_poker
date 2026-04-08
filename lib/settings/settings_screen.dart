@@ -10,6 +10,7 @@ import 'package:ok_multipl_poker/style/card_theme_manager/big_two_card_theme.dar
    ;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../player_progress/player_progress.dart';
 import '../style/my_button.dart';
@@ -199,14 +200,21 @@ class SettingsScreen extends StatelessWidget {
                     );
                   },
                 ),
-                _SettingsLine(
-                  'license'.tr(),
-                  const Icon(Icons.description),
-                  onSelected: () {
-                    showLicensePage(
-                      context: context,
-                      //applicationName: 'OK Multipl Poker',
-                      applicationVersion: '1.0.1',
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const SizedBox.shrink();
+                    final info = snapshot.data!;
+                    return _SettingsLine(
+                      'license'.tr(),
+                      const Icon(Icons.description),
+                      onSelected: () {
+                        showLicensePage(
+                          context: context,
+                          applicationName: info.appName,
+                          applicationVersion: info.version,
+                        );
+                      },
                     );
                   },
                 ),

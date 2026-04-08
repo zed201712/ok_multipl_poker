@@ -4,7 +4,7 @@ description: A game with basic multiplayer support.
 # Prevent accidental publishing to pub.dev.
 publish_to: 'none'
 
-version: 0.0.1+1
+version: 1.0.2+1
 
 environment:
   sdk: ^3.8.0
@@ -32,6 +32,7 @@ dependencies:
   easy_localization: ^3.0.7
 
   json_annotation: 4.9.0
+  package_info_plus: 9.0.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0

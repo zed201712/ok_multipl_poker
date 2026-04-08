@@ -38,3 +38,5 @@
 ## 相關文件
 
 *   [**專案架構圖 (Architecture Diagram)**](architecture.md)
+*   [**版本規劃 (Release Plans)**](../plans/)
+    *   [v1.0.2 規劃](../plans/v1.0.2.md)
