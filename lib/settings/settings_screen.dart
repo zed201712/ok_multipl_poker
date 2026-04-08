@@ -199,6 +199,17 @@ class SettingsScreen extends StatelessWidget {
                     );
                   },
                 ),
+                _SettingsLine(
+                  'license'.tr(),
+                  const Icon(Icons.description),
+                  onSelected: () {
+                    showLicensePage(
+                      context: context,
+                      //applicationName: 'OK Multipl Poker',
+                      applicationVersion: '1.0.1',
+                    );
+                  },
+                ),
                 _gap,
 
                 // QR Code Display
