@@ -186,20 +186,6 @@ class SettingsScreen extends StatelessWidget {
                     onSelected: () => settings.toggleMusicOn(),
                   ),
                 ),
-                _SettingsLine(
-                  'reset_progress'.tr(),
-                  const Icon(Icons.delete),
-                  onSelected: () {
-                    context.read<PlayerProgress>().reset();
-
-                    final messenger = ScaffoldMessenger.of(context);
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text('progress_reset_message'.tr()),
-                      ),
-                    );
-                  },
-                ),
                 FutureBuilder<PackageInfo>(
                   future: PackageInfo.fromPlatform(),
                   builder: (context, snapshot) {
