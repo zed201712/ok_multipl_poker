@@ -16,7 +16,7 @@ _用 Flutter 開發的多人在線撲克遊戲平台，目前收錄「大老二�
 - [功能](#-功能)
 - [開始使用](#-開始使用)
 - [實作方式](#-實作方式)
-- [測試與部署](#-測試與部署)
+- [測試](#-測試)
 
 ---
 
@@ -78,17 +78,11 @@ flutter run -d chrome
 
 ---
 
-## 🧪 測試與部署
+## 🧪 測試
 
 靜態分析與測試：
 
 ```bash
 flutter analyze
 flutter test
-```
-
-推送到 `main` 時，[GitHub Actions](.github/workflows/) 會執行 `flutter test`、建置 Web 版，並部署到 GitHub Pages（`gh-pages` branch）。在本機建置相同的 Web 版：
-
-```bash
-flutter build web --release --base-href /ok_multipl_poker/
 ```
