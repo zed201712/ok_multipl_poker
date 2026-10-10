@@ -1,48 +1,95 @@
-## 🌐 Demo
+# OK Multipl Poker
 
-https://zed201712.github.io/ok_multipl_poker/
-
----
-
-### English
-
-### Introduction
-
-A multiplayer online poker game platform developed with Flutter, currently including two classic games: "Big Two" and "99". This project uses Firebase as the backend to provide a real-time, smooth multiplayer gaming experience.
-
-### ✨ Features
-
-*   **Dual Game Modes**: Supports the complete rules and hand logic for "Big Two" and "99".
-*   **Real-time Match Experience**: Realizes multiplayer state synchronization through Firebase Firestore.
-*   **Cross-platform Support**: Published based on the Flutter framework.
-*   **Customized Experience**: Supports multiple languages (English, Chinese, Japanese).
+_用 Flutter 開發的多人在線撲克遊戲平台，目前收錄「大老二」與「99」兩款經典撲克遊戲，以 Firebase 即時同步對局_
 
 ---
 
-### 日本語
+| 項目 | 內容 |
+| --- | --- |
+| 線上試玩 | <https://zed201712.github.io/ok_multipl_poker/> |
+| 遊戲 | 大老二（Big Two）、99（Poker 99） |
+| 後端 | Firebase Cloud Firestore |
+| 語言 | 繁體中文、English、日本語 |
 
-### 概要
+## 📋 目錄
 
-Flutterで開発されたマルチプレイヤーオンラインポーカープラットフォームです。現在は「大老二 (Big Two)」と「99」の2つのクラシックなポーカーゲームを含んでいます。本プロジェクトはバックエンドにFirebaseを採用し、リアルタイムでスムーズなオンライン対戦体験を提供します。
-
-### ✨ 主な機能
-
-*   **デュアルゲームモード**：「大老二」と「99」の完全なルールと役（ハンド）のロジックをサポート。
-*   **リアルタイム対戦体験**：Firebase Firestoreを通じて複数プレイヤーの状態同期を実現。
-*   **クロスプラットフォーム対応**：Flutterフレームワークを採用。
-*   **カスタマイズ体験**：多言語対応（中国語・英語・日本語）。
+- [功能](#-功能)
+- [開始使用](#-開始使用)
+- [實作方式](#-實作方式)
+- [測試與部署](#-測試與部署)
+- [授權](#-授權)
 
 ---
 
-### 中文
+## ✨ 功能
 
-### 介紹
+- **兩款遊戲**：大老二與 99 的完整規則與牌型判斷
+- **即時對戰**：透過 Firestore 配對房間、同步每一手出牌
+- **電腦玩家**：大老二與 99 各有 AI 出牌策略
+- **跨平台**：同一份程式碼發布到 Web 與行動裝置
+- **客製化**：多種牌面主題、頭像、音樂與音效開關，介面支援中英日三種語言
 
-一個基於 Flutter 開發的多人在線撲克遊戲平台，目前包含「大老二 (Big Two)」與「99」兩款經典撲克遊戲。本專案採用 Firebase 作為後端，提供即時、流暢的多人對戰體驗。
+---
 
-### ✨ 核心特色
+## 🚀 開始使用
 
-*   **雙重遊戲模式**：支援「大老二」與「99」的完整規則與牌型邏輯。
-*   **即時對戰體驗**：透過 Firebase Firestore 實現多人狀態同步。
-*   **跨平台支援**：基於 Flutter 框架發布。
-*   **客製化體驗**：支援多國語言 中英日。
+### 前置需求
+
+| 工具 | 版本 | 為什麼 |
+| --- | --- | --- |
+| Flutter | 3.35.7 | CI 使用這個版本建置與測試；`pubspec.yaml` 要求 Dart SDK `^3.8.0` |
+| Chrome | 最新版 | 用 Web 執行最簡單，不需要額外的 Firebase 設定檔 |
+| Xcode／Android Studio | — | 只有要在 iOS、macOS 或 Android 上執行時才需要 |
+
+確認 Flutter 版本：
+
+```bash
+flutter --version
+```
+
+### 1. 取得程式碼
+
+```bash
+git clone https://github.com/zed201712/ok_multipl_poker.git
+cd ok_multipl_poker
+```
+
+### 2. 安裝套件
+
+```bash
+flutter pub get
+```
+
+### 3. 執行
+
+```bash
+flutter run -d chrome
+```
+
+---
+
+## ⚙️ 實作方式
+
+| 層級 | 位置 | 負責 |
+| --- | --- | --- |
+| 遊戲規則 | [lib/game_internals/](lib/game_internals/) | 牌組、牌型判斷、各遊戲的規則代理（Delegate） |
+| 多人同步 | [lib/multiplayer/](lib/multiplayer/) | Firestore 房間與對局控制器、電腦玩家策略 |
+| 資料模型 | [lib/entities/](lib/entities/) | 對局狀態與房間資料，負責與 Firestore 的 JSON 轉換 |
+| 對局介面 | [lib/play_session/](lib/play_session/) | 遊戲桌面、手牌與出牌區的 Widget |
+
+---
+
+## 🧪 測試與部署
+
+靜態分析與測試：
+
+```bash
+flutter analyze
+flutter test
+```
+
+推送到 `main` 時，[GitHub Actions](.github/workflows/) 會執行 `flutter test`、建置 Web 版，並部署到 GitHub Pages（`gh-pages` branch）。在本機建置相同的 Web 版：
+
+```bash
+flutter build web --release --base-href /ok_multipl_poker/
+```
